@@ -1,0 +1,11 @@
+/// 🔑 API 키 설정 파일 (예시)
+/// 이 파일을 복사해서 app_config.dart 로 이름을 바꾼 뒤 키를 입력하세요.
+///
+/// 키 발급 방법:
+///   1. https://www.data.go.kr 접속
+///   2. "한국환경공단_에어코리아_대기오염정보" 검색
+///   3. 활용신청 → 일반 인증키(Encoding) 복사
+///   4. URL 인코딩된 키를 아래에 붙여넣기
+class AppConfig {
+  static const String airKoreaApiKey = 'YOUR_ENCODED_API_KEY_HERE';
+}

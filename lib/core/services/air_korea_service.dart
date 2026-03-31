@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/models/dust_data.dart';
 import '../../data/models/forecast_models.dart';
+import '../config/app_config.dart';
 import '../constants/dust_standards.dart';
 
 /// 에어코리아 OpenAPI 통신 서비스
@@ -13,8 +14,8 @@ class AirKoreaService {
   static const String _baseUrl =
       'https://apis.data.go.kr/B552584/ArpltnInforInqireSvc';
   static const String _cacheKey = 'dust_cache';
-  // +→%2B, =→%3D 로 인코딩 (URL 직접 조립 시 + 가 공백으로 해석되는 것 방지)
-  static const String _apiKey = 'ydGGiGAqIXDPK%2B5rQsVUugRe9Ys%2BqjrnouHCqC5Wuw4iCR6oIiJbxXOxF4JGeuehOvPHReho0DLbP21N%2BfOlPQ%3D%3D';
+  // app_config.dart (gitignored)에서 키를 주입 — 절대 소스에 직접 입력하지 마세요
+  static const String _apiKey = AppConfig.airKoreaApiKey;
 
   final Dio _dio;
   final SharedPreferences _prefs;
