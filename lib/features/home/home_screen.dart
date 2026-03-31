@@ -5,6 +5,7 @@ import '../../core/constants/dust_standards.dart';
 import '../../core/services/air_korea_service.dart' show AirKoreaService;
 import '../../data/models/forecast_models.dart';
 import '../../providers/providers.dart';
+import '../../widgets/async_state_widgets.dart';
 import '../../widgets/dust_gauge_widget.dart';
 import 'dust_detail_screen.dart';
 import 'dust_status_card.dart';
@@ -47,47 +48,20 @@ class HomeScreen extends ConsumerWidget {
           ref.invalidate(tomorrowForecastProvider);
         },
         child: dustAsync.when(
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primary),
-          ),
-          error: (e, _) => Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.wifi_off,
-                    size: 60, color: AppColors.textHint),
-                const SizedBox(height: 16),
-                const Text('데이터를 불러올 수 없어요',
-                    style: TextStyle(
-                        fontSize: 16, color: AppColors.textSecondary)),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: () => ref.invalidate(dustDataProvider),
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary),
-                  child: const Text('다시 시도'),
-                ),
-              ],
-            ),
+          loading: () => const LoadingStateWidget(message: '미세먼지 정보 불러오는 중...'),
+          error: (e, _) => ErrorStateWidget(
+            message: '미세먼지 정보를 불러올 수 없어요.\n네트워크 연결을 확인해 주세요.',
+            onRetry: () {
+              ref.invalidate(dustDataProvider);
+              ref.invalidate(tomorrowForecastProvider);
+            },
           ),
           data: (dust) {
             if (dust == null) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.cloud_off, size: 60, color: AppColors.textHint),
-                    const SizedBox(height: 16),
-                    const Text('데이터를 불러올 수 없어요',
-                        style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
-                    const SizedBox(height: 12),
-                    ElevatedButton(
-                      onPressed: () => ref.invalidate(dustDataProvider),
-                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                      child: const Text('다시 시도', style: TextStyle(color: Colors.white)),
-                    ),
-                  ],
-                ),
+              return ErrorStateWidget(
+                message: '측정소 데이터가 없어요.\n측정소 이름을 확인하거나\n다른 측정소를 선택해 보세요.',
+                icon: Icons.location_off_outlined,
+                onRetry: () => ref.invalidate(dustDataProvider),
               );
             }
 
@@ -250,14 +224,17 @@ class HomeScreen extends ConsumerWidget {
               loading: () => const SizedBox(
                 height: 80,
                 child: Center(
-                    child: CircularProgressIndicator(strokeWidth: 2)),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: AppColors.primary)),
               ),
-              error: (_, __) => const Text('불러오기 실패',
-                  style: TextStyle(color: AppColors.textHint)),
+              error: (_, __) => _InlineErrorTile(
+                message: '시간별 현황을 불러올 수 없어요.',
+                onRetry: () => ref.invalidate(
+                    hourlyDataProvider(stationName)),
+              ),
               data: (List<HourlyDustData> items) {
                 if (items.isEmpty) {
-                  return const Text('데이터 없음',
-                      style: TextStyle(color: AppColors.textHint));
+                  return const _InlineEmptyTile(message: '시간별 데이터가 없어요.');
                 }
                 return _HourlyForecastTile(items: items);
               },
@@ -404,3 +381,62 @@ class _HourlyForecastTile extends StatelessWidget {
   }
 }
 
+// ── 카드 내부 인라인 에러 ─────────────────────────────────
+
+class _InlineErrorTile extends StatelessWidget {
+  final String message;
+  final VoidCallback? onRetry;
+  const _InlineErrorTile({required this.message, this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline,
+              size: 18, color: AppColors.textHint),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(message,
+                style: const TextStyle(
+                    fontSize: 12, color: AppColors.textSecondary)),
+          ),
+          if (onRetry != null)
+            TextButton(
+              onPressed: onRetry,
+              style: TextButton.styleFrom(
+                  minimumSize: Size.zero,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 4)),
+              child: const Text('재시도',
+                  style: TextStyle(
+                      fontSize: 12, color: AppColors.primary)),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InlineEmptyTile extends StatelessWidget {
+  final String message;
+  const _InlineEmptyTile({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          const Icon(Icons.cloud_off_outlined,
+              size: 18, color: AppColors.textHint),
+          const SizedBox(width: 8),
+          Text(message,
+              style: const TextStyle(
+                  fontSize: 12, color: AppColors.textSecondary)),
+        ],
+      ),
+    );
+  }
+}
