@@ -93,11 +93,11 @@ class AirKoreaService {
     }
   }
 
-  /// 시간별 데이터 12개 조회
+  /// 시간별 데이터 — 현재 측정값 + 24시간 예보
+  /// 미래 시간은 측정 시각 기준으로 연속 생성 (DateTime.now()와 무관하게 시간 연속성 보장)
   Future<List<HourlyDustData>> getHourlyData(String stationName) async {
     try {
       final encodedStation = Uri.encodeComponent(stationName);
-      // 현재 측정값 1건만 조회
       final url = '$_baseUrl/getMsrstnAcctoRltmMesureDnsty'
           '?serviceKey=$_apiKey'
           '&returnType=json&numOfRows=1&pageNo=1'
@@ -109,9 +109,12 @@ class AirKoreaService {
       if (items == null || items.isEmpty) return [];
 
       final map = items.first as Map<String, dynamic>;
-      final time = DateTime.tryParse(map['dataTime'] as String? ?? '') ?? DateTime.now();
+      // API dataTime 파싱 (형식: "2026-03-31 23:00")
+      final rawTime = map['dataTime'] as String? ?? '';
+      final measureTime = DateTime.tryParse(rawTime) ?? DateTime.now();
+
       final current = HourlyDustData(
-        time: time,
+        time: measureTime,
         pm10: _parseInt(map['pm10Value']),
         pm25: _parseInt(map['pm25Value']),
         pm10Grade: DustStandards.getPm10Grade(_parseInt(map['pm10Value']) ?? 0),
@@ -119,21 +122,33 @@ class AirKoreaService {
         isForecast: false,
       );
 
-      // 미래 24시간: 실제 현재 시각 기준 (API 지연과 무관)
-      final now = DateTime.now();
+      // 단기 예보 등급 조회 (시도명 추출 후 사용)
+      // 미래 슬롯의 등급을 일별 예보 기준으로 적용 (당일/내일/모레)
+      final sidoName = _localSidoMap(stationName);
+      final forecasts = await getWeeklyForecast(sidoName: sidoName);
+      // 날짜 문자열("2026-04-01") → WeeklyForecastData 맵
+      final forecastMap = {
+        for (final f in forecasts)
+          '${f.date.year}-${f.date.month.toString().padLeft(2,'0')}-${f.date.day.toString().padLeft(2,'0')}': f
+      };
+
+      // 미래 24시간: 측정 시각 기준으로 1시간씩 증가 (시간 연속성 보장)
       final future = List.generate(24, (i) {
-        final futureTime = now.add(Duration(hours: i + 1));
+        final futureTime = measureTime.add(Duration(hours: i + 1));
+        final dayKey = '${futureTime.year}-${futureTime.month.toString().padLeft(2,'0')}-${futureTime.day.toString().padLeft(2,'0')}';
+        final forecast = forecastMap[dayKey];
         return HourlyDustData(
           time: futureTime,
           pm10: null,
           pm25: null,
-          pm10Grade: current.pm10Grade,
-          pm25Grade: current.pm25Grade,
+          // 해당 날짜의 예보 등급 사용, 없으면 현재 등급 유지
+          pm10Grade: forecast?.pm10Grade ?? current.pm10Grade,
+          pm25Grade: forecast?.pm25Grade ?? current.pm25Grade,
           isForecast: true,
         );
       });
 
-      return [current, ...future]; // 현재(위) → 24시간 후(아래)
+      return [current, ...future];
     } catch (_) {
       return [];
     }
@@ -179,11 +194,17 @@ class AirKoreaService {
   /// 단기 예보 — WeeklyForecastData 리스트 (PM10+PM25, 최대 3일)
   /// 에어코리아 API는 오늘 기준 최대 3일(오늘/내일/모레)만 제공
   /// 하루 3회 발표(05시·11시·17시) 중 가장 최신 발표를 사용
+  /// ※ 자정~04시 사이는 당일 첫 발표(05시)가 없으므로 전날 날짜로 조회
   Future<List<WeeklyForecastData>> getWeeklyForecast({String? sidoName}) async {
     try {
-      final today = DateTime.now();
+      final now = DateTime.now();
+      // 05시 이전이면 아직 당일 예보 미발표 → 전날 17시 발표 기준으로 조회
+      final searchBase = now.hour < 5
+          ? now.subtract(const Duration(days: 1))
+          : now;
+      final today = DateTime(now.year, now.month, now.day); // 오늘 날짜 (필터용)
       final dateStr =
-          '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+          '${searchBase.year}-${searchBase.month.toString().padLeft(2, '0')}-${searchBase.day.toString().padLeft(2, '0')}';
 
       final pm10Url = '$_baseUrl/getMinuDustFrcstDspth'
           '?serviceKey=$_apiKey'
@@ -236,14 +257,15 @@ class AirKoreaService {
       final allDates = {...pm10Map.keys, ...pm25Map.keys};
       final result = allDates.map((date) {
         return WeeklyForecastData(
-          date: DateTime.tryParse(date) ?? today,
+          date: DateTime.tryParse(date) ?? now,
           pm10Grade: pm10Map[date]?.grade,
           pm25Grade: pm25Map[date]?.grade,
         );
       }).toList();
 
       result.sort((a, b) => a.date.compareTo(b.date));
-      return result;
+      // 오늘 이전 날짜(전날 조회 시 어제 예보 포함될 수 있음)는 제외
+      return result.where((d) => !d.date.isBefore(today)).toList();
     } catch (_) {
       return [];
     }
@@ -498,9 +520,11 @@ class AirKoreaService {
   /// 내일 예보 조회 - 해당 시도만 필터링
   Future<String?> getTomorrowForecast({String? sidoName}) async {
     try {
-      final today = DateTime.now();
+      final now = DateTime.now();
+      // 05시 이전이면 전날 발표 기준 조회
+      final searchBase = now.hour < 5 ? now.subtract(const Duration(days: 1)) : now;
       final dateStr =
-          '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+          '${searchBase.year}-${searchBase.month.toString().padLeft(2, '0')}-${searchBase.day.toString().padLeft(2, '0')}';
 
       final url = '$_baseUrl/getMinuDustFrcstDspth'
           '?serviceKey=$_apiKey'
