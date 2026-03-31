@@ -1,0 +1,539 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:permission_handler/permission_handler.dart';
+import '../../core/constants/app_colors.dart';
+import '../../core/services/notification_service.dart';
+import '../../providers/providers.dart';
+
+class NotificationScreen extends ConsumerStatefulWidget {
+  const NotificationScreen({super.key});
+
+  @override
+  ConsumerState<NotificationScreen> createState() => _NotificationScreenState();
+}
+
+class _NotificationScreenState extends ConsumerState<NotificationScreen>
+    with WidgetsBindingObserver {
+  bool _permissionGranted = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _checkPermission();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _checkPermission();
+  }
+
+  Future<void> _checkPermission() async {
+    if (kIsWeb) return;
+    final status = await Permission.notification.status;
+    if (mounted) {
+      setState(() => _permissionGranted = status.isGranted);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final setting = ref.watch(notificationSettingProvider);
+    final notifier = ref.read(notificationSettingProvider.notifier);
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        title: const Text(
+          '알림 설정',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          // 권한 거부 배너
+          if (!_permissionGranted) ...[
+            _PermissionBanner(onTap: () async {
+              await openAppSettings();
+            }),
+            const SizedBox(height: 16),
+          ],
+
+          // 알림 작동 방식 안내
+          _InfoBox(
+            text: '알림은 설정 시간 ±30분 내에 발송돼요.\n'
+                '앱을 설치한 기기에서 실시간 미세먼지 데이터를 가져와 개인 프로필 기준으로 안내해요.',
+          ),
+          const SizedBox(height: 20),
+
+          _SectionLabel('매일 알림'),
+          const SizedBox(height: 10),
+
+          // 오전 알림
+          _NotifCard(
+            icon: Icons.wb_sunny_outlined,
+            title: '외출 전 알림',
+            subtitle: '매일 아침 오늘 미세먼지 상태 안내',
+            example: '예) "오늘 PM2.5 나쁨. 마스크를 꼭 착용하세요."',
+            enabled: setting.morningAlertEnabled,
+            timeLabel: _timeLabel(
+                setting.morningAlertHour, setting.morningAlertMinute),
+            onToggle: (v) =>
+                notifier.update(setting.copyWith(morningAlertEnabled: v)),
+            onTimeTap: () async {
+              final picked = await showTimePicker(
+                context: context,
+                initialTime: TimeOfDay(
+                    hour: setting.morningAlertHour,
+                    minute: setting.morningAlertMinute),
+              );
+              if (picked != null) {
+                notifier.update(setting.copyWith(
+                  morningAlertHour: picked.hour,
+                  morningAlertMinute: picked.minute,
+                ));
+              }
+            },
+          ),
+          const SizedBox(height: 12),
+
+          // 전날 예보
+          _NotifCard(
+            icon: Icons.nights_stay_outlined,
+            title: '전날 예보 알림',
+            subtitle: '내일 미세먼지 예보 안내',
+            example: '예) "내일 예보: 나쁨. 출근 시 마스크를 챙겨두세요."',
+            enabled: setting.eveningForecastEnabled,
+            timeLabel: _timeLabel(
+                setting.eveningForecastHour, setting.eveningForecastMinute),
+            onToggle: (v) =>
+                notifier.update(setting.copyWith(eveningForecastEnabled: v)),
+            onTimeTap: () async {
+              final picked = await showTimePicker(
+                context: context,
+                initialTime: TimeOfDay(
+                    hour: setting.eveningForecastHour,
+                    minute: setting.eveningForecastMinute),
+              );
+              if (picked != null) {
+                notifier.update(setting.copyWith(
+                  eveningForecastHour: picked.hour,
+                  eveningForecastMinute: picked.minute,
+                ));
+              }
+            },
+          ),
+          const SizedBox(height: 12),
+
+          // 귀가 알림
+          _NotifCard(
+            icon: Icons.home_outlined,
+            title: '귀가 후 알림',
+            subtitle: '퇴근 시간 미세먼지 확인 안내',
+            example: '예) "퇴근 시간 나쁨이에요. 마스크 챙기셨나요?"',
+            enabled: setting.eveningReturnEnabled,
+            timeLabel: _timeLabel(
+                setting.eveningReturnHour, setting.eveningReturnMinute),
+            onToggle: (v) =>
+                notifier.update(setting.copyWith(eveningReturnEnabled: v)),
+            onTimeTap: () async {
+              final picked = await showTimePicker(
+                context: context,
+                initialTime: TimeOfDay(
+                    hour: setting.eveningReturnHour,
+                    minute: setting.eveningReturnMinute),
+              );
+              if (picked != null) {
+                notifier.update(setting.copyWith(
+                  eveningReturnHour: picked.hour,
+                  eveningReturnMinute: picked.minute,
+                ));
+              }
+            },
+          ),
+          const SizedBox(height: 24),
+
+          _SectionLabel('실시간 경보'),
+          const SizedBox(height: 10),
+
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.divider),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded,
+                    color: AppColors.dustBad, size: 28),
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '실시간 경보',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        '미세먼지 급등 시 즉시 알림',
+                        style: TextStyle(
+                            fontSize: 13, color: AppColors.textSecondary),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        '예) "⚠️ 미세먼지 경보. 지금 바로 마스크를 착용하세요."',
+                        style: TextStyle(
+                            fontSize: 12, color: AppColors.textHint),
+                      ),
+                    ],
+                  ),
+                ),
+                Switch(
+                  value: setting.realtimeAlertEnabled,
+                  onChanged: (v) =>
+                      notifier.update(setting.copyWith(realtimeAlertEnabled: v)),
+                  activeColor: AppColors.primary,
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // 알림 테스트
+          _SectionLabel('알림 테스트'),
+          const SizedBox(height: 10),
+          _NotifTestCard(),
+          const SizedBox(height: 24),
+
+          const Text(
+            '* 알림은 참고용 정보이며 의료적 진단이나 처방을 대체하지 않습니다.\n'
+            '* 배터리 절약 모드나 기기 설정에 따라 알림이 지연될 수 있어요.',
+            style: TextStyle(fontSize: 12, color: AppColors.textHint),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _timeLabel(int hour, int minute) =>
+      '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+}
+
+class _NotifTestCard extends ConsumerStatefulWidget {
+  @override
+  ConsumerState<_NotifTestCard> createState() => _NotifTestCardState();
+}
+
+class _NotifTestCardState extends ConsumerState<_NotifTestCard> {
+  bool _sending = false;
+  String? _result;
+
+  Future<void> _sendTest() async {
+    setState(() { _sending = true; _result = null; });
+
+    try {
+      final notifService = ref.read(notificationServiceProvider);
+      final dustAsync = ref.read(dustDataProvider);
+      final calcResult = ref.read(dustCalculationProvider);
+      final dust = dustAsync.value;
+
+      final pm25 = dust?.pm25Value ?? 35;
+      final grade = dust?.pm25Grade ?? '보통';
+      final riskLabel = calcResult?.riskLevel.label;
+      final maskType = calcResult?.maskType;
+
+      final body = NotificationService.morningMessage(
+        pm25, grade,
+        riskLabel: riskLabel,
+        maskType: maskType,
+      );
+
+      await notifService.showImmediateNotification(
+        id: 99,
+        title: '마스크 알림 테스트',
+        body: body,
+      );
+      setState(() { _result = '✓ 알림 발송 완료! 상단 알림을 확인하세요.'; });
+    } catch (e) {
+      setState(() { _result = '✗ 발송 실패: $e'; });
+    } finally {
+      setState(() => _sending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '알림이 제대로 오는지 확인해보세요.',
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _sending ? null : _sendTest,
+              icon: _sending
+                  ? const SizedBox(
+                      width: 16, height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.notifications_active_outlined, size: 18),
+              label: Text(_sending ? '발송 중...' : '테스트 알림 보내기'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ),
+          if (_result != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              _result!,
+              style: TextStyle(
+                fontSize: 13,
+                color: _result!.startsWith('✓')
+                    ? AppColors.success
+                    : AppColors.error,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PermissionBanner extends StatelessWidget {
+  final VoidCallback onTap;
+  const _PermissionBanner({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.red.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.red.shade200),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.notifications_off_outlined,
+                color: Colors.red.shade400, size: 22),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text(
+                '알림 권한이 꺼져있어요. 탭하여 설정에서 허용해주세요.',
+                style: TextStyle(fontSize: 13, color: Colors.red),
+              ),
+            ),
+            Icon(Icons.chevron_right, color: Colors.red.shade400),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoBox extends StatelessWidget {
+  final String text;
+  const _InfoBox({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info_outline, size: 18, color: AppColors.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                  fontSize: 13, color: AppColors.textSecondary, height: 1.5),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textSecondary,
+        letterSpacing: 0.5,
+      ),
+    );
+  }
+}
+
+class _NotifCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String example;
+  final bool enabled;
+  final String timeLabel;
+  final ValueChanged<bool> onToggle;
+  final VoidCallback onTimeTap;
+
+  const _NotifCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.example,
+    required this.enabled,
+    required this.timeLabel,
+    required this.onToggle,
+    required this.onTimeTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: enabled ? AppColors.primary.withOpacity(0.3) : AppColors.divider,
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(icon,
+                  color: enabled ? AppColors.primary : AppColors.textHint,
+                  size: 26),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: enabled
+                            ? AppColors.textPrimary
+                            : AppColors.textHint,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(subtitle,
+                        style: const TextStyle(
+                            fontSize: 13, color: AppColors.textSecondary)),
+                  ],
+                ),
+              ),
+              Switch(
+                value: enabled,
+                onChanged: onToggle,
+                activeColor: AppColors.primary,
+              ),
+            ],
+          ),
+          if (enabled) ...[
+            const SizedBox(height: 12),
+            const Divider(height: 1),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Icon(Icons.access_time,
+                    size: 16, color: AppColors.textSecondary),
+                const SizedBox(width: 6),
+                const Text('알림 시간',
+                    style: TextStyle(
+                        fontSize: 13, color: AppColors.textSecondary)),
+                const Spacer(),
+                GestureDetector(
+                  onTap: onTimeTap,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      timeLabel,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                example,
+                style: const TextStyle(
+                    fontSize: 12, color: AppColors.textHint, height: 1.4),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
