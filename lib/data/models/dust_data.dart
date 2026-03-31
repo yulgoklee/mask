@@ -1,0 +1,78 @@
+/// 에어코리아 API 응답 미세먼지 데이터 모델
+class DustData {
+  final String stationName;   // 측정소명
+  final int? pm25Value;       // PM2.5 (μg/m³)
+  final int? pm10Value;       // PM10 (μg/m³)
+  final String pm25Grade;     // PM2.5 등급 (1:좋음 2:보통 3:나쁨 4:매우나쁨)
+  final String pm10Grade;     // PM10 등급
+  final DateTime dataTime;    // 측정 시각
+  final DateTime fetchedAt;   // 조회 시각
+
+  const DustData({
+    required this.stationName,
+    this.pm25Value,
+    this.pm10Value,
+    required this.pm25Grade,
+    required this.pm10Grade,
+    required this.dataTime,
+    required this.fetchedAt,
+  });
+
+  factory DustData.fromJson(Map<String, dynamic> json) {
+    return DustData(
+      stationName: json['stationName'] as String? ?? '',
+      pm25Value: _parseIntOrNull(json['pm25Value']),
+      pm10Value: _parseIntOrNull(json['pm10Value']),
+      pm25Grade: _gradeLabel(json['pm25Grade']),
+      pm10Grade: _gradeLabel(json['pm10Grade']),
+      dataTime: DateTime.tryParse(json['dataTime'] as String? ?? '') ?? DateTime.now(),
+      fetchedAt: DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'stationName': stationName,
+    'pm25Value': pm25Value,
+    'pm10Value': pm10Value,
+    'pm25Grade': pm25Grade,
+    'pm10Grade': pm10Grade,
+    'dataTime': dataTime.toIso8601String(),
+    'fetchedAt': fetchedAt.toIso8601String(),
+  };
+
+  factory DustData.fromCacheJson(Map<String, dynamic> json) {
+    return DustData(
+      stationName: json['stationName'] as String? ?? '',
+      pm25Value: json['pm25Value'] as int?,
+      pm10Value: json['pm10Value'] as int?,
+      pm25Grade: json['pm25Grade'] as String? ?? '알수없음',
+      pm10Grade: json['pm10Grade'] as String? ?? '알수없음',
+      dataTime: DateTime.tryParse(json['dataTime'] as String? ?? '') ?? DateTime.now(),
+      fetchedAt: DateTime.tryParse(json['fetchedAt'] as String? ?? '') ?? DateTime.now(),
+    );
+  }
+
+  /// 캐시가 유효한지 확인 (1시간 이내)
+  bool get isCacheValid {
+    return DateTime.now().difference(fetchedAt).inMinutes < 60;
+  }
+
+  static int? _parseIntOrNull(dynamic value) {
+    if (value == null || value == '-') return null;
+    return int.tryParse(value.toString());
+  }
+
+  static String _gradeLabel(dynamic gradeCode) {
+    switch (gradeCode?.toString()) {
+      case '1': return '좋음';
+      case '2': return '보통';
+      case '3': return '나쁨';
+      case '4': return '매우나쁨';
+      default:  return '알수없음';
+    }
+  }
+
+  @override
+  String toString() =>
+      'DustData(station: $stationName, PM2.5: $pm25Value($pm25Grade), PM10: $pm10Value($pm10Grade))';
+}
