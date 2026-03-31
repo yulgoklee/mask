@@ -1,5 +1,8 @@
-# API Keys (절대 커밋 금지)
+# API Keys & 서명 키 (절대 커밋 금지)
 lib/core/config/app_config.dart
+*.jks
+*.keystore
+android/key.properties
 
 # Miscellaneous
 *.class
