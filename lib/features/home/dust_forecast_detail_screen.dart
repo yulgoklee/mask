@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../data/models/forecast_models.dart';
 import '../../providers/providers.dart';
+import '../../widgets/async_state_widgets.dart';
 import '../../widgets/grade_badge.dart';
 
 class DustForecastDetailScreen extends ConsumerWidget {
@@ -62,11 +63,18 @@ class _HourlyTab extends ConsumerWidget {
     final hourlyAsync = ref.watch(hourlyDataProvider(stationName));
 
     return hourlyAsync.when(
-      loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primary)),
-      error: (_, __) => const Center(child: Text('데이터를 불러올 수 없어요')),
+      loading: () => const LoadingStateWidget(message: '시간별 현황 불러오는 중...'),
+      error: (e, _) => ErrorStateWidget(
+        message: '시간별 현황을 불러올 수 없어요.\n네트워크 연결을 확인해 주세요.',
+        onRetry: () => ref.invalidate(hourlyDataProvider(stationName)),
+      ),
       data: (items) {
-        if (items.isEmpty) return const Center(child: Text('데이터 없음'));
+        if (items.isEmpty) {
+          return const EmptyStateWidget(
+            icon: Icons.access_time_outlined,
+            message: '시간별 데이터가 없어요.\n측정소를 확인해 주세요.',
+          );
+        }
         return ListView(
           padding: const EdgeInsets.all(20),
           children: [
@@ -166,11 +174,18 @@ class _WeeklyTab extends ConsumerWidget {
     final weeklyAsync = ref.watch(weeklyForecastProvider(sidoName));
 
     return weeklyAsync.when(
-      loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primary)),
-      error: (_, __) => const Center(child: Text('예보를 불러올 수 없어요')),
+      loading: () => const LoadingStateWidget(message: '단기 예보 불러오는 중...'),
+      error: (e, _) => ErrorStateWidget(
+        message: '단기 예보를 불러올 수 없어요.\n네트워크 연결을 확인해 주세요.',
+        onRetry: () => ref.invalidate(weeklyForecastProvider(sidoName)),
+      ),
       data: (items) {
-        if (items.isEmpty) return const Center(child: Text('예보 데이터 없음'));
+        if (items.isEmpty) {
+          return const EmptyStateWidget(
+            icon: Icons.wb_sunny_outlined,
+            message: '예보 데이터가 없어요.\n잠시 후 다시 확인해 주세요.',
+          );
+        }
         return ListView(
           padding: const EdgeInsets.all(20),
           children: [

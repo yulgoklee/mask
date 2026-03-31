@@ -95,6 +95,7 @@ class AirKoreaService {
 
   /// 시간별 데이터 — 현재 측정값 + 24시간 예보
   /// 미래 시간은 측정 시각 기준으로 연속 생성 (DateTime.now()와 무관하게 시간 연속성 보장)
+  /// DioException → rethrow (네트워크 오류는 UI에서 인지할 수 있도록)
   Future<List<HourlyDustData>> getHourlyData(String stationName) async {
     try {
       final encodedStation = Uri.encodeComponent(stationName);
@@ -149,7 +150,13 @@ class AirKoreaService {
       });
 
       return [current, ...future];
-    } catch (_) {
+    } on DioException catch (e) {
+      // 네트워크 오류 → rethrow (UI가 error state 표시 가능하도록)
+      debugPrint('[AirKorea] 시간별 데이터 네트워크 오류: ${e.message}');
+      throw Exception('네트워크에 연결할 수 없어요.\n잠시 후 다시 시도해 주세요.');
+    } catch (e) {
+      // 파싱 등 기타 오류 → 빈 리스트 (조용히 실패)
+      debugPrint('[AirKorea] 시간별 데이터 오류: $e');
       return [];
     }
   }
@@ -266,7 +273,11 @@ class AirKoreaService {
       result.sort((a, b) => a.date.compareTo(b.date));
       // 오늘 이전 날짜(전날 조회 시 어제 예보 포함될 수 있음)는 제외
       return result.where((d) => !d.date.isBefore(today)).toList();
-    } catch (_) {
+    } on DioException catch (e) {
+      debugPrint('[AirKorea] 단기예보 네트워크 오류: ${e.message}');
+      throw Exception('예보 데이터를 불러올 수 없어요.\n잠시 후 다시 시도해 주세요.');
+    } catch (e) {
+      debugPrint('[AirKorea] 단기예보 오류: $e');
       return [];
     }
   }
