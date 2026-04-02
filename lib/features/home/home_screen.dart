@@ -1,3 +1,4 @@
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
@@ -12,6 +13,8 @@ import '../../widgets/dust_gauge_widget.dart';
 import 'dust_detail_screen.dart';
 import 'dust_status_card.dart';
 import 'dust_forecast_detail_screen.dart';
+
+final _analytics = FirebaseAnalytics.instance;
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -38,6 +41,7 @@ class HomeScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
             onPressed: () {
+              _analytics.logEvent(name: 'home_refreshed');
               ref.invalidate(dustDataProvider);
               ref.invalidate(tomorrowForecastProvider);
             },
@@ -46,19 +50,26 @@ class HomeScreen extends ConsumerWidget {
       ),
       body: RefreshIndicator(
         onRefresh: () async {
+          _analytics.logEvent(name: 'home_refreshed');
           ref.invalidate(dustDataProvider);
           ref.invalidate(tomorrowForecastProvider);
         },
         child: dustAsync.when(
           loading: () =>
               const LoadingStateWidget(message: '미세먼지 정보 불러오는 중...'),
-          error: (e, _) => ErrorStateWidget(
-            message: '미세먼지 정보를 불러올 수 없어요.\n네트워크 연결을 확인해 주세요.',
-            onRetry: () {
-              ref.invalidate(dustDataProvider);
-              ref.invalidate(tomorrowForecastProvider);
-            },
-          ),
+          error: (e, _) {
+            _analytics.logEvent(
+              name: 'api_error',
+              parameters: {'error_type': e.runtimeType.toString()},
+            );
+            return ErrorStateWidget(
+              message: '미세먼지 정보를 불러올 수 없어요.\n네트워크 연결을 확인해 주세요.',
+              onRetry: () {
+                ref.invalidate(dustDataProvider);
+                ref.invalidate(tomorrowForecastProvider);
+              },
+            );
+          },
           data: (dust) {
             // 측정소 미설정 → 위치 설정 유도
             if (dust == null) {
@@ -190,15 +201,18 @@ class HomeScreen extends ConsumerWidget {
     final hourlyAsync = ref.watch(hourlyDataProvider(stationName));
 
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => DustForecastDetailScreen(
-            stationName: stationName,
-            sidoName: sidoName,
+      onTap: () {
+        _analytics.logEvent(name: 'detail_screen_opened');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => DustForecastDetailScreen(
+              stationName: stationName,
+              sidoName: sidoName,
+            ),
           ),
-        ),
-      ),
+        );
+      },
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
         decoration: BoxDecoration(

@@ -1,3 +1,4 @@
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
@@ -8,6 +9,8 @@ import 'step_condition.dart';
 import 'step_severity.dart';
 import 'step_lifestyle.dart';
 import 'step_notification.dart';
+
+final _analytics = FirebaseAnalytics.instance;
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -31,6 +34,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   int get _totalPages => _hasCondition ? 5 : 4;
 
   @override
+  void initState() {
+    super.initState();
+    _analytics.logEvent(name: 'onboarding_step_1');
+  }
+
+  @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
@@ -42,7 +51,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
-      setState(() => _currentPage++);
+      setState(() {
+        _currentPage++;
+        if (_currentPage == 2) {
+          _analytics.logEvent(name: 'onboarding_step_3');
+        }
+      });
     } else {
       _completeOnboarding();
     }
@@ -70,6 +84,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     await ref.read(profileProvider.notifier).saveProfile(profile);
     await ref.read(profileRepositoryProvider).completeOnboarding();
+    await _analytics.logEvent(name: 'onboarding_completed');
 
     if (mounted) {
       Navigator.of(context).pushReplacementNamed('/location_setup');
@@ -77,6 +92,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Future<void> _skipOnboarding() async {
+    await _analytics.logEvent(name: 'onboarding_skipped');
     await ref.read(profileRepositoryProvider).completeOnboarding();
     if (mounted) {
       Navigator.of(context).pushReplacementNamed('/location_setup');
