@@ -99,12 +99,14 @@ lib/
 │   ├── models/          # DustData, UserProfile, HourlyDustData 등
 │   └── repositories/    # DustRepository, ProfileRepository
 ├── features/
-│   ├── home/            # 홈 화면, 위험도 카드, 상세 화면
-│   ├── onboarding/      # 5단계 온보딩
-│   ├── profile/         # 건강 프로필 편집
-│   ├── notification_setting/
-│   ├── info/            # 미세먼지 정보 (AdMob)
-│   └── ...
+│   ├── home/                  # 홈 화면, 위험도 카드, 상세 화면
+│   ├── onboarding/            # 5단계 온보딩
+│   ├── profile/               # 건강 프로필 편집
+│   ├── notification_setting/  # 알림 시간·종류 설정
+│   ├── info/                  # 미세먼지 정보 (AdMob)
+│   ├── location_setup/        # GPS 기반 측정소 선택
+│   ├── splash/                # 스플래시 화면
+│   └── tutorial/              # 최초 실행 튜토리얼
 ├── providers/           # Riverpod 프로바이더
 └── widgets/             # DustGaugeWidget, GradeBadge 등
 ```
@@ -113,11 +115,22 @@ lib/
 
 ## AdMob 설정
 
-`info_screen.dart`의 광고는 현재 테스트 ID로 설정되어 있습니다. 출시 전 실제 Unit ID로 교체하세요.
+광고 코드는 현재 **비활성화** 상태입니다 (`ad_banner_widget.dart`가 빈 위젯 반환). 출시 전 아래 순서로 활성화하세요.
 
-- `android/app/src/main/AndroidManifest.xml` → `com.google.android.gms.ads.APPLICATION_ID`
-- `ios/Runner/Info.plist` → `GADApplicationIdentifier`
-- `lib/widgets/ad_banner_widget.dart` → 배너 Unit ID
+1. `android/app/src/main/AndroidManifest.xml` → `com.google.android.gms.ads.APPLICATION_ID` 실제 ID로 교체
+2. `ios/Runner/Info.plist` → `GADApplicationIdentifier` 실제 ID로 교체
+3. `lib/widgets/ad_banner_widget.dart` → 주석 해제 후 배너 Unit ID 입력
+
+---
+
+## 개인정보처리방침
+
+앱 배포에 필요한 개인정보처리방침은 GitHub Pages로 제공됩니다.
+
+- URL: `https://yulgoklee.github.io/mask/`
+- 파일 위치: `docs/privacy-policy.html`
+
+> Play Store / App Store 제출 시 위 URL을 개인정보처리방침 링크로 입력하세요.
 
 ---
 
