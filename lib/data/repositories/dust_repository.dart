@@ -2,6 +2,21 @@ import '../models/dust_data.dart';
 import '../../core/services/air_korea_service.dart';
 import '../../core/services/location_service.dart';
 
+/// GPS 측정소 자동 감지 결과
+class DetectStationResult {
+  final String? station;
+  final LocationError? error;
+
+  DetectStationResult._({this.station, this.error});
+  factory DetectStationResult.success(String station) =>
+      DetectStationResult._(station: station);
+  factory DetectStationResult.failure(LocationError error) =>
+      DetectStationResult._(error: error);
+  factory DetectStationResult.notFound() => DetectStationResult._();
+
+  bool get isSuccess => station != null;
+}
+
 /// 미세먼지 데이터 접근 Repository
 class DustRepository {
   final AirKoreaService _airKorea;
@@ -9,25 +24,28 @@ class DustRepository {
 
   DustRepository(this._airKorea, this._location);
 
-  /// 미세먼지 데이터 조회 (저장된 측정소 기준, 없으면 기본값)
+  /// 저장된 측정소 기준 미세먼지 조회
+  /// 측정소 미설정 시 null 반환 — UI에서 위치 설정 유도
   Future<DustData?> getCurrentDustData() async {
-    final station = _location.getSavedStation() ?? '강남구';
+    final station = _location.getSavedStation();
+    if (station == null) return null;
     return _airKorea.getDustData(station);
   }
 
   /// GPS로 현재 위치 기반 측정소 자동 감지 후 저장
-  Future<String?> detectAndSaveStation() async {
-    final position = await _location.getCurrentPosition();
-    if (position == null) return null;
-    final station = await _airKorea.getNearestStation(
-      position.latitude,
-      position.longitude,
-    );
-    if (station != null) {
-      await _location.saveStation(station);
-      await _location.saveLastPosition(position.latitude, position.longitude);
+  Future<DetectStationResult> detectAndSaveStation() async {
+    final result = await _location.getCurrentPosition();
+    if (!result.isSuccess) {
+      return DetectStationResult.failure(result.error!);
     }
-    return station;
+
+    final pos = result.position!;
+    final station = await _airKorea.getNearestStation(pos.latitude, pos.longitude);
+    if (station == null) return DetectStationResult.notFound();
+
+    await _location.saveStation(station);
+    await _location.saveLastPosition(pos.latitude, pos.longitude);
+    return DetectStationResult.success(station);
   }
 
   /// 측정소명 직접 지정하여 조회
