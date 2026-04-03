@@ -384,16 +384,23 @@ class _HourlyForecastTile extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(timeLabel,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: isMidnight ? 10 : 12,
-                        fontWeight:
-                            isNow ? FontWeight.bold : FontWeight.normal,
-                        color: isNow
-                            ? AppColors.primary
-                            : AppColors.textSecondary,
-                      )),
+                  SizedBox(
+                    height: 16,
+                    child: Center(
+                      child: Text(
+                        timeLabel,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: isMidnight ? 10 : 12,
+                          fontWeight:
+                              isNow ? FontWeight.bold : FontWeight.normal,
+                          color: isNow
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   const Divider(height: 1),
                   const SizedBox(height: 4),
