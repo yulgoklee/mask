@@ -355,7 +355,6 @@ class _HourlyForecastTile extends StatelessWidget {
         itemBuilder: (_, i) {
           final item = items[i];
           final isNow = (i == 0);
-          final forecast = item.isForecast;
           final isMidnight = !isNow && item.time.hour == 0;
           const _weekdays = ['월', '화', '수', '목', '금', '토', '일'];
           // 자정: 날짜+요일만 1줄 표시 (00시는 생략 — 타일 높이 유지)
@@ -367,7 +366,7 @@ class _HourlyForecastTile extends StatelessWidget {
                   : '${item.time.hour}시';
 
           return Opacity(
-            opacity: forecast ? 0.55 : 1.0,
+            opacity: item.isForecast ? 0.55 : 1.0,
             child: Container(
               width: 58,
               padding:
@@ -395,10 +394,6 @@ class _HourlyForecastTile extends StatelessWidget {
                             ? AppColors.primary
                             : AppColors.textSecondary,
                       )),
-                  if (forecast)
-                    const Text('예보',
-                        style: TextStyle(
-                            fontSize: 8, color: AppColors.textHint)),
                   const SizedBox(height: 4),
                   const Divider(height: 1),
                   const SizedBox(height: 4),
