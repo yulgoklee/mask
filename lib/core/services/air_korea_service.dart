@@ -133,21 +133,24 @@ class AirKoreaService {
           '${f.date.year}-${f.date.month.toString().padLeft(2,'0')}-${f.date.day.toString().padLeft(2,'0')}': f
       };
 
-      // 이후 23시간: 측정 시각 기준으로 1시간씩 증가 (홈에서 12개, 상세에서 24개 사용)
-      final future = List.generate(23, (i) {
-        final futureTime = measureTime.add(Duration(hours: i + 1));
+      // 미래 슬롯 생성: 이미 지난 시간은 건너뛰고 24개 채우기
+      // (API 측정값이 1시간 지연될 경우, 현재 시각 이전 슬롯을 제거)
+      final now = DateTime.now();
+      final future = <HourlyDustData>[];
+      for (int i = 1; future.length < 23 && i <= 48; i++) {
+        final futureTime = measureTime.add(Duration(hours: i));
+        if (!futureTime.isAfter(now)) continue; // 이미 지난 시간 건너뜀
         final dayKey = '${futureTime.year}-${futureTime.month.toString().padLeft(2,'0')}-${futureTime.day.toString().padLeft(2,'0')}';
         final forecast = forecastMap[dayKey];
-        return HourlyDustData(
+        future.add(HourlyDustData(
           time: futureTime,
           pm10: null,
           pm25: null,
-          // 해당 날짜의 예보 등급 사용, 없으면 현재 등급 유지
           pm10Grade: forecast?.pm10Grade ?? current.pm10Grade,
           pm25Grade: forecast?.pm25Grade ?? current.pm25Grade,
           isForecast: true,
-        );
-      });
+        ));
+      }
 
       return [current, ...future];
     } on DioException catch (e) {
