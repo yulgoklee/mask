@@ -4,10 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/dust_standards.dart';
 import '../../core/services/air_korea_service.dart' show AirKoreaService;
-import '../../core/services/location_service.dart';
 import '../../data/models/forecast_models.dart';
-import '../../data/repositories/dust_repository.dart';
 import '../../providers/providers.dart';
+import '../location_setup/location_setup_screen.dart';
 import '../../widgets/async_state_widgets.dart';
 import '../../widgets/dust_gauge_widget.dart';
 import 'dust_detail_screen.dart';
@@ -103,7 +102,15 @@ class HomeScreen extends ConsumerWidget {
                       ),
                       const SizedBox(width: 6),
                       GestureDetector(
-                        onTap: () => _showStationPicker(context, ref),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const LocationSetupScreen(),
+                          ),
+                        ).then((_) {
+                          ref.invalidate(dustDataProvider);
+                          ref.invalidate(tomorrowForecastProvider);
+                        }),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 2),
@@ -268,24 +275,6 @@ class HomeScreen extends ConsumerWidget {
       '${dt.hour.toString().padLeft(2, '0')}:'
       '${dt.minute.toString().padLeft(2, '0')} 기준';
 
-  Future<void> _showStationPicker(BuildContext context, WidgetRef ref) async {
-    final repo = ref.read(dustRepositoryProvider);
-    final locService = ref.read(locationServiceProvider);
-    final controller = TextEditingController(text: repo.savedStation ?? '');
-
-    await showDialog(
-      context: context,
-      builder: (ctx) => _StationPickerDialog(
-        controller: controller,
-        repo: repo,
-        locService: locService,
-        onSaved: () {
-          ref.invalidate(dustDataProvider);
-          ref.invalidate(tomorrowForecastProvider);
-        },
-      ),
-    );
-  }
 }
 
 // ── 위치 미설정 상태 ──────────────────────────────────────
@@ -330,161 +319,6 @@ class _NoStationWidget extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-// ── 측정소 변경 다이얼로그 (GPS + 직접 입력) ──────────────
-
-class _StationPickerDialog extends StatefulWidget {
-  final TextEditingController controller;
-  final DustRepository repo;
-  final LocationService locService;
-  final VoidCallback onSaved;
-
-  const _StationPickerDialog({
-    required this.controller,
-    required this.repo,
-    required this.locService,
-    required this.onSaved,
-  });
-
-  @override
-  State<_StationPickerDialog> createState() => _StationPickerDialogState();
-}
-
-class _StationPickerDialogState extends State<_StationPickerDialog> {
-  bool _detecting = false;
-  String? _detectError;
-  VoidCallback? _settingsAction;
-
-  Future<void> _detectLocation() async {
-    setState(() {
-      _detecting = true;
-      _detectError = null;
-      _settingsAction = null;
-    });
-
-    final result = await widget.repo.detectAndSaveStation();
-    if (!mounted) return;
-
-    if (result.isSuccess) {
-      widget.onSaved();
-      Navigator.pop(context);
-      return;
-    }
-
-    String msg;
-    VoidCallback? action;
-    switch (result.error) {
-      case LocationError.serviceDisabled:
-        msg = 'GPS가 꺼져 있어요. 위치 서비스를 켜주세요.';
-        action = () => widget.locService.openLocationSettings();
-      case LocationError.permissionDeniedForever:
-        msg = '위치 권한이 거절되었어요. 설정에서 허용해주세요.';
-        action = () => widget.locService.openAppSettings();
-      case LocationError.permissionDenied:
-        msg = '위치 권한을 허용해야 자동 감지가 가능해요.';
-        action = null;
-      case LocationError.timeout:
-        msg = '위치를 찾을 수 없어요. 다시 시도해주세요.';
-        action = null;
-      default:
-        msg = '위치 감지에 실패했어요. 직접 입력해주세요.';
-        action = null;
-    }
-
-    setState(() {
-      _detecting = false;
-      _detectError = msg;
-      _settingsAction = action;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('지역 설정'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // GPS 자동 감지
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: _detecting ? null : _detectLocation,
-              icon: _detecting
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.my_location, size: 18),
-              label: Text(_detecting ? '위치 감지 중...' : '현재 위치로 자동 감지'),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.primary),
-                foregroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
-          ),
-          if (_detectError != null) ...[
-            const SizedBox(height: 6),
-            Text(_detectError!,
-                style: const TextStyle(
-                    fontSize: 12, color: AppColors.error, height: 1.4)),
-            if (_settingsAction != null)
-              TextButton(
-                onPressed: _settingsAction,
-                style: TextButton.styleFrom(
-                    minimumSize: Size.zero,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 4, vertical: 2)),
-                child: const Text('설정 열기',
-                    style: TextStyle(fontSize: 12, color: AppColors.primary)),
-              ),
-          ],
-          const SizedBox(height: 12),
-          const Divider(),
-          const SizedBox(height: 8),
-          const Text(
-            '시·군·구 직접 입력\n예) 수원, 강남구, 해운대구',
-            style: TextStyle(
-                fontSize: 13, color: AppColors.textSecondary, height: 1.4),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: widget.controller,
-            autofocus: false,
-            decoration: const InputDecoration(
-              hintText: '지역명 입력',
-              border: OutlineInputBorder(),
-              contentPadding:
-                  EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('취소')),
-        ElevatedButton(
-          onPressed: () async {
-            final name = widget.controller.text.trim();
-            if (name.isNotEmpty) {
-              await widget.repo.changeStation(name);
-              widget.onSaved();
-            }
-            if (mounted) Navigator.pop(context);
-          },
-          style:
-              ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-          child: const Text('저장', style: TextStyle(color: Colors.white)),
-        ),
-      ],
     );
   }
 }
