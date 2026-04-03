@@ -276,7 +276,7 @@ class HomeScreen extends ConsumerWidget {
                 if (items.isEmpty) {
                   return const _InlineEmptyTile(message: '시간별 데이터가 없어요.');
                 }
-                return _HourlyForecastTile(items: items);
+                return _HourlyForecastTile(items: items.take(12).toList());
               },
             ),
           ],
@@ -358,11 +358,12 @@ class _HourlyForecastTile extends StatelessWidget {
           final forecast = item.isForecast;
           final isMidnight = !isNow && item.time.hour == 0;
           const _weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+          // 자정: 날짜+요일만 1줄 표시 (00시는 생략 — 타일 높이 유지)
           final timeLabel = isNow
               ? '지금'
               : isMidnight
                   ? '${item.time.month}/${item.time.day}'
-                      '(${_weekdays[item.time.weekday - 1]})\n00시'
+                      '(${_weekdays[item.time.weekday - 1]})'
                   : '${item.time.hour}시';
 
           return Opacity(
@@ -385,8 +386,9 @@ class _HourlyForecastTile extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(timeLabel,
+                      textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: isMidnight ? 10 : 12,
                         fontWeight:
                             isNow ? FontWeight.bold : FontWeight.normal,
                         color: isNow
