@@ -133,7 +133,7 @@ class AirKoreaService {
           '${f.date.year}-${f.date.month.toString().padLeft(2,'0')}-${f.date.day.toString().padLeft(2,'0')}': f
       };
 
-      // 미래 24시간: 측정 시각 기준으로 1시간씩 증가 (시간 연속성 보장)
+      // 이후 11시간: 측정 시각 기준으로 1시간씩 증가 (current 1개 + 11개 = 12개)
       final future = List.generate(11, (i) {
         final futureTime = measureTime.add(Duration(hours: i + 1));
         final dayKey = '${futureTime.year}-${futureTime.month.toString().padLeft(2,'0')}-${futureTime.day.toString().padLeft(2,'0')}';

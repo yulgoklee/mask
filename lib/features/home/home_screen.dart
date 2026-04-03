@@ -356,7 +356,12 @@ class _HourlyForecastTile extends StatelessWidget {
           final item = items[i];
           final isNow = (i == 0);
           final forecast = item.isForecast;
-          final timeLabel = isNow ? '지금' : '${item.time.hour}시';
+          final isMidnight = !isNow && item.time.hour == 0;
+          final timeLabel = isNow
+              ? '지금'
+              : isMidnight
+                  ? '${item.time.month}/${item.time.day}'
+                  : '${item.time.hour}시';
 
           return Opacity(
             opacity: forecast ? 0.55 : 1.0,
