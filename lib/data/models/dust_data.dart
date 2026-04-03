@@ -52,9 +52,13 @@ class DustData {
     );
   }
 
-  /// 캐시가 유효한지 확인 (1시간 이내)
+  /// 캐시가 유효한지 확인
+  /// 조건: 조회한 지 30분 미만 AND 측정시각(dataTime)이 70분 이내
+  /// → API는 매시 정각 업데이트. dataTime이 오래되면 새 데이터가 있다고 판단.
   bool get isCacheValid {
-    return DateTime.now().difference(fetchedAt).inMinutes < 60;
+    final fetchAge = DateTime.now().difference(fetchedAt).inMinutes;
+    final dataAge = DateTime.now().difference(dataTime).inMinutes;
+    return fetchAge < 30 && dataAge < 70;
   }
 
   static int? _parseIntOrNull(dynamic value) {
