@@ -36,7 +36,7 @@ class DustForecastDetailScreen extends ConsumerWidget {
             unselectedLabelColor: AppColors.textSecondary,
             indicatorColor: AppColors.primary,
             tabs: [
-              Tab(text: '12시간 현황'),
+              Tab(text: '24시간 현황'),
               Tab(text: '단기 예보 (3일)'),
             ],
           ),
@@ -81,7 +81,7 @@ class _HourlyTab extends ConsumerWidget {
             _HourlyTable(items: items),
             const SizedBox(height: 12),
             Text(
-              '* 측정소: $stationName  /  현재 기준 12시간 예보',
+              '* 측정소: $stationName  /  현재 기준 24시간 예보',
               style:
                   const TextStyle(fontSize: 11, color: AppColors.textHint),
             ),
