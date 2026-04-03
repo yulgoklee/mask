@@ -108,6 +108,25 @@ class _LocationSetupScreenState extends ConsumerState<LocationSetupScreen> {
   // ── 지역 직접 선택 ──────────────────────────────────────────────
 
   Future<void> _selectStation(String stationName) async {
+    setState(() {
+      _detecting = true;
+      _errorMsg = null;
+      _settingsAction = null;
+    });
+
+    // API에서 실제로 데이터를 가져올 수 있는지 검증
+    final airKorea = ref.read(airKoreaServiceProvider);
+    final testData = await airKorea.getDustData(stationName);
+    if (!mounted) return;
+
+    if (testData == null) {
+      setState(() {
+        _detecting = false;
+        _errorMsg = '[$stationName] 측정 데이터가 없어요.\n다른 지역을 선택해 주세요.';
+      });
+      return;
+    }
+
     await ref.read(dustRepositoryProvider).changeStation(stationName);
     _goHome();
   }
@@ -303,7 +322,7 @@ class _LocationSetupScreenState extends ConsumerState<LocationSetupScreen> {
                   children: (_regionStations[_selectedSido!] ?? [])
                       .map((station) {
                     return GestureDetector(
-                      onTap: () => _selectStation(station),
+                      onTap: _detecting ? null : () => _selectStation(station),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 9),
