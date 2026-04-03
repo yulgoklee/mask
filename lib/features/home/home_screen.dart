@@ -111,7 +111,7 @@ class HomeScreen extends ConsumerWidget {
                           size: 16, color: AppColors.textSecondary),
                       const SizedBox(width: 4),
                       Text(
-                        AirKoreaService.displayLocation(dust.stationName),
+                        AirKoreaService.displayLocation(savedStation),
                         style: const TextStyle(
                             fontSize: 14, color: AppColors.textSecondary),
                       ),
