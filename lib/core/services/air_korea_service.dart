@@ -70,7 +70,8 @@ class AirKoreaService {
 
       final header = data['response']?['header'];
       final resultCode = header?['resultCode']?.toString();
-      if (resultCode != null && resultCode != '00') {
+      // resultCode가 null(응답 구조 이상)이거나 '00'이 아니면 오류 처리
+      if (resultCode == null || resultCode != '00') {
         debugPrint('[AirKorea] API 오류코드: $resultCode / ${header?['resultMsg']}');
         return null;
       }
@@ -110,9 +111,8 @@ class AirKoreaService {
       if (items == null || items.isEmpty) return [];
 
       final map = items.first as Map<String, dynamic>;
-      // API dataTime 파싱 (형식: "2026-03-31 23:00")
-      final rawTime = map['dataTime'] as String? ?? '';
-      final measureTime = DateTime.tryParse(rawTime) ?? DateTime.now();
+      // API dataTime 파싱 (형식: "2026-03-31 23:00" — 초 없음, 전용 헬퍼 사용)
+      final measureTime = _parseDataTime(map['dataTime'] as String?);
 
       final current = HourlyDustData(
         time: measureTime,
@@ -169,6 +169,16 @@ class AirKoreaService {
     return int.tryParse(v.toString());
   }
 
+  /// API 날짜 문자열 파싱 ("2026-03-31 23:00" → DateTime)
+  /// Dart DateTime.tryParse는 초(ss) 없는 HH:mm 포맷이 불안정할 수 있으므로 정규화
+  static DateTime _parseDataTime(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return DateTime.now();
+    var s = raw.trim();
+    if (s.contains(' ') && !s.contains('T')) s = s.replaceFirst(' ', 'T');
+    if (RegExp(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$').hasMatch(s)) s = '$s:00';
+    return DateTime.tryParse(s) ?? DateTime.now();
+  }
+
   /// 시간별 과거 데이터 (24시간) — 상세 화면용
   Future<List<HourlyDustData>> getHourlyHistory(String stationName) async {
     try {
@@ -184,7 +194,7 @@ class AirKoreaService {
       if (items == null) return [];
       final result = items.map((e) {
         final map = e as Map<String, dynamic>;
-        final t = DateTime.tryParse(map['dataTime'] as String? ?? '') ?? DateTime.now();
+        final t = _parseDataTime(map['dataTime'] as String?);
         return HourlyDustData(
           time: t,
           pm10: _parseInt(map['pm10Value']),

@@ -99,15 +99,19 @@ Future<void> _runDustCheck() async {
     }
 
     // ── 실시간 경보 ──────────────────────────────────────
-    if (setting.realtimeAlertEnabled && result.shouldSendRealtime) {
+    // 동일 시간대(1시간 단위) 중복 발송 방지
+    if (setting.realtimeAlertEnabled &&
+        result.shouldSendRealtime &&
+        !_sentThisHour(prefs, 'realtime')) {
       await notifService.showImmediateNotification(
         id: NotificationService.realtimeAlertId,
         title: '⚠️ 미세먼지 경보',
         body: result.message,
       );
+      _markSentHour(prefs, 'realtime');
     }
-  } catch (_) {
-    // 백그라운드 실패는 무시
+  } catch (e, st) {
+    debugPrint('[BackgroundService] 오류: $e\n$st');
   }
 }
 
@@ -128,6 +132,22 @@ String _dateKey() {
   final now = DateTime.now();
   return '${now.year}${now.month.toString().padLeft(2, '0')}'
       '${now.day.toString().padLeft(2, '0')}';
+}
+
+/// 실시간 경보: 동일 시(時) 내 중복 발송 방지
+bool _sentThisHour(SharedPreferences prefs, String type) {
+  return prefs.getBool('notif_sent_${type}_${_hourKey()}') ?? false;
+}
+
+void _markSentHour(SharedPreferences prefs, String type) {
+  prefs.setBool('notif_sent_${type}_${_hourKey()}', true);
+}
+
+String _hourKey() {
+  final now = DateTime.now();
+  return '${now.year}${now.month.toString().padLeft(2, '0')}'
+      '${now.day.toString().padLeft(2, '0')}'
+      '${now.hour.toString().padLeft(2, '0')}';
 }
 
 String _gradeLabel(DustGrade grade) {
