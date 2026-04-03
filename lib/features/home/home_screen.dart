@@ -70,11 +70,26 @@ class HomeScreen extends ConsumerWidget {
             );
           },
           data: (dust) {
-            // 측정소 미설정 → 위치 설정 유도
-            if (dust == null) {
+            final savedStation =
+                ref.read(dustRepositoryProvider).savedStation;
+
+            // 측정소 자체가 미설정 → 위치 설정 유도
+            if (savedStation == null) {
               return _NoStationWidget(
                 onSetup: () => Navigator.of(context)
                     .pushNamed('/location_setup'),
+              );
+            }
+
+            // 측정소는 설정됐지만 API가 데이터를 못 가져온 경우 → 재시도
+            if (dust == null) {
+              return ErrorStateWidget(
+                icon: Icons.cloud_off_outlined,
+                message: '[$savedStation] 데이터를 가져올 수 없어요.\n잠시 후 다시 시도해 주세요.',
+                onRetry: () {
+                  ref.invalidate(dustDataProvider);
+                  ref.invalidate(tomorrowForecastProvider);
+                },
               );
             }
 
