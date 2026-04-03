@@ -111,7 +111,7 @@ class HomeScreen extends ConsumerWidget {
                           size: 16, color: AppColors.textSecondary),
                       const SizedBox(width: 4),
                       Text(
-                        dust.stationName,
+                        AirKoreaService.displayLocation(savedStation),
                         style: const TextStyle(
                             fontSize: 14, color: AppColors.textSecondary),
                       ),
@@ -276,7 +276,7 @@ class HomeScreen extends ConsumerWidget {
                 if (items.isEmpty) {
                   return const _InlineEmptyTile(message: '시간별 데이터가 없어요.');
                 }
-                return _HourlyForecastTile(items: items);
+                return _HourlyForecastTile(items: items.take(12).toList());
               },
             ),
           ],
@@ -355,11 +355,18 @@ class _HourlyForecastTile extends StatelessWidget {
         itemBuilder: (_, i) {
           final item = items[i];
           final isNow = (i == 0);
-          final forecast = item.isForecast;
-          final timeLabel = isNow ? '지금' : '${item.time.hour}시';
+          final isMidnight = !isNow && item.time.hour == 0;
+          const _weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+          // 자정: 날짜+요일만 1줄 표시 (00시는 생략 — 타일 높이 유지)
+          final timeLabel = isNow
+              ? '지금'
+              : isMidnight
+                  ? '${item.time.month}/${item.time.day}'
+                      '(${_weekdays[item.time.weekday - 1]})'
+                  : '${item.time.hour}시';
 
           return Opacity(
-            opacity: forecast ? 0.55 : 1.0,
+            opacity: item.isForecast ? 0.55 : 1.0,
             child: Container(
               width: 58,
               padding:
@@ -377,19 +384,23 @@ class _HourlyForecastTile extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(timeLabel,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight:
-                            isNow ? FontWeight.bold : FontWeight.normal,
-                        color: isNow
-                            ? AppColors.primary
-                            : AppColors.textSecondary,
-                      )),
-                  if (forecast)
-                    const Text('예보',
+                  SizedBox(
+                    height: 16,
+                    child: Center(
+                      child: Text(
+                        timeLabel,
+                        textAlign: TextAlign.center,
                         style: TextStyle(
-                            fontSize: 8, color: AppColors.textHint)),
+                          fontSize: isMidnight ? 10 : 12,
+                          fontWeight:
+                              isNow ? FontWeight.bold : FontWeight.normal,
+                          color: isNow
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   const Divider(height: 1),
                   const SizedBox(height: 4),

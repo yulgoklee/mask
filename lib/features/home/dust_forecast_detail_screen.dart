@@ -109,7 +109,7 @@ class _HourlyTable extends StatelessWidget {
       header: const Row(
         children: [
           SizedBox(
-              width: 48,
+              width: 66,
               child: Text('시간', style: _tableHeaderStyle)),
           Expanded(
               child: Text('미세먼지\n(PM10)',
@@ -129,11 +129,19 @@ class _HourlyTable extends StatelessWidget {
           child: Row(
             children: [
               SizedBox(
-                width: 48,
+                width: 66,
                 child: Text(
-                  isNow ? '지금' : '${item.time.hour.toString().padLeft(2, '0')}시',
+                  () {
+                    if (isNow) return '지금';
+                    if (item.time.hour == 0) {
+                      const wd = ['월','화','수','목','금','토','일'];
+                      return '${item.time.month}/${item.time.day}'
+                          '(${wd[item.time.weekday - 1]})\n00시';
+                    }
+                    return '${item.time.hour.toString().padLeft(2, '0')}시';
+                  }(),
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: isNow ? FontWeight.bold : FontWeight.normal,
                     color: isNow ? AppColors.primary : AppColors.textPrimary,
                   ),

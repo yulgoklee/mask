@@ -5,7 +5,9 @@ import '../../core/services/location_service.dart';
 import '../../data/repositories/dust_repository.dart';
 import '../../providers/providers.dart';
 
-// ── 시/도 → 측정소명 매핑 (에어코리아 실측정소 기준) ─────────────────
+// ── 표시명 → 에어코리아 실측정소명 매핑 ──────────────────────────────
+// key: 사용자에게 보이는 지역명
+// value: 에어코리아 API stationName (API 직접 검증 완료)
 
 const _sidoList = [
   '서울', '경기', '인천', '부산', '대구',
@@ -14,33 +16,70 @@ const _sidoList = [
   '경남', '제주',
 ];
 
-const _regionStations = <String, List<String>>{
-  '서울': [
-    '강남구', '강동구', '강북구', '강서구', '관악구', '광진구',
-    '구로구', '금천구', '노원구', '도봉구', '동대문구', '동작구',
-    '마포구', '서대문구', '서초구', '성동구', '성북구', '송파구',
-    '양천구', '영등포구', '용산구', '은평구', '종로구', '중구', '중랑구',
-  ],
-  '경기': [
-    '고양', '광주', '김포', '남양주', '부천', '성남',
-    '수원', '시흥', '안산', '안양', '용인', '의정부',
-    '파주', '평택', '하남', '화성',
-  ],
-  '인천': ['계양구', '부평구', '연수구', '인천'],
-  '부산': ['동래구', '북구', '부산', '사하구', '해운대구'],
-  '대구': ['달서구', '대구', '수성구'],
-  '광주': ['광주광역시'],
-  '대전': ['대전'],
-  '울산': ['울산'],
-  '세종': ['세종'],
-  '강원': ['강릉', '원주', '춘천'],
-  '충북': ['청주', '충주'],
-  '충남': ['아산', '천안'],
-  '전북': ['익산', '전주'],
-  '전남': ['순천', '여수'],
-  '경북': ['경주', '구미', '안동', '포항'],
-  '경남': ['김해', '진주', '창원'],
-  '제주': ['서귀포', '제주'],
+const _regionStations = <String, Map<String, String>>{
+  '서울': {
+    '강남구': '강남구', '강동구': '강동구', '강북구': '강북구', '강서구': '강서구',
+    '관악구': '관악구', '광진구': '광진구', '구로구': '구로구', '금천구': '금천구',
+    '노원구': '노원구', '도봉구': '도봉구', '동대문구': '동대문구', '동작구': '동작구',
+    '마포구': '마포구', '서대문구': '서대문구', '서초구': '서초구', '성동구': '성동구',
+    '성북구': '성북구', '송파구': '송파구', '양천구': '양천구', '영등포구': '영등포구',
+    '용산구': '용산구', '은평구': '은평구', '종로구': '종로구', '중구': '중구', '중랑구': '중랑구',
+  },
+  '경기': {
+    '고양': '행신동', '광주': '경안동', '김포': '사우동', '남양주': '금곡동',
+    '부천': '중2동', '성남': '수내동', '수원': '인계동', '시흥': '정왕동',
+    '안산': '고잔동', '안양': '안양8동', '용인': '수지', '의정부': '의정부동',
+    '파주': '운정', '평택': '비전동', '하남': '미사', '화성': '동탄',
+  },
+  '인천': {
+    '계양구': '계산', '부평구': '부평', '연수구': '동춘', '남동구': '구월동',
+    '서구': '청라', '연수구(송도)': '송도',
+  },
+  '부산': {
+    '중구': '광복동', '동래구': '온천동', '사하구': '감천동',
+    '북구': '화명동', '해운대구': '우동',
+  },
+  '대구': {
+    '중구': '수창동', '달서구': '이곡동', '수성구': '만촌동',
+  },
+  '광주': {
+    '동구': '서석동', '서구': '치평동', '북구': '두암동',
+    '광산구': '일곡동', '남구': '주월동',
+  },
+  '대전': {
+    '동구': '대성동', '중구': '문창동', '서구': '둔산동',
+    '유성구': '노은동', '대덕구': '읍내동',
+  },
+  '울산': {
+    '남구': '무거동', '중구': '신정동', '북구': '농소동', '울주군': '삼남읍',
+  },
+  '세종': {
+    '세종': '한솔동',
+  },
+  '강원': {
+    '강릉': '옥천동', '원주': '반곡동(명륜동)', '춘천': '중앙동(강원)',
+  },
+  '충북': {
+    '청주': '용담동', '충주': '칠금동',
+  },
+  '충남': {
+    '아산': '모종동', '천안': '성성동',
+  },
+  '전북': {
+    '익산': '모현동', '전주': '삼천동',
+  },
+  '전남': {
+    '순천': '부흥동', '여수': '용당동',
+  },
+  '경북': {
+    '경주': '성건동', '구미': '원평동', '안동': '중방동', '포항': '장흥동',
+  },
+  '경남': {
+    '김해': '장유동', '진주': '상봉동', '창원': '명서동',
+  },
+  '제주': {
+    '서귀포': '동홍동', '제주': '이도동',
+  },
 };
 
 // ── 화면 ────────────────────────────────────────────────────────────
@@ -101,14 +140,14 @@ class _LocationSetupScreenState extends ConsumerState<LocationSetupScreen> {
       _detecting = false;
       _errorMsg = msg;
       _settingsAction = action;
-      _selectedSido ??= '서울'; // GPS 실패 시 서울 기본 선택으로 유도
+      _selectedSido ??= '서울';
     });
   }
 
   // ── 지역 직접 선택 ──────────────────────────────────────────────
 
-  Future<void> _selectStation(String stationName) async {
-    await ref.read(dustRepositoryProvider).changeStation(stationName);
+  Future<void> _selectStation(String apiStationName) async {
+    await ref.read(dustRepositoryProvider).changeStation(apiStationName);
     _goHome();
   }
 
@@ -290,7 +329,7 @@ class _LocationSetupScreenState extends ConsumerState<LocationSetupScreen> {
               if (_selectedSido != null) ...[
                 const SizedBox(height: 24),
                 Text(
-                  '$_selectedSido 시·군·구 선택',
+                  '$_selectedSido 지역 선택',
                   style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -300,10 +339,11 @@ class _LocationSetupScreenState extends ConsumerState<LocationSetupScreen> {
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: (_regionStations[_selectedSido!] ?? [])
-                      .map((station) {
+                  children: (_regionStations[_selectedSido!] ?? {})
+                      .entries
+                      .map((entry) {
                     return GestureDetector(
-                      onTap: () => _selectStation(station),
+                      onTap: () => _selectStation(entry.value),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 9),
@@ -313,7 +353,7 @@ class _LocationSetupScreenState extends ConsumerState<LocationSetupScreen> {
                           border: Border.all(color: AppColors.divider),
                         ),
                         child: Text(
-                          station,
+                          entry.key,
                           style: const TextStyle(
                               fontSize: 14,
                               color: AppColors.textPrimary),

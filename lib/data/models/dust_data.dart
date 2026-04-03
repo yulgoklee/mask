@@ -25,7 +25,7 @@ class DustData {
       pm10Value: _parseIntOrNull(json['pm10Value']),
       pm25Grade: _gradeLabel(json['pm25Grade']),
       pm10Grade: _gradeLabel(json['pm10Grade']),
-      dataTime: DateTime.tryParse(json['dataTime'] as String? ?? '') ?? DateTime.now(),
+      dataTime: _parseDataTime(json['dataTime'] as String?),
       fetchedAt: DateTime.now(),
     );
   }
@@ -47,14 +47,36 @@ class DustData {
       pm10Value: json['pm10Value'] as int?,
       pm25Grade: json['pm25Grade'] as String? ?? '알수없음',
       pm10Grade: json['pm10Grade'] as String? ?? '알수없음',
-      dataTime: DateTime.tryParse(json['dataTime'] as String? ?? '') ?? DateTime.now(),
-      fetchedAt: DateTime.tryParse(json['fetchedAt'] as String? ?? '') ?? DateTime.now(),
+      dataTime: _parseDataTime(json['dataTime'] as String?),
+      fetchedAt: _parseDataTime(json['fetchedAt'] as String?),
     );
   }
 
-  /// 캐시가 유효한지 확인 (1시간 이내)
+  /// 캐시가 유효한지 확인
+  /// 조건: 조회한 지 30분 미만 AND 측정시각(dataTime)이 70분 이내
+  /// → API는 매시 정각 업데이트. dataTime이 오래되면 새 데이터가 있다고 판단.
   bool get isCacheValid {
-    return DateTime.now().difference(fetchedAt).inMinutes < 60;
+    final fetchAge = DateTime.now().difference(fetchedAt).inMinutes;
+    final dataAge = DateTime.now().difference(dataTime).inMinutes;
+    return fetchAge < 30 && dataAge < 70;
+  }
+
+  /// API/캐시 날짜 문자열 파싱 (형식: "2026-03-31 23:00" — 초 없음)
+  /// Dart의 DateTime.tryParse는 초(ss)가 없는 HH:mm 포맷을 안정적으로
+  /// 처리하지 못할 수 있으므로, ":00"을 보완하여 ISO 8601로 정규화한다.
+  static DateTime _parseDataTime(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return DateTime.now();
+    // "2026-03-31 23:00" → "2026-03-31T23:00:00"
+    var s = raw.trim();
+    // space → T 구분자 정규화
+    if (s.contains(' ') && !s.contains('T')) {
+      s = s.replaceFirst(' ', 'T');
+    }
+    // HH:mm만 있고 초가 없는 경우(길이 16) → :00 추가
+    if (RegExp(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$').hasMatch(s)) {
+      s = '$s:00';
+    }
+    return DateTime.tryParse(s) ?? DateTime.now();
   }
 
   static int? _parseIntOrNull(dynamic value) {
