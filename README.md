@@ -83,6 +83,9 @@ flutter run
 | 위치 | geolocator ^13.0.1 |
 | 광고 | google_mobile_ads ^5.1.0 |
 | 권한 | permission_handler ^11.3.1 |
+| 분석 | firebase_analytics ^12.2.0 |
+| 오류 수집 | firebase_crashlytics ^5.1.0 |
+| Firebase 코어 | firebase_core ^4.6.0 |
 
 ---
 
