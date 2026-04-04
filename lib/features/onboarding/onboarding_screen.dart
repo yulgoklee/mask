@@ -82,8 +82,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       activityLevel: _activityLevel,
     );
 
-    await ref.read(profileProvider.notifier).saveProfile(profile);
-    await ref.read(profileRepositoryProvider).completeOnboarding();
+    try {
+      await ref.read(profileProvider.notifier).saveProfile(profile);
+      await ref.read(profileRepositoryProvider).completeOnboarding();
+    } catch (_) {
+      // 저장 실패해도 홈으로 진행 (다음 실행 시 재시도 가능)
+    }
+
     await _analytics.logEvent(name: 'onboarding_completed');
 
     if (mounted) {
@@ -93,7 +98,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Future<void> _skipOnboarding() async {
     await _analytics.logEvent(name: 'onboarding_skipped');
-    await ref.read(profileRepositoryProvider).completeOnboarding();
+
+    try {
+      await ref.read(profileRepositoryProvider).completeOnboarding();
+    } catch (_) {
+      // 저장 실패해도 홈으로 진행
+    }
+
     if (mounted) {
       Navigator.of(context).pushReplacementNamed('/location_setup');
     }

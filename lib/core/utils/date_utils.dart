@@ -6,7 +6,6 @@ class AppDateUtils {
   }
 
   static String formatTimeOnly(int hour, int minute) {
-    final h = hour.toString().padLeft(2, '0');
     final m = minute.toString().padLeft(2, '0');
     final ampm = hour < 12 ? '오전' : '오후';
     final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);

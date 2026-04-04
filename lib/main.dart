@@ -14,16 +14,24 @@ import 'providers/providers.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Firebase 초기화
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // Firebase 초기화 — 실패해도 앱은 계속 실행
+  bool firebaseReady = false;
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    firebaseReady = true;
+  } catch (_) {
+    // Firebase 초기화 실패 시 Analytics/Crashlytics 없이 앱 실행
+  }
 
-  // Flutter 에러 → Crashlytics로 전송
-  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-  // 비동기 에러 → Crashlytics로 전송
-  PlatformDispatcher.instance.onError = (error, stack) {
-    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-    return true;
-  };
+  if (firebaseReady) {
+    // Flutter 에러 → Crashlytics로 전송
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+    // 비동기 에러 → Crashlytics로 전송
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
+  }
 
   final prefs = await SharedPreferences.getInstance();
 
@@ -40,9 +48,13 @@ void main() async {
     // iOS 알림 권한 요청
     await notifService.requestPermission();
 
-    // 백그라운드 작업 등록
-    await BackgroundService.initialize();
-    await BackgroundService.registerPeriodicTask();
+    // 백그라운드 작업 등록 — 실패해도 앱은 계속 실행
+    try {
+      await BackgroundService.initialize();
+      await BackgroundService.registerPeriodicTask();
+    } catch (_) {
+      // 백그라운드 등록 실패 시 수동 새로고침으로 대체
+    }
   }
 
   runApp(

@@ -448,59 +448,6 @@ class AirKoreaService {
     return r * 2 * atan2(sqrt(a), sqrt(1 - a));
   }
 
-  /// WGS84 위경도 → 한국 TM 좌표 변환 (중부원점 기준)
-  static Map<String, double> _wgs84ToTm(double latDeg, double lonDeg) {
-    const double a = 6378137.0;
-    const double f = 1.0 / 298.257222101;
-    const double k0 = 1.0;
-    const double lon0 = 127.0 * pi / 180;
-    const double lat0 = 38.0 * pi / 180;
-    const double fe = 200000.0;
-    const double fn = 600000.0;
-
-    final double e2 = 2 * f - f * f;
-    final double ep2 = e2 / (1 - e2);
-
-    final double lat = latDeg * pi / 180;
-    final double lon = lonDeg * pi / 180;
-
-    final double sinLat = sin(lat);
-    final double cosLat = cos(lat);
-    final double tanLat = tan(lat);
-
-    final double N = a / sqrt(1 - e2 * sinLat * sinLat);
-    final double T = tanLat * tanLat;
-    final double C = ep2 * cosLat * cosLat;
-    final double A = (lon - lon0) * cosLat;
-
-    double mArc(double phi) {
-      final double e4 = e2 * e2;
-      final double e6 = e4 * e2;
-      return a * (
-        (1 - e2 / 4 - 3 * e4 / 64 - 5 * e6 / 256) * phi
-        - (3 * e2 / 8 + 3 * e4 / 32 + 45 * e6 / 1024) * sin(2 * phi)
-        + (15 * e4 / 256 + 45 * e6 / 1024) * sin(4 * phi)
-        - (35 * e6 / 3072) * sin(6 * phi)
-      );
-    }
-
-    final double x = k0 * N * (
-      A + (1 - T + C) * pow(A, 3) / 6
-      + (5 - 18 * T + T * T + 72 * C - 58 * ep2) * pow(A, 5) / 120
-    ) + fe;
-
-    final double y = k0 * (
-      mArc(lat) - mArc(lat0)
-      + N * tanLat * (
-        A * A / 2
-        + (5 - T + 9 * C + 4 * C * C) * pow(A, 4) / 24
-        + (61 - 58 * T + T * T + 600 * C - 330 * ep2) * pow(A, 6) / 720
-      )
-    ) + fn;
-
-    return {'x': x, 'y': y};
-  }
-
   /// 측정소의 시도명 조회 (로컬 매핑 우선, API fallback)
   Future<String?> getSidoForStation(String stationName) async {
     // 1. 로컬 매핑 (자치구명 → 시도)
