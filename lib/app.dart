@@ -9,7 +9,6 @@ import 'features/info/info_screen.dart';
 import 'features/splash/splash_screen.dart';
 import 'features/tutorial/tutorial_screen.dart';
 import 'features/location_setup/location_setup_screen.dart';
-import 'providers/providers.dart';
 
 class MaskAlertApp extends ConsumerWidget {
   const MaskAlertApp({super.key});

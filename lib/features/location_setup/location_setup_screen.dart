@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/location_service.dart';
-import '../../data/repositories/dust_repository.dart';
 import '../../providers/providers.dart';
 
 // ── 표시명 → 에어코리아 실측정소명 매핑 ──────────────────────────────
