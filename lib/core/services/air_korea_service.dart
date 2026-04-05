@@ -6,7 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/models/dust_data.dart';
 import '../../data/models/forecast_models.dart';
 import '../config/app_config.dart';
+import '../constants/app_constants.dart';
 import '../constants/dust_standards.dart';
+import '../errors/app_exception.dart';
 import 'dust_data_source.dart';
 
 /// 에어코리아 OpenAPI 통신 서비스
@@ -14,7 +16,7 @@ import 'dust_data_source.dart';
 class AirKoreaService implements DustDataSource {
   static const String _baseUrl =
       'https://apis.data.go.kr/B552584/ArpltnInforInqireSvc';
-  static const String _cacheKey = 'dust_cache';
+  static const String _cacheKey = AppConstants.prefDustCache;
   // app_config.dart (gitignored)에서 키를 주입 — 절대 소스에 직접 입력하지 마세요
   static const String _apiKey = AppConfig.airKoreaApiKey;
 
@@ -88,10 +90,10 @@ class AirKoreaService implements DustDataSource {
       debugPrint('[AirKorea] DioException: ${e.type} / ${e.message}');
       final cached = _getCachedData(stationName);
       if (cached != null) return cached;
-      throw Exception('API 호출 실패: ${e.message}');
+      throw const NetworkException();
     } catch (e) {
       debugPrint('[AirKorea] 알 수 없는 오류: $e');
-      return null;
+      throw const ParseException();
     }
   }
 
@@ -155,9 +157,9 @@ class AirKoreaService implements DustDataSource {
 
       return [current, ...future];
     } on DioException catch (e) {
-      // 네트워크 오류 → rethrow (UI가 error state 표시 가능하도록)
+      // 네트워크 오류 → throw (UI가 error state 표시 가능하도록)
       debugPrint('[AirKorea] 시간별 데이터 네트워크 오류: ${e.message}');
-      throw Exception('네트워크에 연결할 수 없어요.\n잠시 후 다시 시도해 주세요.');
+      throw const NetworkException();
     } catch (e) {
       // 파싱 등 기타 오류 → 빈 리스트 (조용히 실패)
       debugPrint('[AirKorea] 시간별 데이터 오류: $e');
@@ -289,7 +291,7 @@ class AirKoreaService implements DustDataSource {
       return result.where((d) => !d.date.isBefore(today)).toList();
     } on DioException catch (e) {
       debugPrint('[AirKorea] 단기예보 네트워크 오류: ${e.message}');
-      throw Exception('예보 데이터를 불러올 수 없어요.\n잠시 후 다시 시도해 주세요.');
+      throw const NetworkException('예보 데이터를 불러올 수 없어요.\n잠시 후 다시 시도해 주세요.');
     } catch (e) {
       debugPrint('[AirKorea] 단기예보 오류: $e');
       return [];

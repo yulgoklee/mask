@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
+import '../constants/app_constants.dart';
 import 'notification_scheduler.dart';
 
 const String _taskCheckDust = 'check_dust_task';
@@ -32,7 +33,7 @@ class BackgroundService {
     await Workmanager().registerPeriodicTask(
       _taskCheckDust,
       _taskCheckDust,
-      frequency: const Duration(minutes: 15),
+      frequency: const Duration(minutes: AppConstants.backgroundTaskIntervalMinutes),
       constraints: Constraints(
         networkType: NetworkType.connected,
       ),

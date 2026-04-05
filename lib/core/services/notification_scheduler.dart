@@ -3,32 +3,30 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/models/user_profile.dart';
 import '../../data/models/notification_setting.dart';
+import '../constants/app_constants.dart';
 import '../constants/dust_standards.dart';
 import '../utils/dust_calculator.dart';
 import 'air_korea_service.dart';
 import 'notification_service.dart';
-
-// 알림 발송 허용 윈도우 (설정 시간 ±이 분 이내)
-const int _windowMinutes = 30;
 
 /// 미세먼지 알림 스케줄러
 /// 백그라운드 서비스에서 호출되는 알림 발송 로직을 캡슐화
 class NotificationScheduler {
   Future<void> runCheck(SharedPreferences prefs) async {
     try {
-      final stationName = prefs.getString('saved_station_name');
+      final stationName = prefs.getString(AppConstants.prefStationName);
       if (stationName == null) return;
 
       final service = AirKoreaService(prefs);
       final dust = await service.getDustData(stationName);
       if (dust == null) return;
 
-      final profileJson = prefs.getString('user_profile');
+      final profileJson = prefs.getString(AppConstants.prefUserProfile);
       final profile = profileJson != null
           ? UserProfile.fromJson(jsonDecode(profileJson) as Map<String, dynamic>)
           : UserProfile.defaultProfile();
 
-      final settingJson = prefs.getString('notification_setting');
+      final settingJson = prefs.getString(AppConstants.prefNotificationSetting);
       final setting = settingJson != null
           ? NotificationSetting.fromJson(
               jsonDecode(settingJson) as Map<String, dynamic>)
@@ -106,7 +104,8 @@ class NotificationScheduler {
 
 bool _inWindow(DateTime now, int hour, int minute) {
   final target = DateTime(now.year, now.month, now.day, hour, minute);
-  return now.difference(target).inMinutes.abs() <= _windowMinutes;
+  return now.difference(target).inMinutes.abs() <=
+      AppConstants.notificationWindowMinutes;
 }
 
 bool _sentToday(SharedPreferences prefs, String type) {
