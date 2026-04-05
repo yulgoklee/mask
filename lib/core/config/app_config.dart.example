@@ -8,4 +8,9 @@
 ///   4. URL 인코딩된 키를 아래에 붙여넣기
 class AppConfig {
   static const String airKoreaApiKey = 'YOUR_ENCODED_API_KEY_HERE';
+
+  /// Cloud Functions 베이스 URL (서버 API 프록시 준비용)
+  /// 예: 'https://asia-northeast3-PROJECT_ID.cloudfunctions.net'
+  /// 비워두면 직접 에어코리아 API 호출
+  static const String cloudFunctionsBaseUrl = '';
 }

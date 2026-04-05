@@ -6,8 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
-import 'core/services/background_service.dart';
 import 'core/services/notification_service.dart';
+import 'core/services/workmanager_push_scheduler.dart';
 import 'firebase_options.dart';
 import 'providers/providers.dart';
 
@@ -50,8 +50,9 @@ void main() async {
 
     // 백그라운드 작업 등록 — 실패해도 앱은 계속 실행
     try {
-      await BackgroundService.initialize();
-      await BackgroundService.registerPeriodicTask();
+      final pushScheduler = WorkmanagerPushScheduler();
+      await pushScheduler.initialize();
+      await pushScheduler.register();
     } catch (_) {
       // 백그라운드 등록 실패 시 수동 새로고침으로 대체
     }

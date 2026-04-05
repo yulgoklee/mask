@@ -6,7 +6,10 @@ import '../data/models/user_profile.dart';
 import '../data/models/forecast_models.dart';
 import '../data/repositories/dust_repository.dart';
 import '../data/repositories/profile_repository.dart';
+import '../data/datasources/profile_data_source.dart';
+import '../data/datasources/local_profile_data_source.dart';
 import '../core/services/air_korea_service.dart';
+import '../core/services/dust_data_source.dart';
 import '../core/services/location_service.dart';
 import '../core/services/notification_service.dart';
 import '../core/utils/dust_calculator.dart';
@@ -23,11 +26,26 @@ final notificationServiceProvider = Provider<NotificationService>((ref) {
 
 // ── Repository Providers ──────────────────────────────────
 
-final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
+/// Local profile data source provider (typed as abstract interface)
+/// Replace this override to switch implementations (e.g. Firestore)
+final localProfileDataSourceProvider = Provider<ProfileDataSource>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
-  return ProfileRepository(prefs);
+  return LocalProfileDataSource(prefs);
 });
 
+final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
+  final dataSource = ref.watch(localProfileDataSourceProvider);
+  return ProfileRepository.fromDataSource(dataSource);
+});
+
+/// Primary dust data source provider (typed as abstract interface)
+/// Replace this override to switch implementations (e.g. API proxy, mock)
+final dustDataSourceProvider = Provider<DustDataSource>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return AirKoreaService(prefs);
+});
+
+/// Backward-compatible alias for dustDataSourceProvider
 final airKoreaServiceProvider = Provider<AirKoreaService>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   return AirKoreaService(prefs);
@@ -40,7 +58,7 @@ final locationServiceProvider = Provider<LocationService>((ref) {
 
 final dustRepositoryProvider = Provider<DustRepository>((ref) {
   return DustRepository(
-    ref.watch(airKoreaServiceProvider),
+    ref.watch(dustDataSourceProvider),
     ref.watch(locationServiceProvider),
   );
 });
@@ -50,7 +68,9 @@ final dustRepositoryProvider = Provider<DustRepository>((ref) {
 class ProfileNotifier extends StateNotifier<UserProfile> {
   final ProfileRepository _repo;
 
-  ProfileNotifier(this._repo) : super(_repo.loadProfile());
+  ProfileNotifier(this._repo) : super(UserProfile.defaultProfile()) {
+    _repo.loadProfile().then((p) => state = p);
+  }
 
   Future<void> saveProfile(UserProfile profile) async {
     await _repo.saveProfile(profile);
@@ -71,7 +91,9 @@ class NotificationSettingNotifier extends StateNotifier<NotificationSetting> {
   final ProfileRepository _repo;
 
   NotificationSettingNotifier(this._repo)
-      : super(_repo.loadNotificationSetting());
+      : super(const NotificationSetting()) {
+    _repo.loadNotificationSetting().then((s) => state = s);
+  }
 
   Future<void> update(NotificationSetting setting) async {
     await _repo.saveNotificationSetting(setting);
@@ -117,21 +139,21 @@ final tomorrowForecastProvider = FutureProvider<String?>((ref) async {
 
 final hourlyDataProvider = FutureProvider.family<List<HourlyDustData>, String>(
   (ref, stationName) async {
-    final service = ref.watch(airKoreaServiceProvider);
-    return service.getHourlyData(stationName);
+    final repo = ref.watch(dustRepositoryProvider);
+    return repo.getHourlyData(stationName);
   },
 );
 
 final hourlyHistoryProvider = FutureProvider.family<List<HourlyDustData>, String>(
   (ref, stationName) async {
-    final service = ref.watch(airKoreaServiceProvider);
-    return service.getHourlyHistory(stationName);
+    final repo = ref.watch(dustRepositoryProvider);
+    return repo.getHourlyHistory(stationName);
   },
 );
 
 final weeklyForecastProvider = FutureProvider.family<List<WeeklyForecastData>, String>(
   (ref, sidoName) async {
-    final service = ref.watch(airKoreaServiceProvider);
-    return service.getWeeklyForecast(sidoName: sidoName);
+    final repo = ref.watch(dustRepositoryProvider);
+    return repo.getWeeklyForecast(sidoName: sidoName);
   },
 );
