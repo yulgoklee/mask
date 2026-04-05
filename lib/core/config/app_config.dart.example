@@ -9,8 +9,12 @@
 class AppConfig {
   static const String airKoreaApiKey = 'YOUR_ENCODED_API_KEY_HERE';
 
-  /// Cloud Functions 베이스 URL (서버 API 프록시 준비용)
-  /// 예: 'https://asia-northeast3-PROJECT_ID.cloudfunctions.net'
-  /// 비워두면 직접 에어코리아 API 호출
+  /// Cloud Functions 베이스 URL
+  /// 형식: 'https://asia-northeast3-PROJECT_ID.cloudfunctions.net'
+  /// - 비워두면 AirKorea API 직접 호출 (개발/폴백)
+  /// - 설정하면 CloudFunctionsDataSource 자동 사용 (프록시, API 키 숨김)
+  ///
+  /// Firebase 배포 후 실제 URL 확인:
+  ///   firebase deploy --only functions 실행 후 출력되는 URL 사용
   static const String cloudFunctionsBaseUrl = '';
 }
