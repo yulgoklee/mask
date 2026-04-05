@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/services/geolocator_gps_service.dart';
+import '../core/services/gps_service.dart';
 import '../core/services/location_service.dart';
 import '../core/services/notification_service.dart';
 
@@ -14,7 +16,14 @@ final notificationServiceProvider = Provider<NotificationService>((ref) {
   return NotificationService();
 });
 
+/// GPS 서비스 (abstract interface 타입)
+/// 테스트 시 FakeGpsService로 override 가능
+final gpsServiceProvider = Provider<GpsService>((ref) {
+  return GeolocatorGpsService();
+});
+
 final locationServiceProvider = Provider<LocationService>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
-  return LocationService(prefs);
+  final gps = ref.watch(gpsServiceProvider);
+  return LocationService(prefs, gps);
 });
