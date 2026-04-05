@@ -36,9 +36,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     if (!mounted) return;
 
     final repo = ref.read(profileRepositoryProvider);
-    if (!repo.isTutorialSeen()) {
+    final tutorialSeen = await repo.isTutorialSeen();
+    final onboardingDone = await repo.isOnboardingCompleted();
+    if (!mounted) return;
+
+    if (!tutorialSeen) {
       Navigator.of(context).pushReplacementNamed('/tutorial');
-    } else if (!repo.isOnboardingCompleted()) {
+    } else if (!onboardingDone) {
       Navigator.of(context).pushReplacementNamed('/onboarding');
     } else {
       Navigator.of(context).pushReplacementNamed('/home');

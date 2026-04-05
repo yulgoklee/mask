@@ -7,10 +7,11 @@ import '../../data/models/dust_data.dart';
 import '../../data/models/forecast_models.dart';
 import '../config/app_config.dart';
 import '../constants/dust_standards.dart';
+import 'dust_data_source.dart';
 
 /// 에어코리아 OpenAPI 통신 서비스
 /// API: https://apis.data.go.kr/B552584/ArpltnInforInqireSvc
-class AirKoreaService {
+class AirKoreaService implements DustDataSource {
   static const String _baseUrl =
       'https://apis.data.go.kr/B552584/ArpltnInforInqireSvc';
   static const String _cacheKey = 'dust_cache';
