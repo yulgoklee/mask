@@ -3,10 +3,13 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/models/user_profile.dart';
 import '../../data/models/notification_setting.dart';
+import '../config/app_config.dart';
 import '../constants/app_constants.dart';
 import '../constants/dust_standards.dart';
 import '../utils/dust_calculator.dart';
 import 'air_korea_service.dart';
+import 'cloud_functions_data_source.dart';
+import 'dust_data_source.dart';
 import 'notification_service.dart';
 
 /// 미세먼지 알림 스케줄러
@@ -17,7 +20,13 @@ class NotificationScheduler {
       final stationName = prefs.getString(AppConstants.prefStationName);
       if (stationName == null) return;
 
-      final service = AirKoreaService(prefs);
+      // Cloud Functions URL이 설정된 경우 서버 프록시 사용 (API 키 보안)
+      // 미설정 시 직접 호출로 폴백 (개발 환경 등)
+      final DustDataSource service =
+          AppConfig.cloudFunctionsBaseUrl.isNotEmpty
+              ? CloudFunctionsDataSource()
+              : AirKoreaService(prefs);
+
       final dust = await service.getDustData(stationName);
       if (dust == null) return;
 
