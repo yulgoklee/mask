@@ -394,6 +394,27 @@ class _BgTestCardState extends State<_BgTestCard> {
     }
   }
 
+  /// 중복 방지 플래그 초기화 → 오늘 날짜 기준 발송 기록 삭제
+  Future<void> _resetSentFlags() async {
+    setState(() { _running = true; _result = null; });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final now = DateTime.now();
+      final dateKey = '${now.year}${now.month.toString().padLeft(2, '0')}'
+          '${now.day.toString().padLeft(2, '0')}';
+      final hourKey = '$dateKey${now.hour.toString().padLeft(2, '0')}';
+      for (final type in ['morning', 'forecast', 'return']) {
+        await prefs.remove('notif_sent_${type}_$dateKey');
+      }
+      await prefs.remove('notif_sent_realtime_$hourKey');
+      setState(() { _result = '✓ 중복 방지 초기화 완료. 이제 스케줄러를 다시 실행해보세요.'; });
+    } catch (e) {
+      setState(() { _result = '✗ 오류: $e'; });
+    } finally {
+      setState(() => _running = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -422,7 +443,19 @@ class _BgTestCardState extends State<_BgTestCard> {
                   side: BorderSide(color: Colors.orange.shade300),
                   padding: const EdgeInsets.symmetric(vertical: 10),
                 ),
-                child: const Text('스케줄러 직접 실행', style: TextStyle(fontSize: 13)),
+                child: const Text('스케줄러 실행', style: TextStyle(fontSize: 13)),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _running ? null : _resetSentFlags,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.orange.shade700,
+                  side: BorderSide(color: Colors.orange.shade300),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                ),
+                child: const Text('중복방지 초기화', style: TextStyle(fontSize: 13)),
               ),
             ),
             const SizedBox(width: 8),
@@ -434,7 +467,7 @@ class _BgTestCardState extends State<_BgTestCard> {
                   side: BorderSide(color: Colors.orange.shade300),
                   padding: const EdgeInsets.symmetric(vertical: 10),
                 ),
-                child: const Text('Workmanager 실행', style: TextStyle(fontSize: 13)),
+                child: const Text('Workmanager', style: TextStyle(fontSize: 13)),
               ),
             ),
           ]),
