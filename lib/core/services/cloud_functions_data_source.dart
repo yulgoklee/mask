@@ -244,9 +244,13 @@ class CloudFunctionsDataSource implements DustDataSource {
     }).firstOrNull;
 
     if (tomorrowForecast == null) return null;
-    final worst = DustStandards.worstGrade(
-        tomorrowForecast.pm10Grade, tomorrowForecast.pm25Grade);
-    if (worst == null) return null;
+    final pm10 = tomorrowForecast.pm10Grade;
+    final pm25 = tomorrowForecast.pm25Grade;
+    if (pm10 == null && pm25 == null) return null;
+    final worst = pm10 != null && pm25 != null
+        ? DustStandards.worstGrade(pm10, pm25)
+        : (pm10 ?? pm25)!;
+
 
     return switch (worst) {
       DustGrade.good => '좋음',
