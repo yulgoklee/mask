@@ -2,7 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/dust_data.dart';
 import '../data/models/forecast_models.dart';
 import '../data/repositories/dust_repository.dart';
+import '../core/config/app_config.dart';
 import '../core/services/air_korea_service.dart';
+import '../core/services/cloud_functions_data_source.dart';
 import '../core/services/dust_data_source.dart';
 import '../core/utils/dust_calculator.dart';
 import 'core_providers.dart';
@@ -11,8 +13,14 @@ import 'profile_providers.dart';
 // ── 미세먼지 데이터 소스 ──────────────────────────────────
 
 /// 미세먼지 데이터 소스 (abstract interface 타입으로 제공)
-/// 서버 프록시 구현체로 교체 시 이 provider만 변경하면 됨
+///
+/// 우선순위:
+/// 1. AppConfig.cloudFunctionsBaseUrl 설정 시 → CloudFunctionsDataSource (서버 프록시)
+/// 2. 미설정 시 → AirKoreaService (직접 호출, 개발/폴백용)
 final dustDataSourceProvider = Provider<DustDataSource>((ref) {
+  if (AppConfig.cloudFunctionsBaseUrl.isNotEmpty) {
+    return CloudFunctionsDataSource();
+  }
   final prefs = ref.watch(sharedPreferencesProvider);
   return AirKoreaService(prefs);
 });
