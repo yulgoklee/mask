@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../core/services/background_service.dart';
+import '../core/services/notification_scheduler.dart';
 import '../data/models/notification_setting.dart';
 import '../data/models/user_profile.dart';
 import '../data/repositories/profile_repository.dart';
@@ -55,8 +58,17 @@ class NotificationSettingNotifier extends StateNotifier<NotificationSetting> {
   Future<void> update(NotificationSetting setting) async {
     await _repo.saveNotificationSetting(setting);
     state = setting;
-    // 알림 시간 변경 즉시 1회 체크 → 변경된 시간이 현재와 가까우면 바로 발송
+    // 알림 시간 변경 즉시 1회 체크 → 포그라운드에서 바로 실행 (Workmanager 딜레이 없음)
+    unawaited(_runImmediateCheck());
+    // 백그라운드 작업도 예약 (앱 종료 후에도 주기적 체크 유지)
     BackgroundService.runOnce();
+  }
+
+  Future<void> _runImmediateCheck() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await NotificationScheduler().runCheck(prefs);
+    } catch (_) {}
   }
 }
 
