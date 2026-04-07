@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/services/background_service.dart';
 import '../data/models/notification_setting.dart';
 import '../data/models/user_profile.dart';
 import '../data/repositories/profile_repository.dart';
@@ -54,6 +55,8 @@ class NotificationSettingNotifier extends StateNotifier<NotificationSetting> {
   Future<void> update(NotificationSetting setting) async {
     await _repo.saveNotificationSetting(setting);
     state = setting;
+    // 알림 시간 변경 즉시 1회 체크 → 변경된 시간이 현재와 가까우면 바로 발송
+    BackgroundService.runOnce();
   }
 }
 
