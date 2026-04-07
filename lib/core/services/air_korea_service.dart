@@ -330,7 +330,11 @@ class AirKoreaService implements DustDataSource {
   }
 
   /// 가장 가까운 측정소 조회 (로컬 좌표 매핑, API 불필요)
-  Future<String?> getNearestStation(double lat, double lng) async {
+  Future<String?> getNearestStation(double lat, double lng) =>
+      AirKoreaService.findNearestStation(lat, lng);
+
+  /// 좌표 기반 가장 가까운 측정소 탐색 (static — 데이터 소스와 무관하게 사용 가능)
+  static Future<String?> findNearestStation(double lat, double lng) async {
     if (lat < 33.0 || lat > 38.7 || lng < 124.5 || lng > 132.0) {
       debugPrint('[AirKorea] 한국 외 위치: lat=$lat, lng=$lng');
       return null;

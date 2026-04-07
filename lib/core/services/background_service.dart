@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 import '../constants/app_constants.dart';
@@ -7,8 +8,12 @@ import 'notification_scheduler.dart';
 const String _taskCheckDust = 'check_dust_task';
 
 /// Workmanager 백그라운드 콜백 (top-level 함수 필수)
+///
+/// ⚠️ 백그라운드 isolate는 별도 Flutter 인스턴스 → 플러그인 사용 전
+///    WidgetsFlutterBinding.ensureInitialized() 반드시 호출해야 함.
 @pragma('vm:entry-point')
 void callbackDispatcher() {
+  WidgetsFlutterBinding.ensureInitialized(); // 백그라운드 isolate 플러그인 초기화
   Workmanager().executeTask((task, inputData) async {
     if (task == _taskCheckDust) {
       await _runDustCheck();
@@ -25,7 +30,8 @@ Future<void> _runDustCheck() async {
 class BackgroundService {
   static Future<void> initialize() async {
     if (kIsWeb) return;
-    await Workmanager().initialize(callbackDispatcher);
+    // isInDebugMode: 디버그 빌드에서 Workmanager 로그 출력 활성화
+    await Workmanager().initialize(callbackDispatcher, isInDebugMode: kDebugMode);
   }
 
   static Future<void> registerPeriodicTask() async {
@@ -38,6 +44,19 @@ class BackgroundService {
         networkType: NetworkType.connected,
       ),
       existingWorkPolicy: ExistingPeriodicWorkPolicy.replace,
+    );
+  }
+
+  /// 백그라운드 로직을 즉시 1회 실행 (테스트/디버그용)
+  /// 시간 윈도우 체크 없이 알림 발송 여부를 빠르게 검증할 수 있음
+  static Future<void> runOnce() async {
+    if (kIsWeb) return;
+    await Workmanager().registerOneOffTask(
+      '${_taskCheckDust}_test',
+      _taskCheckDust,
+      initialDelay: Duration.zero,
+      constraints: Constraints(networkType: NetworkType.connected),
+      existingWorkPolicy: ExistingWorkPolicy.replace,
     );
   }
 

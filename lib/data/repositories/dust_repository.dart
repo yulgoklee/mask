@@ -42,12 +42,9 @@ class DustRepository {
     }
 
     final pos = result.position!;
-    // AirKoreaService provides getNearestStation via local coordinate mapping
-    String? station;
-    if (_dataSource is AirKoreaService) {
-      station = await (_dataSource as AirKoreaService)
-          .getNearestStation(pos.latitude, pos.longitude);
-    }
+    // 좌표 → 최근접 측정소 탐색 (순수 로컬 계산, 데이터 소스와 무관)
+    final station = await AirKoreaService.findNearestStation(
+        pos.latitude, pos.longitude);
     if (station == null) return DetectStationResult.notFound();
 
     await _location.saveStation(station);
