@@ -2,7 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/services/background_service.dart';
+import '../../core/services/notification_scheduler.dart';
 import '../../core/services/notification_service.dart';
 import '../../providers/providers.dart';
 
@@ -227,6 +230,14 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
           _NotifTestCard(),
           const SizedBox(height: 24),
 
+          // 백그라운드 테스트 (디버그 빌드에서만 표시)
+          if (kDebugMode) ...[
+            _SectionLabel('백그라운드 테스트 (개발용)'),
+            const SizedBox(height: 10),
+            _BgTestCard(),
+            const SizedBox(height: 24),
+          ],
+
           const Text(
             '* 알림은 참고용 정보이며 의료적 진단이나 처방을 대체하지 않습니다.\n'
             '* 배터리 절약 모드나 기기 설정에 따라 알림이 지연될 수 있어요.',
@@ -331,6 +342,112 @@ class _NotifTestCardState extends ConsumerState<_NotifTestCard> {
                 fontWeight: FontWeight.w500,
               ),
             ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// 백그라운드 스케줄러 직접 실행 카드 (kDebugMode 에서만 표시)
+class _BgTestCard extends StatefulWidget {
+  @override
+  State<_BgTestCard> createState() => _BgTestCardState();
+}
+
+class _BgTestCardState extends State<_BgTestCard> {
+  bool _running = false;
+  String? _result;
+
+  /// 방법 1: Workmanager oneOff 태스크 → 실제 백그라운드 isolate 실행
+  Future<void> _runViaWorkmanager() async {
+    setState(() { _running = true; _result = null; });
+    try {
+      await BackgroundService.runOnce();
+      setState(() {
+        _result = '✓ Workmanager 태스크 등록 완료.\n'
+            '앱을 백그라운드로 내리면 곧 실행돼요.\n'
+            'Android 에뮬레이터: adb logcat 으로 확인 가능';
+      });
+    } catch (e) {
+      setState(() { _result = '✗ 오류: $e'; });
+    } finally {
+      setState(() => _running = false);
+    }
+  }
+
+  /// 방법 2: 스케줄러 로직 직접 호출 → 시간 윈도우 체크 포함, 즉시 실행
+  Future<void> _runSchedulerDirect() async {
+    setState(() { _running = true; _result = null; });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await NotificationScheduler().runCheck(prefs);
+      setState(() {
+        _result = '✓ 스케줄러 실행 완료.\n'
+            '알림 시간 윈도우 내에 있으면 알림이 발송됐어요.\n'
+            '(오늘 이미 발송된 알림은 중복 방지로 건너뜀)';
+      });
+    } catch (e) {
+      setState(() { _result = '✗ 오류: $e'; });
+    } finally {
+      setState(() => _running = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.orange.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(Icons.bug_report_outlined, color: Colors.orange.shade700, size: 18),
+            const SizedBox(width: 6),
+            Text('개발용 — 릴리즈 빌드에서는 숨겨짐',
+                style: TextStyle(fontSize: 12, color: Colors.orange.shade700)),
+          ]),
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _running ? null : _runSchedulerDirect,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.orange.shade700,
+                  side: BorderSide(color: Colors.orange.shade300),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                ),
+                child: const Text('스케줄러 직접 실행', style: TextStyle(fontSize: 13)),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _running ? null : _runViaWorkmanager,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.orange.shade700,
+                  side: BorderSide(color: Colors.orange.shade300),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                ),
+                child: const Text('Workmanager 실행', style: TextStyle(fontSize: 13)),
+              ),
+            ),
+          ]),
+          if (_result != null) ...[
+            const SizedBox(height: 10),
+            Text(_result!,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: _result!.startsWith('✓')
+                      ? Colors.green.shade700
+                      : Colors.red.shade700,
+                  height: 1.4,
+                )),
           ],
         ],
       ),
