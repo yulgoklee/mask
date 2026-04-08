@@ -1,8 +1,10 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 import '../constants/app_constants.dart';
+import '../../firebase_options.dart';
 import 'notification_scheduler.dart';
 
 const String _taskCheckDust = 'check_dust_task';
@@ -23,6 +25,12 @@ void callbackDispatcher() {
 }
 
 Future<void> _runDustCheck() async {
+  // 백그라운드 isolate는 별도 인스턴스 → Firebase 재초기화 필요
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  } catch (_) {
+    // 이미 초기화됐거나 실패해도 알림 체크는 계속 진행
+  }
   final prefs = await SharedPreferences.getInstance();
   await NotificationScheduler().runCheck(prefs);
 }
