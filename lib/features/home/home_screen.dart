@@ -52,8 +52,12 @@ class HomeScreen extends ConsumerWidget {
           _analytics.logEvent(name: 'home_refreshed');
           ref.invalidate(dustDataProvider);
           ref.invalidate(tomorrowForecastProvider);
+          // 새로고침 완료까지 대기
+          await ref.read(dustDataProvider.future).catchError((_) => null);
         },
         child: dustAsync.when(
+          // 새로고침 중엔 이전 데이터 유지 (깜빡임 방지)
+          skipLoadingOnRefresh: true,
           loading: () =>
               const LoadingStateWidget(message: '미세먼지 정보 불러오는 중...'),
           error: (e, _) {
