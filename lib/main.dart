@@ -3,6 +3,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
@@ -36,6 +37,9 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
 
   if (!kIsWeb) {
+    // AdMob 초기화
+    await MobileAds.instance.initialize();
+
     // 알림 서비스 초기화
     final notifService = NotificationService();
     await notifService.initialize();
