@@ -60,14 +60,16 @@ class NotificationScheduler {
       if (setting.morningAlertEnabled &&
           _inWindow(now, setting.morningAlertHour, setting.morningAlertMinute) &&
           !_sentToday(prefs, 'morning')) {
-        await notifService.showImmediateNotification(
+        await _sendNotification(
+          notifService: notifService,
+          analytics: analytics,
           id: NotificationService.morningAlertId,
+          type: 'morning',
           title: '오늘 미세먼지 안내',
           body: NotificationService.morningMessage(pm25, gradeName,
               riskLabel: riskLabel, maskType: maskType),
+          onSuccess: () => _markSent(prefs, 'morning'),
         );
-        _markSent(prefs, 'morning');
-        analytics.logEvent(name: 'notification_sent', parameters: {'type': 'morning'});
       }
 
       // ── 전날 예보 알림 ───────────────────────────────────
@@ -76,42 +78,47 @@ class NotificationScheduler {
           !_sentToday(prefs, 'forecast')) {
         final sido = await service.getSidoForStation(stationName);
         final forecastGrade = await service.getTomorrowForecast(sidoName: sido);
-        await notifService.showImmediateNotification(
+        await _sendNotification(
+          notifService: notifService,
+          analytics: analytics,
           id: NotificationService.eveningForecastId,
+          type: 'forecast',
           title: '내일 미세먼지 예보',
           body: NotificationService.forecastMessage(forecastGrade ?? '보통',
               riskLabel: riskLabel),
+          onSuccess: () => _markSent(prefs, 'forecast'),
         );
-        _markSent(prefs, 'forecast');
-        analytics.logEvent(name: 'notification_sent', parameters: {'type': 'forecast'});
       }
 
       // ── 귀가 알림 ────────────────────────────────────────
       if (setting.eveningReturnEnabled &&
           _inWindow(now, setting.eveningReturnHour, setting.eveningReturnMinute) &&
           !_sentToday(prefs, 'return')) {
-        await notifService.showImmediateNotification(
+        await _sendNotification(
+          notifService: notifService,
+          analytics: analytics,
           id: NotificationService.eveningReturnId,
+          type: 'return',
           title: '귀가 전 미세먼지 확인',
           body: NotificationService.eveningReturnMessage(gradeName,
               riskLabel: riskLabel, maskType: maskType),
+          onSuccess: () => _markSent(prefs, 'return'),
         );
-        _markSent(prefs, 'return');
-        analytics.logEvent(name: 'notification_sent', parameters: {'type': 'return'});
       }
 
       // ── 실시간 경보 ──────────────────────────────────────
-      // 동일 시간대(1시간 단위) 중복 발송 방지
       if (setting.realtimeAlertEnabled &&
           result.shouldSendRealtime &&
           !_sentThisHour(prefs, 'realtime')) {
-        await notifService.showImmediateNotification(
+        await _sendNotification(
+          notifService: notifService,
+          analytics: analytics,
           id: NotificationService.realtimeAlertId,
+          type: 'realtime',
           title: '⚠️ 미세먼지 경보',
           body: result.message,
+          onSuccess: () => _markSentHour(prefs, 'realtime'),
         );
-        _markSentHour(prefs, 'realtime');
-        analytics.logEvent(name: 'notification_sent', parameters: {'type': 'realtime'});
       }
     } catch (e, st) {
       debugPrint('[NotificationScheduler] 오류: $e\n$st');
@@ -124,6 +131,44 @@ class NotificationScheduler {
         );
       } catch (_) {}
     }
+  }
+}
+
+/// 알림 발송 + 성공/실패 추적
+Future<void> _sendNotification({
+  required NotificationService notifService,
+  required FirebaseAnalytics analytics,
+  required int id,
+  required String type,
+  required String title,
+  required String body,
+  required VoidCallback onSuccess,
+}) async {
+  try {
+    await notifService.showImmediateNotification(
+      id: id,
+      title: title,
+      body: body,
+    );
+    onSuccess();
+    analytics.logEvent(
+      name: 'notification_sent',
+      parameters: {'type': type},
+    );
+    debugPrint('[NotificationScheduler] ✅ $type 알림 발송 성공');
+  } catch (e, st) {
+    debugPrint('[NotificationScheduler] ❌ $type 알림 발송 실패: $e');
+    analytics.logEvent(
+      name: 'notification_send_failed',
+      parameters: {'type': type},
+    );
+    try {
+      await FirebaseCrashlytics.instance.recordError(
+        e, st,
+        fatal: false,
+        reason: 'notification_send_failed_$type',
+      );
+    } catch (_) {}
   }
 }
 
