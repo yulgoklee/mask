@@ -29,8 +29,12 @@ class NotificationScheduler {
               ? CloudFunctionsDataSource()
               : AirKoreaService(prefs);
 
-      final dust = await service.getDustData(stationName);
-      if (dust == null) return;
+      // 네트워크 실패 시 최대 2회 재시도 (3초 간격)
+      final dust = await _fetchWithRetry(() => service.getDustData(stationName));
+      if (dust == null) {
+        debugPrint('[NotificationScheduler] 데이터 조회 실패 (재시도 포함) — 알림 건너뜀');
+        return;
+      }
 
       final profileJson = prefs.getString(AppConstants.prefUserProfile);
       final profile = profileJson != null
@@ -205,6 +209,26 @@ String _hourKey() {
   return '${now.year}${now.month.toString().padLeft(2, '0')}'
       '${now.day.toString().padLeft(2, '0')}'
       '${now.hour.toString().padLeft(2, '0')}';
+}
+
+/// 최대 [maxRetries]회 재시도. 각 시도 사이 [delaySeconds]초 대기.
+Future<T?> _fetchWithRetry<T>(
+  Future<T?> Function() fetch, {
+  int maxRetries = 2,
+  int delaySeconds = 3,
+}) async {
+  for (int attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      final result = await fetch();
+      if (result != null) return result;
+    } catch (e) {
+      debugPrint('[fetchWithRetry] 시도 ${attempt + 1} 실패: $e');
+    }
+    if (attempt < maxRetries) {
+      await Future.delayed(Duration(seconds: delaySeconds));
+    }
+  }
+  return null;
 }
 
 String _gradeLabel(DustGrade grade) {

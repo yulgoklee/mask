@@ -58,8 +58,7 @@ class HomeScreen extends ConsumerWidget {
         child: dustAsync.when(
           // 새로고침 중엔 이전 데이터 유지 (깜빡임 방지)
           skipLoadingOnRefresh: true,
-          loading: () =>
-              const LoadingStateWidget(message: '미세먼지 정보 불러오는 중...'),
+          loading: () => const HomeSkeleton(),
           error: (e, _) {
             _analytics.logEvent(
               name: 'api_error',
