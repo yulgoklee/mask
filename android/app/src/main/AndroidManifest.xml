@@ -64,10 +64,10 @@
             android:foregroundServiceType="dataSync"
             android:exported="false"/>
 
-        <!-- AdMob 테스트 App ID (배포 전 실제 ID로 교체) -->
+        <!-- AdMob App ID -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"/>
+            android:value="ca-app-pub-2943697287082336~2248905378"/>
 
         <meta-data
             android:name="flutterEmbedding"
