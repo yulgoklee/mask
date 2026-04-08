@@ -1,3 +1,4 @@
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 import 'app.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/workmanager_push_scheduler.dart';
@@ -24,6 +26,8 @@ void main() async {
     // Firebase 초기화 실패 시 Analytics/Crashlytics 없이 앱 실행
   }
 
+  final prefs = await SharedPreferences.getInstance();
+
   if (firebaseReady) {
     // Flutter 에러 → Crashlytics로 전송
     FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
@@ -32,9 +36,12 @@ void main() async {
       FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
       return true;
     };
-  }
 
-  final prefs = await SharedPreferences.getInstance();
+    // 익명 사용자 ID 설정 — 크래시 리포트 추적용
+    final userId = _getOrCreateUserId(prefs);
+    await FirebaseCrashlytics.instance.setUserIdentifier(userId);
+    await FirebaseAnalytics.instance.setUserId(id: userId);
+  }
 
   if (!kIsWeb) {
     // AdMob 초기화
@@ -44,9 +51,13 @@ void main() async {
     final notifService = NotificationService();
     await notifService.initialize();
 
-    // Android 13+ 알림 권한 요청
-    if (await Permission.notification.isDenied) {
-      await Permission.notification.request();
+    // Android 13+ 알림 권한 요청 및 결과 검증
+    final notifStatus = await Permission.notification.status;
+    if (notifStatus.isDenied) {
+      final result = await Permission.notification.request();
+      if (result.isPermanentlyDenied && firebaseReady) {
+        FirebaseCrashlytics.instance.log('notification_permission_permanently_denied');
+      }
     }
 
     // iOS 알림 권한 요청
@@ -57,8 +68,12 @@ void main() async {
       final pushScheduler = WorkmanagerPushScheduler();
       await pushScheduler.initialize();
       await pushScheduler.register();
-    } catch (_) {
-      // 백그라운드 등록 실패 시 수동 새로고침으로 대체
+    } catch (e, st) {
+      // 백그라운드 등록 실패 → Crashlytics 기록
+      if (firebaseReady) {
+        FirebaseCrashlytics.instance.recordError(e, st,
+            fatal: false, reason: 'background_scheduler_register_failed');
+      }
     }
   }
 
@@ -70,4 +85,14 @@ void main() async {
       child: const MaskAlertApp(),
     ),
   );
+}
+
+/// 익명 사용자 ID 조회 또는 생성 (앱 삭제 전까지 유지)
+String _getOrCreateUserId(SharedPreferences prefs) {
+  const key = 'anonymous_user_id';
+  final existing = prefs.getString(key);
+  if (existing != null) return existing;
+  final newId = const Uuid().v4();
+  prefs.setString(key, newId);
+  return newId;
 }

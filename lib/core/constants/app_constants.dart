@@ -13,7 +13,8 @@ class AppConstants {
 
   // ── 알림 ─────────────────────────────────────────────────
   /// 알림 발송 허용 윈도우: 설정 시간 ±이 분(분) 이내일 때 발송
-  static const int notificationWindowMinutes = 30;
+  /// backgroundTaskIntervalMinutes(15) / 2 = 7 → WorkManager 1회 실행 시 알림 1개만 발송
+  static const int notificationWindowMinutes = 7;
 
   /// Workmanager 백그라운드 체크 주기 (분)
   static const int backgroundTaskIntervalMinutes = 15;
