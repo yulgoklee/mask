@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import '../../data/models/dust_data.dart';
 import '../../data/models/forecast_models.dart';
@@ -56,8 +57,9 @@ class CloudFunctionsDataSource implements DustDataSource {
     } on DioException catch (e) {
       debugPrint('[CloudFn] getDustData 네트워크 오류: ${e.message}');
       throw const NetworkException();
-    } catch (e) {
+    } catch (e, st) {
       debugPrint('[CloudFn] getDustData 파싱 오류: $e');
+      FirebaseCrashlytics.instance.recordError(e, st, fatal: false, reason: 'getDustData_parse');
       throw const ParseException();
     }
   }
@@ -115,8 +117,9 @@ class CloudFunctionsDataSource implements DustDataSource {
     } on DioException catch (e) {
       debugPrint('[CloudFn] getHourlyData 네트워크 오류: ${e.message}');
       throw const NetworkException();
-    } catch (e) {
+    } catch (e, st) {
       debugPrint('[CloudFn] getHourlyData 오류: $e');
+      FirebaseCrashlytics.instance.recordError(e, st, fatal: false, reason: 'getHourlyData_parse');
       return [];
     }
   }
@@ -226,8 +229,9 @@ class CloudFunctionsDataSource implements DustDataSource {
     } on DioException catch (e) {
       debugPrint('[CloudFn] getWeeklyForecast 네트워크 오류: ${e.message}');
       throw const NetworkException('예보 데이터를 불러올 수 없어요.\n잠시 후 다시 시도해 주세요.');
-    } catch (e) {
+    } catch (e, st) {
       debugPrint('[CloudFn] getWeeklyForecast 오류: $e');
+      FirebaseCrashlytics.instance.recordError(e, st, fatal: false, reason: 'getWeeklyForecast_parse');
       return [];
     }
   }

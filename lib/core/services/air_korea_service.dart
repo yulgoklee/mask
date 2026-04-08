@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 import 'package:dio/dio.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/models/dust_data.dart';
@@ -91,8 +92,9 @@ class AirKoreaService implements DustDataSource {
       final cached = _getCachedData(stationName);
       if (cached != null) return cached;
       throw const NetworkException();
-    } catch (e) {
+    } catch (e, st) {
       debugPrint('[AirKorea] 알 수 없는 오류: $e');
+      FirebaseCrashlytics.instance.recordError(e, st, fatal: false, reason: 'fetchFromApi_parse');
       throw const ParseException();
     }
   }
@@ -160,9 +162,10 @@ class AirKoreaService implements DustDataSource {
       // 네트워크 오류 → throw (UI가 error state 표시 가능하도록)
       debugPrint('[AirKorea] 시간별 데이터 네트워크 오류: ${e.message}');
       throw const NetworkException();
-    } catch (e) {
-      // 파싱 등 기타 오류 → 빈 리스트 (조용히 실패)
+    } catch (e, st) {
+      // 파싱 등 기타 오류 → 빈 리스트
       debugPrint('[AirKorea] 시간별 데이터 오류: $e');
+      FirebaseCrashlytics.instance.recordError(e, st, fatal: false, reason: 'getHourlyData_parse');
       return [];
     }
   }
@@ -292,8 +295,9 @@ class AirKoreaService implements DustDataSource {
     } on DioException catch (e) {
       debugPrint('[AirKorea] 단기예보 네트워크 오류: ${e.message}');
       throw const NetworkException('예보 데이터를 불러올 수 없어요.\n잠시 후 다시 시도해 주세요.');
-    } catch (e) {
+    } catch (e, st) {
       debugPrint('[AirKorea] 단기예보 오류: $e');
+      FirebaseCrashlytics.instance.recordError(e, st, fatal: false, reason: 'getWeeklyForecast_parse');
       return [];
     }
   }

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/models/user_profile.dart';
@@ -107,6 +108,13 @@ class NotificationScheduler {
       }
     } catch (e, st) {
       debugPrint('[NotificationScheduler] 오류: $e\n$st');
+      try {
+        await FirebaseCrashlytics.instance.recordError(
+          e, st,
+          fatal: false,
+          reason: 'background_notification_check',
+        );
+      } catch (_) {}
     }
   }
 }
