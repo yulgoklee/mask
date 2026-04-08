@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -53,6 +54,8 @@ class NotificationScheduler {
       final riskLabel = result.riskLevel.label;
       final maskType = result.maskType;
 
+      final analytics = FirebaseAnalytics.instance;
+
       // ── 오전 알림 ────────────────────────────────────────
       if (setting.morningAlertEnabled &&
           _inWindow(now, setting.morningAlertHour, setting.morningAlertMinute) &&
@@ -64,6 +67,7 @@ class NotificationScheduler {
               riskLabel: riskLabel, maskType: maskType),
         );
         _markSent(prefs, 'morning');
+        analytics.logEvent(name: 'notification_sent', parameters: {'type': 'morning'});
       }
 
       // ── 전날 예보 알림 ───────────────────────────────────
@@ -79,6 +83,7 @@ class NotificationScheduler {
               riskLabel: riskLabel),
         );
         _markSent(prefs, 'forecast');
+        analytics.logEvent(name: 'notification_sent', parameters: {'type': 'forecast'});
       }
 
       // ── 귀가 알림 ────────────────────────────────────────
@@ -92,6 +97,7 @@ class NotificationScheduler {
               riskLabel: riskLabel, maskType: maskType),
         );
         _markSent(prefs, 'return');
+        analytics.logEvent(name: 'notification_sent', parameters: {'type': 'return'});
       }
 
       // ── 실시간 경보 ──────────────────────────────────────
@@ -105,10 +111,12 @@ class NotificationScheduler {
           body: result.message,
         );
         _markSentHour(prefs, 'realtime');
+        analytics.logEvent(name: 'notification_sent', parameters: {'type': 'realtime'});
       }
     } catch (e, st) {
       debugPrint('[NotificationScheduler] 오류: $e\n$st');
       try {
+        FirebaseAnalytics.instance.logEvent(name: 'notification_bg_failed');
         await FirebaseCrashlytics.instance.recordError(
           e, st,
           fatal: false,
