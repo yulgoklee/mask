@@ -18,20 +18,14 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     _TutorialPage(
       emoji: '😷',
       color: Color(0xFF3B82F6),
-      title: '마스크, 언제 써야 할까요?',
-      description: '미세먼지 수치만 봐서는 내가 마스크를\n써야 하는지 판단하기 어렵죠.\n\n마스크 알림이 알아서 알려드려요.',
+      title: '매일 아침,\n마스크가 필요한지 알려드려요',
+      description: '미세먼지 수치를 확인하는 앱이 아니에요.\n"오늘 마스크 챙겨야겠다!" 라고\n행동하게 만드는 앱이에요.',
     ),
     _TutorialPage(
       emoji: '🏥',
       color: Color(0xFF10B981),
-      title: '내 건강 상태에 맞게',
-      description: '나이, 기저질환, 활동량을 입력하면\n나에게 맞는 기준으로\n위험도를 계산해드려요.',
-    ),
-    _TutorialPage(
-      emoji: '🔔',
-      color: Color(0xFFF59E0B),
-      title: '딱 맞는 시간에 알림',
-      description: '출근 전, 퇴근 시간, 미세먼지 급등 시\n원하는 알림만 켜두세요.\n마스크 등급(KF80/KF94)도 안내해드려요.',
+      title: '내 건강 상태에 맞게,\n오늘 할 행동을 알려드려요',
+      description: '나이, 기저질환, 활동량에 따라\n나에게 딱 맞는 기준으로\n마스크 착용 여부를 판단해드려요.',
     ),
   ];
 

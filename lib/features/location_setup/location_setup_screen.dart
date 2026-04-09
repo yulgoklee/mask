@@ -154,9 +154,11 @@ class _LocationSetupScreenState extends ConsumerState<LocationSetupScreen> {
     ref.invalidate(dustDataProvider);
     ref.invalidate(tomorrowForecastProvider);
     if (Navigator.of(context).canPop()) {
+      // 설정 화면에서 진입한 경우 → 뒤로
       Navigator.of(context).pop();
     } else {
-      Navigator.of(context).pushReplacementNamed('/home');
+      // 온보딩 플로우에서 진입한 경우 → 알림 시간 설정으로
+      Navigator.of(context).pushReplacementNamed('/notification_time');
     }
   }
 

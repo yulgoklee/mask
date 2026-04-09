@@ -1,5 +1,7 @@
 /// 개인 건강 프로필 모델
 class UserProfile {
+  /// 표시 이름 (선택). null이면 "님"으로 호칭.
+  final String? name;
   final AgeGroup ageGroup;
   final bool hasCondition;
   final ConditionType conditionType;
@@ -9,6 +11,7 @@ class UserProfile {
   final SensitivityLevel sensitivity;
 
   const UserProfile({
+    this.name,
     required this.ageGroup,
     required this.hasCondition,
     this.conditionType = ConditionType.none,
@@ -18,7 +21,11 @@ class UserProfile {
     this.sensitivity = SensitivityLevel.normal,
   });
 
+  /// 알림/홈 화면 호칭 ("율곡님" or "님")
+  String get displayName => (name != null && name!.isNotEmpty) ? '$name님' : '님';
+
   factory UserProfile.defaultProfile() => const UserProfile(
+        name: null,
         ageGroup: AgeGroup.thirties,
         hasCondition: false,
         conditionType: ConditionType.none,
@@ -29,6 +36,7 @@ class UserProfile {
       );
 
   UserProfile copyWith({
+    Object? name = _sentinel,
     AgeGroup? ageGroup,
     bool? hasCondition,
     ConditionType? conditionType,
@@ -38,6 +46,7 @@ class UserProfile {
     SensitivityLevel? sensitivity,
   }) {
     return UserProfile(
+      name: name == _sentinel ? this.name : name as String?,
       ageGroup: ageGroup ?? this.ageGroup,
       hasCondition: hasCondition ?? this.hasCondition,
       conditionType: conditionType ?? this.conditionType,
@@ -49,6 +58,7 @@ class UserProfile {
   }
 
   Map<String, dynamic> toJson() => {
+        'name': name,
         'ageGroup': ageGroup.index,
         'hasCondition': hasCondition,
         'conditionType': conditionType.index,
@@ -59,6 +69,7 @@ class UserProfile {
       };
 
   factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
+        name: json['name'] as String?,
         ageGroup: AgeGroup.values[json['ageGroup'] as int],
         hasCondition: json['hasCondition'] as bool,
         conditionType: ConditionType.values[json['conditionType'] as int],
@@ -68,6 +79,9 @@ class UserProfile {
         sensitivity: SensitivityLevel.values[json['sensitivity'] as int],
       );
 }
+
+// copyWith에서 null과 "미전달"을 구분하기 위한 센티널
+const _sentinel = Object();
 
 enum AgeGroup {
   teens,

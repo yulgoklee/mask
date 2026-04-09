@@ -9,6 +9,9 @@ import 'features/info/info_screen.dart';
 import 'features/splash/splash_screen.dart';
 import 'features/tutorial/tutorial_screen.dart';
 import 'features/location_setup/location_setup_screen.dart';
+import 'features/onboarding/notification_time_screen.dart';
+import 'features/onboarding/permission_screen.dart';
+import 'features/onboarding/complete_screen.dart';
 
 class MaskAlertApp extends ConsumerWidget {
   const MaskAlertApp({super.key});
@@ -37,6 +40,9 @@ scaffoldBackgroundColor: AppColors.background,
         '/onboarding': (_) => const OnboardingScreen(),
         '/tutorial': (_) => const TutorialScreen(),
         '/location_setup': (_) => const LocationSetupScreen(),
+        '/notification_time': (_) => const NotificationTimeScreen(),
+        '/permission': (_) => const PermissionScreen(),
+        '/onboarding_complete': (_) => const OnboardingCompleteScreen(),
       },
     );
   }

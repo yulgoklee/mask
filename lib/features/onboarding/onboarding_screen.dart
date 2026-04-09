@@ -4,11 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../data/models/user_profile.dart';
 import '../../providers/providers.dart';
+import 'step_name.dart';
 import 'step_age.dart';
 import 'step_condition.dart';
 import 'step_severity.dart';
 import 'step_lifestyle.dart';
-import 'step_notification.dart';
+import 'step_sensitivity.dart';
 
 final _analytics = FirebaseAnalytics.instance;
 
@@ -24,14 +25,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   int _currentPage = 0;
 
   // 온보딩 중 수집하는 임시 프로필 데이터
+  String? _name;
   AgeGroup _ageGroup = AgeGroup.thirties;
   bool _hasCondition = false;
   ConditionType _conditionType = ConditionType.none;
   Severity _severity = Severity.mild;
   bool _isDiagnosed = false;
   ActivityLevel _activityLevel = ActivityLevel.normal;
+  SensitivityLevel _sensitivity = SensitivityLevel.normal;
 
-  int get _totalPages => _hasCondition ? 5 : 4;
+  // 이름(1) + 나이(1) + 질환(1) + [수준(1)] + 활동(1) + 민감도(1)
+  int get _totalPages => _hasCondition ? 6 : 5;
 
   @override
   void initState() {
@@ -74,12 +78,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Future<void> _completeOnboarding() async {
     final profile = UserProfile(
+      name: _name,
       ageGroup: _ageGroup,
       hasCondition: _hasCondition,
       conditionType: _conditionType,
       severity: _severity,
       isDiagnosed: _isDiagnosed,
       activityLevel: _activityLevel,
+      sensitivity: _sensitivity,
     );
 
     try {
@@ -206,12 +212,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   List<Widget> _buildPages() {
     final pages = <Widget>[
-      // 1. 나이
+      // 1. 이름
+      StepName(
+        initialName: _name,
+        onChanged: (v) => setState(() => _name = v),
+      ),
+      // 2. 나이
       StepAge(
         selected: _ageGroup,
         onChanged: (v) => setState(() => _ageGroup = v),
       ),
-      // 2. 기저질환 여부
+      // 3. 기저질환 여부
       StepCondition(
         hasCondition: _hasCondition,
         conditionType: _conditionType,
@@ -223,7 +234,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       ),
     ];
 
-    // 3. 질환 수준 (기저질환이 있을 경우만)
+    // 4. 질환 수준 (기저질환이 있을 경우만)
     if (_hasCondition) {
       pages.add(
         StepSeverity(
@@ -235,7 +246,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       );
     }
 
-    // 4. 야외 활동 빈도
+    // 5. 야외 활동 빈도
     pages.add(
       StepLifestyle(
         activityLevel: _activityLevel,
@@ -243,8 +254,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       ),
     );
 
-    // 5. 알림 설정
-    pages.add(const StepNotification());
+    // 6. 알림 민감도
+    pages.add(
+      StepSensitivity(
+        sensitivity: _sensitivity,
+        onChanged: (v) => setState(() => _sensitivity = v),
+      ),
+    );
 
     return pages;
   }
