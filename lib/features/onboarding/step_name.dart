@@ -74,7 +74,7 @@ class _StepNameState extends State<StepName> {
               color: AppColors.textPrimary,
             ),
             decoration: InputDecoration(
-              hintText: '예: 율곡',
+              hintText: '예: 지수',
               hintStyle: const TextStyle(
                 fontSize: 20,
                 color: AppColors.textHint,

@@ -51,17 +51,19 @@ void main() async {
     final notifService = NotificationService();
     await notifService.initialize();
 
-    // Android 13+ 알림 권한 요청 및 결과 검증
-    final notifStatus = await Permission.notification.status;
-    if (notifStatus.isDenied) {
-      final result = await Permission.notification.request();
-      if (result.isPermanentlyDenied && firebaseReady) {
-        FirebaseCrashlytics.instance.log('notification_permission_permanently_denied');
+    // 알림 권한 요청 — 온보딩 완료된 기존 사용자만
+    // 신규 사용자는 permission_screen.dart에서 맥락과 함께 요청
+    final onboardingDone = prefs.getBool('onboarding_completed') ?? false;
+    if (onboardingDone) {
+      final notifStatus = await Permission.notification.status;
+      if (notifStatus.isDenied) {
+        final result = await Permission.notification.request();
+        if (result.isPermanentlyDenied && firebaseReady) {
+          FirebaseCrashlytics.instance.log('notification_permission_permanently_denied');
+        }
       }
+      await notifService.requestPermission();
     }
-
-    // iOS 알림 권한 요청
-    await notifService.requestPermission();
 
     // 백그라운드 작업 등록 — 실패해도 앱은 계속 실행
     try {
