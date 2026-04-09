@@ -7,10 +7,12 @@ class DustCalculator {
   static DustCalculationResult calculate(UserProfile profile, DustData dust) {
     final pm25 = dust.pm25Value;
     if (pm25 == null) {
-      return DustCalculationResult(
+      return const DustCalculationResult(
         riskLevel: RiskLevel.unknown,
         shouldSendRealtime: false,
         message: '미세먼지 데이터를 불러올 수 없어요.',
+        heroText: '데이터를 불러오는 중이에요',
+        reason: '',
         maskRequired: false,
       );
     }
@@ -48,15 +50,71 @@ class DustCalculator {
       riskLevel: riskLevel,
       shouldSendRealtime: shouldSendRealtime,
       message: _buildMessage(riskLevel, pm25, profile),
+      heroText: _buildHeroText(riskLevel),
+      reason: 'PM2.5 $pm25μg/m³ · ${grade.label}',
+      personalNote: _buildPersonalNote(profile),
       maskRequired: maskRequired,
       maskType: _maskType(riskLevel),
     );
   }
 
+  // ── 홈 카드 행동 결론 문구 ─────────────────────────────────
+
+  static String _buildHeroText(RiskLevel risk) {
+    switch (risk) {
+      case RiskLevel.low:      return '오늘은 마스크 없어도 돼요';
+      case RiskLevel.normal:   return '오늘은 대체로 괜찮아요';
+      case RiskLevel.warning:  return '오늘 마스크 챙기세요';
+      case RiskLevel.danger:   return '오늘 마스크 필수예요';
+      case RiskLevel.critical: return '오늘 외출을 자제해주세요';
+      case RiskLevel.unknown:  return '데이터를 불러오는 중이에요';
+    }
+  }
+
+  // ── 개인화 맥락 한 줄 (적용된 기준 설명) ─────────────────────
+
+  static String? _buildPersonalNote(UserProfile profile) {
+    if (profile.hasCondition) {
+      return '${profile.conditionType.label} 보유자 기준 적용';
+    }
+    if (profile.ageGroup.isVulnerable) {
+      return '${profile.ageGroup.label} 민감 연령 기준 적용';
+    }
+    if (profile.sensitivity == SensitivityLevel.high) {
+      return '고민감도 설정 기준 적용';
+    }
+    if (profile.sensitivity == SensitivityLevel.low) {
+      return '저민감도 설정 기준 적용';
+    }
+    return null;
+  }
+
+  // ── 기존 message (알림 fallback 용) ──────────────────────────
+
+  static String _buildMessage(RiskLevel risk, int pm25, UserProfile profile) {
+    final display = profile.displayName;
+    switch (risk) {
+      case RiskLevel.low:
+        return '$display, 오늘 공기가 맑아요 😊\n마음껏 외출하셔도 좋아요.';
+      case RiskLevel.normal:
+        return '오늘은 보통 수준이에요.\n장시간 야외 활동 시 마스크를 고려하세요.';
+      case RiskLevel.warning:
+        return '$display, 오늘 마스크를 꼭 챙기세요.\nPM2.5 ${pm25}μg/m³로 나빠요.';
+      case RiskLevel.danger:
+        return '$display, 오늘 외출 시 마스크 필수예요.\nPM2.5 ${pm25}μg/m³로 매우 나빠요.';
+      case RiskLevel.critical:
+        return '$display, 오늘은 외출을 자제해주세요.\nPM2.5 ${pm25}μg/m³로 매우 심각해요.';
+      case RiskLevel.unknown:
+        return '미세먼지 정보를 불러올 수 없어요.';
+    }
+  }
+
+  // ── 내부 헬퍼 ─────────────────────────────────────────────
+
   static String? _maskType(RiskLevel risk) {
     switch (risk) {
-      case RiskLevel.warning: return 'KF80';
-      case RiskLevel.danger:  return 'KF94';
+      case RiskLevel.warning:  return 'KF80';
+      case RiskLevel.danger:   return 'KF94';
       case RiskLevel.critical: return 'KF94';
       default: return null;
     }
@@ -77,14 +135,12 @@ class DustCalculator {
   static DustGrade _applyCondition(DustGrade grade, Severity severity) {
     switch (severity) {
       case Severity.mild:
-        // 보통 이상이면 한 단계 강화
         if (grade.index >= DustGrade.normal.index) {
           return _upgradeGrade(grade);
         }
         return grade;
       case Severity.moderate:
       case Severity.severe:
-        // 항상 한 단계 강화
         return _upgradeGrade(grade);
     }
   }
@@ -97,45 +153,33 @@ class DustCalculator {
       case DustGrade.veryBad: return RiskLevel.critical;
     }
   }
-
-  static String _buildMessage(
-      RiskLevel risk, int pm25, UserProfile profile) {
-    final conditionNote = profile.hasCondition
-        ? '(${profile.conditionType.label} 보유자 기준) '
-        : '';
-
-    switch (risk) {
-      case RiskLevel.low:
-        return '${conditionNote}오늘 공기가 맑아요. 마음껏 외출하셔도 좋습니다.';
-      case RiskLevel.normal:
-        return '${conditionNote}보통 수준이에요. 장시간 야외 활동 시 마스크를 고려하세요.';
-      case RiskLevel.warning:
-        return '${conditionNote}미세먼지가 나빠요(PM2.5: $pm25). 외출 시 마스크를 착용하세요.';
-      case RiskLevel.danger:
-        return '${conditionNote}미세먼지가 매우 나빠요(PM2.5: $pm25). 외출을 자제하고, 반드시 마스크를 착용하세요.';
-      case RiskLevel.critical:
-        return '${conditionNote}미세먼지가 매우 심각해요(PM2.5: $pm25). 가급적 외출을 삼가세요.';
-      case RiskLevel.unknown:
-        return '미세먼지 정보를 불러올 수 없어요.';
-    }
-  }
 }
+
+// ── 계산 결과 ──────────────────────────────────────────────
 
 class DustCalculationResult {
   final RiskLevel riskLevel;
   final bool shouldSendRealtime;
-  final String message;
+  final String message;       // 기존 하위 호환용 (알림 fallback)
+  final String heroText;      // 홈 카드 행동 결론: "오늘 마스크 필요해요"
+  final String reason;        // 데이터 근거: "PM2.5 45μg/m³ · 나쁨"
+  final String? personalNote; // 개인화 맥락: "호흡기 질환 기준 적용" (null이면 숨김)
   final bool maskRequired;
-  final String? maskType; // 'KF80' or 'KF94' or null
+  final String? maskType;     // 'KF80' or 'KF94' or null
 
   const DustCalculationResult({
     required this.riskLevel,
     required this.shouldSendRealtime,
     required this.message,
+    required this.heroText,
+    required this.reason,
+    this.personalNote,
     required this.maskRequired,
     this.maskType,
   });
 }
+
+// ── RiskLevel ─────────────────────────────────────────────
 
 enum RiskLevel {
   unknown,

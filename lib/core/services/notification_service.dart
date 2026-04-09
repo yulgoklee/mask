@@ -2,6 +2,14 @@ import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import '../../data/models/user_profile.dart';
+
+/// 알림 제목 + 본문 묶음 (배달앱 카드 스타일)
+class NotificationContent {
+  final String title;
+  final String body;
+  const NotificationContent({required this.title, required this.body});
+}
 
 class NotificationService {
   static const String _channelId = 'mask_alert_channel';
@@ -84,45 +92,98 @@ class NotificationService {
   Future<void> cancel(int id) => _plugin.cancel(id);
   Future<void> cancelAll() => _plugin.cancelAll();
 
-  // ── 알림 문구 ──────────────────────────────────────────
+  // ── 알림 콘텐츠 생성 (배달앱 카드 스타일) ──────────────────
 
-  static String morningMessage(int pm25, String grade,
-      {String? riskLabel, String? maskType}) {
-    // 마스크 여부 → 농도 → 위험도 순
-    final String lead;
-    if (maskType != null) {
-      lead = '$maskType 마스크를 착용하세요!';
-    } else if (grade == '나쁨' || grade == '매우나쁨') {
-      lead = '외출 시 마스크를 착용하세요!';
-    } else {
-      lead = '오늘은 마스크 없이 외출 가능해요.';
-    }
-    final detail = 'PM2.5 $pm25μg/m³(${grade})';
-    final risk = riskLabel != null ? '나의 위험도: $riskLabel' : '';
-    return '$lead $detail${risk.isNotEmpty ? ' / $risk' : ''}';
+  /// 아침 알림 — 오늘 마스크 여부
+  static NotificationContent morningContent({
+    required UserProfile profile,
+    required int pm25,
+    required String gradeName,
+    required bool maskRequired,
+    String? maskType,
+  }) {
+    final name = profile.displayName;
+    final title = maskRequired
+        ? '😷 $name, 오늘 마스크 챙기세요'
+        : '✅ $name, 오늘은 마스크 없어도 돼요';
+
+    final lines = <String>[];
+    if (maskType != null) lines.add('$maskType 이상 권장');
+    lines.add('PM2.5 $pm25μg/m³ · $gradeName');
+    final note = _personalNote(profile);
+    if (note != null) lines.add(note);
+
+    return NotificationContent(title: title, body: lines.join('\n'));
   }
 
-  static String forecastMessage(String tomorrowGrade,
-      {String? riskLabel}) {
-    final String lead = (tomorrowGrade == '나쁨' || tomorrowGrade == '매우나쁨')
-        ? '내일은 마스크를 꼭 챙기세요!'
-        : '내일은 마스크 없이 외출 가능해요.';
-    final risk = riskLabel != null ? ' / 나의 위험도: $riskLabel' : '';
-    return '$lead 내일 예보: $tomorrowGrade$risk';
+  /// 저녁 예보 알림 — 내일 마스크 여부
+  static NotificationContent forecastContent({
+    required UserProfile profile,
+    required String tomorrowGrade,
+    String? maskType,
+  }) {
+    final name = profile.displayName;
+    final isBad = tomorrowGrade == '나쁨' || tomorrowGrade == '매우나쁨';
+
+    final title = isBad
+        ? '🌆 $name, 내일 외출 준비 — 마스크 필요해요'
+        : '🌤 $name, 내일 공기는 괜찮아요';
+
+    final lines = <String>['내일 예보: $tomorrowGrade'];
+    if (isBad) {
+      if (maskType != null) {
+        lines.add('$maskType 이상 권장');
+      } else {
+        lines.add('마스크 미리 챙겨두세요');
+      }
+    } else {
+      lines.add('마스크 없이 외출해도 좋아요');
+    }
+
+    return NotificationContent(title: title, body: lines.join('\n'));
   }
 
-  static String eveningReturnMessage(String grade,
-      {String? riskLabel, String? maskType}) {
-    final String lead;
-    if (maskType != null) {
-      lead = '귀가 시 $maskType 마스크를 착용하세요!';
-    } else if (grade == '나쁨' || grade == '매우나쁨') {
-      lead = '귀가 시 마스크를 착용하세요!';
+  /// 귀가 알림 — 퇴근길 공기 상태
+  static NotificationContent eveningReturnContent({
+    required UserProfile profile,
+    required String gradeName,
+    String? maskType,
+  }) {
+    final name = profile.displayName;
+    final isBad = gradeName == '나쁨' || gradeName == '매우나쁨';
+
+    final title = isBad
+        ? '🏠 $name, 퇴근길 마스크 챙기세요'
+        : '🏠 $name, 퇴근길 공기 괜찮아요';
+
+    final lines = <String>['현재 PM2.5: $gradeName'];
+    if (isBad) {
+      lines.add(maskType != null ? '$maskType 착용 권고' : '마스크 착용을 권장해요');
     } else {
-      lead = '퇴근 시간 공기가 괜찮아요.';
+      lines.add('오늘 수고하셨어요 😊');
     }
-    final detail = '현재 미세먼지: $grade';
-    final risk = riskLabel != null ? '나의 위험도: $riskLabel' : '';
-    return '$lead $detail${risk.isNotEmpty ? ' / $risk' : ''}';
+
+    return NotificationContent(title: title, body: lines.join('\n'));
+  }
+
+  /// 실시간 급등 알림
+  static NotificationContent realtimeContent({
+    required UserProfile profile,
+    required int pm25,
+  }) {
+    final name = profile.displayName;
+    return NotificationContent(
+      title: '🚨 $name, 미세먼지 갑자기 나빠졌어요',
+      body: 'PM2.5 $pm25μg/m³ · 매우나쁨\n야외 활동 즉시 중단 권고',
+    );
+  }
+
+  // ── 내부 헬퍼 ─────────────────────────────────────────────
+
+  static String? _personalNote(UserProfile profile) {
+    if (profile.hasCondition) return '${profile.conditionType.label} 기준 적용';
+    if (profile.ageGroup.isVulnerable) return '${profile.ageGroup.label} 민감 연령 기준';
+    if (profile.sensitivity == SensitivityLevel.high) return '고민감도 기준 적용';
+    return null;
   }
 }

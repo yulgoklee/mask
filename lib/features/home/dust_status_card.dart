@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/dust_calculator.dart';
+import '../../providers/providers.dart';
 import 'risk_detail_screen.dart';
 
-/// 홈 화면 - 나의 위험도 카드
-class DustStatusCard extends StatelessWidget {
+/// 홈 화면 — 행동 카드
+///
+/// 레이아웃 우선순위: 이모지 → [이름]님 → 행동 결론(hero) → 마스크 타입 → 구분선 → 근거 → 맥락
+class DustStatusCard extends ConsumerWidget {
   final DustCalculationResult result;
 
   const DustStatusCard({super.key, required this.result});
@@ -32,134 +36,154 @@ class DustStatusCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(profileProvider);
+
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const RiskDetailScreen()),
       ),
-      child: _buildCard(),
-    );
-  }
-
-  Widget _buildCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            _bgColor,
-            _bgColor.withOpacity(0.7),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [_bgColor, _bgColor.withOpacity(0.75)],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: _bgColor.withOpacity(0.3),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
           ],
         ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: _bgColor.withOpacity(0.3),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Text(
-                '나의 위험도',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 13,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 이모지
+            Text(_emoji, style: const TextStyle(fontSize: 32)),
+            const SizedBox(height: 10),
+
+            // [이름]님, (있을 때만)
+            if (profile.name != null && profile.name!.isNotEmpty) ...[
+              Text(
+                '${profile.name}님,',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const Spacer(),
-              Text(
-                _emoji,
-                style: const TextStyle(fontSize: 28),
-              ),
+              const SizedBox(height: 2),
             ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            result.riskLevel.label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
+
+            // 행동 결론 (hero text)
+            Text(
+              result.heroText,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                height: 1.2,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            result.message,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              height: 1.5,
-            ),
-          ),
-          if (result.maskRequired) ...[
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.25),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.masks, color: Colors.white, size: 18),
-                      const SizedBox(width: 6),
-                      Text(
-                        '마스크 착용 권고',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (result.maskType != null) ...[
-                  const SizedBox(width: 8),
+
+            // 마스크 타입 pill (마스크 필요할 때만)
+            if (result.maskRequired) ...[
+              const SizedBox(height: 16),
+              Row(
+                children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withOpacity(0.25),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Text(
-                      result.maskType!,
-                      style: TextStyle(
-                        color: _bgColor,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.masks, color: Colors.white, size: 18),
+                        SizedBox(width: 6),
+                        Text(
+                          '마스크 착용 권고',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  if (result.maskType != null) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        result.maskType!,
+                        style: TextStyle(
+                          color: _bgColor,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
+              ),
+            ],
+
+            // 구분선
+            const SizedBox(height: 16),
+            Divider(color: Colors.white.withOpacity(0.3), height: 1),
+            const SizedBox(height: 12),
+
+            // PM2.5 근거 (보조 정보)
+            if (result.reason.isNotEmpty)
+              Text(
+                result.reason,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                ),
+              ),
+
+            // 개인화 맥락 (기저질환·민감도 등)
+            if (result.personalNote != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                result.personalNote!,
+                style: const TextStyle(
+                  color: Colors.white54,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+
+            // 상세 보기
+            const SizedBox(height: 10),
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text('상세 보기',
+                    style: TextStyle(color: Colors.white70, fontSize: 12)),
+                SizedBox(width: 2),
+                Icon(Icons.chevron_right, color: Colors.white70, size: 16),
               ],
             ),
           ],
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: const [
-              Text('상세 보기',
-                  style: TextStyle(color: Colors.white70, fontSize: 12)),
-              SizedBox(width: 2),
-              Icon(Icons.chevron_right, color: Colors.white70, size: 16),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }

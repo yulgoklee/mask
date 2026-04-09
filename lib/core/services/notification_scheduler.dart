@@ -55,7 +55,6 @@ class NotificationScheduler {
       final pm25 = dust.pm25Value ?? 0;
       final gradeName = _gradeLabel(DustStandards.getPm25Grade(pm25));
 
-      final riskLabel = result.riskLevel.label;
       final maskType = result.maskType;
 
       final analytics = FirebaseAnalytics.instance;
@@ -64,14 +63,20 @@ class NotificationScheduler {
       if (setting.morningAlertEnabled &&
           _inWindow(now, setting.morningAlertHour, setting.morningAlertMinute) &&
           !_sentToday(prefs, 'morning')) {
+        final content = NotificationService.morningContent(
+          profile: profile,
+          pm25: pm25,
+          gradeName: gradeName,
+          maskRequired: result.maskRequired,
+          maskType: maskType,
+        );
         await _sendNotification(
           notifService: notifService,
           analytics: analytics,
           id: NotificationService.morningAlertId,
           type: 'morning',
-          title: '오늘 미세먼지 안내',
-          body: NotificationService.morningMessage(pm25, gradeName,
-              riskLabel: riskLabel, maskType: maskType),
+          title: content.title,
+          body: content.body,
           onSuccess: () => _markSent(prefs, 'morning'),
         );
       }
@@ -82,14 +87,18 @@ class NotificationScheduler {
           !_sentToday(prefs, 'forecast')) {
         final sido = await service.getSidoForStation(stationName);
         final forecastGrade = await service.getTomorrowForecast(sidoName: sido);
+        final content = NotificationService.forecastContent(
+          profile: profile,
+          tomorrowGrade: forecastGrade ?? '보통',
+          maskType: maskType,
+        );
         await _sendNotification(
           notifService: notifService,
           analytics: analytics,
           id: NotificationService.eveningForecastId,
           type: 'forecast',
-          title: '내일 미세먼지 예보',
-          body: NotificationService.forecastMessage(forecastGrade ?? '보통',
-              riskLabel: riskLabel),
+          title: content.title,
+          body: content.body,
           onSuccess: () => _markSent(prefs, 'forecast'),
         );
       }
@@ -98,14 +107,18 @@ class NotificationScheduler {
       if (setting.eveningReturnEnabled &&
           _inWindow(now, setting.eveningReturnHour, setting.eveningReturnMinute) &&
           !_sentToday(prefs, 'return')) {
+        final content = NotificationService.eveningReturnContent(
+          profile: profile,
+          gradeName: gradeName,
+          maskType: maskType,
+        );
         await _sendNotification(
           notifService: notifService,
           analytics: analytics,
           id: NotificationService.eveningReturnId,
           type: 'return',
-          title: '귀가 전 미세먼지 확인',
-          body: NotificationService.eveningReturnMessage(gradeName,
-              riskLabel: riskLabel, maskType: maskType),
+          title: content.title,
+          body: content.body,
           onSuccess: () => _markSent(prefs, 'return'),
         );
       }
@@ -114,13 +127,17 @@ class NotificationScheduler {
       if (setting.realtimeAlertEnabled &&
           result.shouldSendRealtime &&
           !_sentThisHour(prefs, 'realtime')) {
+        final content = NotificationService.realtimeContent(
+          profile: profile,
+          pm25: pm25,
+        );
         await _sendNotification(
           notifService: notifService,
           analytics: analytics,
           id: NotificationService.realtimeAlertId,
           type: 'realtime',
-          title: '⚠️ 미세먼지 경보',
-          body: result.message,
+          title: content.title,
+          body: content.body,
           onSuccess: () => _markSentHour(prefs, 'realtime'),
         );
       }

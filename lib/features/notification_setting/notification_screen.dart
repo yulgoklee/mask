@@ -271,20 +271,22 @@ class _NotifTestCardState extends ConsumerState<_NotifTestCard> {
       final dust = dustAsync.value;
 
       final pm25 = dust?.pm25Value ?? 35;
-      final grade = dust?.pm25Grade ?? '보통';
-      final riskLabel = calcResult?.riskLevel.label;
+      final gradeName = dust?.pm25Grade ?? '보통';
+      final profile = ref.read(profileProvider);
       final maskType = calcResult?.maskType;
 
-      final body = NotificationService.morningMessage(
-        pm25, grade,
-        riskLabel: riskLabel,
+      final content = NotificationService.morningContent(
+        profile: profile,
+        pm25: pm25,
+        gradeName: gradeName,
+        maskRequired: calcResult?.maskRequired ?? false,
         maskType: maskType,
       );
 
       await notifService.showImmediateNotification(
         id: 99,
-        title: '마스크 알림 테스트',
-        body: body,
+        title: content.title,
+        body: content.body,
       );
       setState(() { _result = '✓ 알림 발송 완료! 상단 알림을 확인하세요.'; });
     } catch (e) {
