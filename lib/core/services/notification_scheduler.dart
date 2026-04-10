@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/models/user_profile.dart';
 import '../../data/models/notification_setting.dart';
+import '../../data/models/temporary_state.dart';
+import '../../data/models/today_situation.dart';
 import '../config/app_config.dart';
 import '../constants/app_constants.dart';
 import '../constants/dust_standards.dart';
@@ -47,15 +49,49 @@ class NotificationScheduler {
               jsonDecode(settingJson) as Map<String, dynamic>)
           : const NotificationSetting();
 
+      // ── Tier 2: 기간 상태 로드 ─────────────────────────
+      final tempStatesRaw = prefs.getString('temporary_states');
+      final temporaryStates = tempStatesRaw != null
+          ? (jsonDecode(tempStatesRaw) as List<dynamic>)
+              .map((e) => TemporaryState.fromJson(e as Map<String, dynamic>))
+              .where((s) => s.isActive)
+              .toList()
+          : <TemporaryState>[];
+
+      // ── Tier 3: 오늘의 상황 로드 ───────────────────────
+      final todaySitRaw = prefs.getString('today_situation');
+      TodaySituation? todaySituation;
+      if (todaySitRaw != null) {
+        try {
+          final sit = TodaySituation.fromJson(
+              jsonDecode(todaySitRaw) as Map<String, dynamic>);
+          if (sit.isActive) todaySituation = sit;
+        } catch (_) {}
+      }
+
+      // ── 계산 ────────────────────────────────────────────
       final notifService = NotificationService();
       await notifService.initialize();
 
-      final result = DustCalculator.calculate(profile, dust);
+      // 공기 자체 기준만으로 계산한 결과 (Tier 1만)
+      final baseResult = DustCalculator.calculate(profile, dust);
+      // Tier 2/3 포함 최종 결과
+      final result = DustCalculator.calculate(
+        profile,
+        dust,
+        temporaryStates: temporaryStates,
+        todaySituation: todaySituation,
+      );
+
       final now = DateTime.now();
       final pm25 = dust.pm25Value ?? 0;
       final gradeName = _gradeLabel(DustStandards.getPm25Grade(pm25));
-
       final maskType = result.maskType;
+
+      // 가장 유의미한 활성 상태명 (본문에 표기)
+      final stateNote = _primaryStateNote(temporaryStates, todaySituation);
+      // 공기 자체는 괜찮지만 상태 때문에 마스크 필요한 경우
+      final stateOnlyMask = result.maskRequired && !baseResult.maskRequired;
 
       final analytics = FirebaseAnalytics.instance;
 
@@ -69,6 +105,8 @@ class NotificationScheduler {
           gradeName: gradeName,
           maskRequired: result.maskRequired,
           maskType: maskType,
+          stateNote: stateNote,
+          stateOnlyMask: stateOnlyMask,
         );
         await _sendNotification(
           notifService: notifService,
@@ -87,10 +125,25 @@ class NotificationScheduler {
           !_sentToday(prefs, 'forecast')) {
         final sido = await service.getSidoForStation(stationName);
         final forecastGrade = await service.getTomorrowForecast(sidoName: sido);
+        final tomorrowGrade = forecastGrade ?? '보통';
+
+        // 취약 상태 기준으로 내일 예보 마스크 필요 여부 재계산
+        final forecastCheck = DustCalculator.forecastCheck(
+          gradeName: tomorrowGrade,
+          profile: profile,
+          temporaryStates: temporaryStates,
+        );
+        // 예보에서 stateOnly 여부: 등급만으론 마스크 불필요하지만 상태로 필요
+        final forecastStateOnly = forecastCheck.maskRequired &&
+            !(tomorrowGrade == '나쁨' || tomorrowGrade == '매우나쁨');
+
         final content = NotificationService.forecastContent(
           profile: profile,
-          tomorrowGrade: forecastGrade ?? '보통',
-          maskType: maskType,
+          tomorrowGrade: tomorrowGrade,
+          maskType: forecastCheck.maskType,
+          maskRequired: forecastCheck.maskRequired,
+          stateNote: stateNote,
+          stateOnlyMask: forecastStateOnly,
         );
         await _sendNotification(
           notifService: notifService,
@@ -111,6 +164,8 @@ class NotificationScheduler {
           profile: profile,
           gradeName: gradeName,
           maskType: maskType,
+          stateNote: stateNote,
+          stateOnlyMask: stateOnlyMask,
         );
         await _sendNotification(
           notifService: notifService,
@@ -130,6 +185,7 @@ class NotificationScheduler {
         final content = NotificationService.realtimeContent(
           profile: profile,
           pm25: pm25,
+          stateNote: stateNote,
         );
         await _sendNotification(
           notifService: notifService,
@@ -245,6 +301,15 @@ Future<T?> _fetchWithRetry<T>(
       await Future.delayed(Duration(seconds: delaySeconds));
     }
   }
+  return null;
+}
+
+/// 가장 유의미한 활성 상태 이름 반환
+/// 우선순위: Tier 2 (기간 상태) > Tier 3 (오늘의 상황)
+String? _primaryStateNote(
+    List<TemporaryState> temporaryStates, TodaySituation? todaySituation) {
+  if (temporaryStates.isNotEmpty) return temporaryStates.first.label;
+  if (todaySituation != null) return todaySituation.label;
   return null;
 }
 

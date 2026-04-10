@@ -5,6 +5,8 @@ import '../core/services/background_service.dart';
 import '../core/services/notification_scheduler.dart';
 import '../data/models/notification_setting.dart';
 import '../data/models/user_profile.dart';
+import '../data/models/temporary_state.dart';
+import '../data/models/today_situation.dart';
 import '../data/repositories/profile_repository.dart';
 import '../data/datasources/profile_data_source.dart';
 import '../data/datasources/local_profile_data_source.dart';
@@ -12,8 +14,6 @@ import 'core_providers.dart';
 
 // ── 프로필 데이터 소스 ────────────────────────────────────
 
-/// 로컬 프로필 데이터 소스 (abstract interface 타입으로 제공)
-/// Firestore 등 서버 구현체로 교체 시 이 provider만 변경하면 됨
 final localProfileDataSourceProvider = Provider<ProfileDataSource>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   return LocalProfileDataSource(prefs);
@@ -24,7 +24,7 @@ final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
   return ProfileRepository.fromDataSource(dataSource);
 });
 
-// ── 프로필 상태 ──────────────────────────────────────────
+// ── Tier 1 — 고정 프로필 ──────────────────────────────────
 
 class ProfileNotifier extends StateNotifier<UserProfile> {
   final ProfileRepository _repo;
@@ -46,7 +46,75 @@ final profileProvider =
   return ProfileNotifier(ref.watch(profileRepositoryProvider));
 });
 
-// ── 알림 설정 상태 ────────────────────────────────────────
+// ── Tier 2 — 기간 상태 ───────────────────────────────────
+
+class TemporaryStatesNotifier extends StateNotifier<List<TemporaryState>> {
+  final ProfileRepository _repo;
+
+  TemporaryStatesNotifier(this._repo) : super([]) {
+    _repo.loadTemporaryStates().then((list) => state = list);
+  }
+
+  /// 기간 상태 추가
+  Future<void> add(TemporaryState newState) async {
+    // 같은 타입이 이미 있으면 교체
+    final updated = [
+      ...state.where((s) => s.type != newState.type),
+      newState,
+    ];
+    await _repo.saveTemporaryStates(updated);
+    state = updated;
+  }
+
+  /// 기간 상태 제거
+  Future<void> remove(TemporaryStateType type) async {
+    final updated = state.where((s) => s.type != type).toList();
+    await _repo.saveTemporaryStates(updated);
+    state = updated;
+  }
+
+  /// 만료된 상태 정리 (앱 시작 시 호출)
+  Future<void> pruneExpired() async {
+    final active = state.where((s) => s.isActive).toList();
+    if (active.length != state.length) {
+      await _repo.saveTemporaryStates(active);
+      state = active;
+    }
+  }
+}
+
+final temporaryStatesProvider =
+    StateNotifierProvider<TemporaryStatesNotifier, List<TemporaryState>>((ref) {
+  return TemporaryStatesNotifier(ref.watch(profileRepositoryProvider));
+});
+
+// ── Tier 3 — 오늘의 상황 ─────────────────────────────────
+
+class TodaySituationNotifier extends StateNotifier<TodaySituation?> {
+  final ProfileRepository _repo;
+
+  TodaySituationNotifier(this._repo) : super(null) {
+    _repo.loadTodaySituation().then((s) => state = s);
+  }
+
+  Future<void> set(TodaySituationType type) async {
+    final situation = TodaySituation(type: type, date: DateTime.now());
+    await _repo.saveTodaySituation(situation);
+    state = situation;
+  }
+
+  Future<void> clear() async {
+    await _repo.saveTodaySituation(null);
+    state = null;
+  }
+}
+
+final todaySituationProvider =
+    StateNotifierProvider<TodaySituationNotifier, TodaySituation?>((ref) {
+  return TodaySituationNotifier(ref.watch(profileRepositoryProvider));
+});
+
+// ── 알림 설정 ─────────────────────────────────────────────
 
 class NotificationSettingNotifier extends StateNotifier<NotificationSetting> {
   final ProfileRepository _repo;
@@ -58,9 +126,7 @@ class NotificationSettingNotifier extends StateNotifier<NotificationSetting> {
   Future<void> update(NotificationSetting setting) async {
     await _repo.saveNotificationSetting(setting);
     state = setting;
-    // 알림 시간 변경 즉시 1회 체크 → 포그라운드에서 바로 실행 (Workmanager 딜레이 없음)
     unawaited(_runImmediateCheck());
-    // 백그라운드 작업도 예약 (앱 종료 후에도 주기적 체크 유지)
     BackgroundService.runOnce();
   }
 
