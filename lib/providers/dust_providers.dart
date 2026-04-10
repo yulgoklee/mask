@@ -49,7 +49,7 @@ final dustCalculationProvider = Provider<DustCalculationResult?>((ref) {
   final dustAsync = ref.watch(dustDataProvider);
   final profile = ref.watch(profileProvider);
   final temporaryStates = ref.watch(temporaryStatesProvider);
-  final todaySituation = ref.watch(todaySituationProvider);
+  final todaySituations = ref.watch(todaySituationProvider);
 
   return dustAsync.when(
     data: (dust) {
@@ -58,7 +58,7 @@ final dustCalculationProvider = Provider<DustCalculationResult?>((ref) {
         profile,
         dust,
         temporaryStates: temporaryStates,
-        todaySituation: todaySituation,
+        todaySituations: todaySituations,
       );
     },
     loading: () => null,

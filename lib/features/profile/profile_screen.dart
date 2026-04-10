@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../data/models/temporary_state.dart';
@@ -6,48 +7,14 @@ import '../../data/models/today_situation.dart';
 import '../../data/models/user_profile.dart';
 import '../../providers/providers.dart';
 
-class ProfileScreen extends ConsumerStatefulWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
-  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
-}
-
-class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  // Tier 1 — 로컬 상태 (저장 버튼 누를 때만 반영)
-  late UserProfile _profile;
-  bool _hasChanges = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _profile = ref.read(profileProvider);
-  }
-
-  void _updateTier1(UserProfile updated) {
-    setState(() {
-      _profile = updated;
-      _hasChanges = true;
-    });
-  }
-
-  Future<void> _saveTier1() async {
-    await ref.read(profileProvider.notifier).saveProfile(_profile);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('기본 정보가 저장되었어요.'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      setState(() => _hasChanges = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(profileProvider);
     final temporaryStates = ref.watch(temporaryStatesProvider);
-    final todaySituation = ref.watch(todaySituationProvider);
+    final todaySituations = ref.watch(todaySituationProvider);
     final calcResult = ref.watch(dustCalculationProvider);
 
     return Scaffold(
@@ -62,19 +29,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        actions: [
-          if (_hasChanges)
-            TextButton(
-              onPressed: _saveTier1,
-              child: const Text(
-                '저장',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -83,10 +37,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
           // ── 요약 카드 ───────────────────────────────────────
           _SummaryCard(
-            profile: _profile,
+            profile: profile,
             calcResult: calcResult,
             temporaryStates: temporaryStates,
-            todaySituation: todaySituation,
+            todaySituations: todaySituations,
           ),
           const SizedBox(height: 24),
 
@@ -97,7 +51,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             tooltip: '오늘 하루가 지나면 자동으로 해제돼요',
           ),
           const SizedBox(height: 10),
-          _TodaySection(todaySituation: todaySituation),
+          _TodaySection(todaySituations: todaySituations),
           const SizedBox(height: 28),
 
           // ── 현재 상태 섹션 (Tier 2) ─────────────────────────
@@ -107,7 +61,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             tooltip: '만료일까지 마스크 기준이 달라져요',
           ),
           const SizedBox(height: 10),
-          _TemporaryStatesSection(temporaryStates: temporaryStates),
+          _TemporaryStatesSection(
+            temporaryStates: temporaryStates,
+            profile: profile,
+          ),
           const SizedBox(height: 28),
 
           // ── 기본 정보 섹션 (Tier 1) ─────────────────────────
@@ -116,33 +73,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             badge: '거의 안 바뀜',
           ),
           const SizedBox(height: 10),
-          _BasicInfoSection(
-            profile: _profile,
-            onUpdate: _updateTier1,
-          ),
+          _BasicInfoSection(profile: profile),
           const SizedBox(height: 16),
 
-          if (_hasChanges)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: ElevatedButton(
-                onPressed: _saveTier1,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  '기본 정보 저장',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-
-          const SizedBox(height: 8),
           const Text(
             '* 본 앱은 참고용 정보를 제공합니다. 의료적 진단이나 처방을 대체하지 않습니다.',
             style: TextStyle(fontSize: 12, color: AppColors.textHint),
@@ -160,33 +93,40 @@ class _SummaryCard extends StatelessWidget {
   final UserProfile profile;
   final dynamic calcResult;
   final List<TemporaryState> temporaryStates;
-  final TodaySituation? todaySituation;
+  final List<TodaySituation> todaySituations;
 
   const _SummaryCard({
     required this.profile,
     required this.calcResult,
     required this.temporaryStates,
-    required this.todaySituation,
+    required this.todaySituations,
   });
 
   @override
   Widget build(BuildContext context) {
     final activeStates = temporaryStates.where((s) => s.isActive).toList();
-    final hasTodaySit = todaySituation?.isActive == true;
-    final hasAnyState = activeStates.isNotEmpty || hasTodaySit;
+    final activeTodaySituations =
+        todaySituations.where((s) => s.isActive).toList();
+    final hasAnyState =
+        activeStates.isNotEmpty || activeTodaySituations.isNotEmpty;
 
-    // 현재 적용 중인 마스크 기준 한 줄
     final standardLine = calcResult?.maskType != null
         ? '${calcResult!.maskType} 기준 적용 중'
         : '현재 마스크 불필요';
 
-    // 상태 요약 텍스트
-    final stateSummary = hasAnyState
-        ? [
-            if (hasTodaySit) todaySituation!.type.label,
-            ...activeStates.map((s) => s.type.label),
-          ].join(' · ')
-        : profile.ageGroup.label;
+    String stateSummary;
+    if (hasAnyState) {
+      stateSummary = [
+        ...activeTodaySituations.map((s) => s.type.label),
+        ...activeStates.map((s) => s.type.label),
+      ].join(' · ');
+    } else if (profile.age != null) {
+      final genderLabel = profile.gender?.label ?? '';
+      stateSummary =
+          '${profile.age}세${genderLabel.isNotEmpty ? ' · $genderLabel' : ''}';
+    } else {
+      stateSummary = profile.ageGroup.label;
+    }
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -294,30 +234,28 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-// ── 오늘 섹션 (Tier 3) ────────────────────────────────────
+// ── 오늘 섹션 (Tier 3) — List 기반 ───────────────────────
 
 class _TodaySection extends ConsumerWidget {
-  final TodaySituation? todaySituation;
+  final List<TodaySituation> todaySituations;
 
-  const _TodaySection({required this.todaySituation});
+  const _TodaySection({required this.todaySituations});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final activeTypes =
+        todaySituations.where((s) => s.isActive).map((s) => s.type).toSet();
+
     return Column(
       children: TodaySituationType.values.map((type) {
-        final isActive = todaySituation?.isActive == true &&
-            todaySituation?.type == type;
+        final isActive = activeTypes.contains(type);
         return _SettingRow(
           icon: type == TodaySituationType.outdoorExercise ? '🏃' : '🤒',
           title: type.label,
           subtitle: type.description,
           isActive: isActive,
           onToggle: (active) async {
-            if (active) {
-              await ref.read(todaySituationProvider.notifier).set(type);
-            } else {
-              await ref.read(todaySituationProvider.notifier).clear();
-            }
+            await ref.read(todaySituationProvider.notifier).toggle(type);
           },
         );
       }).toList(),
@@ -329,12 +267,28 @@ class _TodaySection extends ConsumerWidget {
 
 class _TemporaryStatesSection extends ConsumerWidget {
   final List<TemporaryState> temporaryStates;
+  final UserProfile profile;
 
-  const _TemporaryStatesSection({required this.temporaryStates});
+  const _TemporaryStatesSection({
+    required this.temporaryStates,
+    required this.profile,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeTypes = temporaryStates.map((s) => s.type).toSet();
+
+    // 여성인 경우 임신 항목을 최상단으로
+    final orderedInactive = TemporaryStateType.values
+        .where((t) => !activeTypes.contains(t))
+        .toList();
+    if (profile.gender == Gender.female) {
+      orderedInactive.sort((a, b) {
+        if (a == TemporaryStateType.pregnancy) return -1;
+        if (b == TemporaryStateType.pregnancy) return 1;
+        return 0;
+      });
+    }
 
     return Column(
       children: [
@@ -342,7 +296,8 @@ class _TemporaryStatesSection extends ConsumerWidget {
         ...temporaryStates.map((state) => _ActiveStateTile(
               state: state,
               onRemove: () async {
-                final confirmed = await _confirmRemove(context, state.type.label);
+                final confirmed =
+                    await _confirmRemove(context, state.type.label);
                 if (confirmed) {
                   await ref
                       .read(temporaryStatesProvider.notifier)
@@ -351,13 +306,13 @@ class _TemporaryStatesSection extends ConsumerWidget {
               },
             )),
 
-        // 추가 가능한 상태
-        ...TemporaryStateType.values
-            .where((t) => !activeTypes.contains(t))
-            .map((type) => _InactiveStateTile(
-                  type: type,
-                  onAdd: () => _showAddSheet(context, type),
-                )),
+        // 추가 가능한 상태 (여성은 임신이 맨 위)
+        ...orderedInactive.map((type) => _InactiveStateTile(
+              type: type,
+              highlight: profile.gender == Gender.female &&
+                  type == TemporaryStateType.pregnancy,
+              onAdd: () => _showAddSheet(context, type),
+            )),
       ],
     );
   }
@@ -473,8 +428,13 @@ class _ActiveStateTile extends StatelessWidget {
 class _InactiveStateTile extends StatelessWidget {
   final TemporaryStateType type;
   final VoidCallback onAdd;
+  final bool highlight;
 
-  const _InactiveStateTile({required this.type, required this.onAdd});
+  const _InactiveStateTile({
+    required this.type,
+    required this.onAdd,
+    this.highlight = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -482,9 +442,15 @@ class _InactiveStateTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: highlight
+            ? AppColors.primary.withValues(alpha: 0.03)
+            : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(
+          color: highlight
+              ? AppColors.primary.withValues(alpha: 0.2)
+              : Colors.grey.shade200,
+        ),
       ),
       child: Row(
         children: [
@@ -492,10 +458,16 @@ class _InactiveStateTile extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color: highlight
+                  ? AppColors.primary.withValues(alpha: 0.1)
+                  : Colors.grey.shade100,
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.add, color: Colors.grey.shade400, size: 16),
+            child: Icon(
+              highlight ? Icons.pregnant_woman : Icons.add,
+              color: highlight ? AppColors.primary : Colors.grey.shade400,
+              size: 16,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -504,10 +476,12 @@ class _InactiveStateTile extends StatelessWidget {
               children: [
                 Text(
                   type.label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: highlight
+                        ? AppColors.primary
+                        : AppColors.textPrimary,
                   ),
                 ),
                 Text(
@@ -543,32 +517,43 @@ class _InactiveStateTile extends StatelessWidget {
   }
 }
 
-// ── 기본 정보 섹션 (Tier 1) ───────────────────────────────
+// ── 기본 정보 섹션 (Tier 1) — 자동 저장 ─────────────────
 
-class _BasicInfoSection extends StatelessWidget {
+class _BasicInfoSection extends ConsumerWidget {
   final UserProfile profile;
-  final ValueChanged<UserProfile> onUpdate;
 
-  const _BasicInfoSection({
-    required this.profile,
-    required this.onUpdate,
-  });
+  const _BasicInfoSection({required this.profile});
+
+  void _save(WidgetRef ref, UserProfile updated) {
+    ref.read(profileProvider.notifier).update(updated);
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _FieldLabel('나이대'),
+        // ── 성별 ────────────────────────────────────────────
+        _FieldLabel('성별'),
         const SizedBox(height: 8),
-        _ChipGroup<AgeGroup>(
-          values: AgeGroup.values,
-          selected: profile.ageGroup,
-          labelOf: (v) => v.label,
-          onSelect: (v) => onUpdate(profile.copyWith(ageGroup: v)),
+        _ChipGroup<Gender?>(
+          values: [null, ...Gender.values],
+          selected: profile.gender,
+          labelOf: (v) => v?.label ?? '선택 안 함',
+          onSelect: (v) => _save(ref, profile.copyWith(gender: v)),
         ),
         const SizedBox(height: 20),
 
+        // ── 출생연도 ─────────────────────────────────────────
+        _FieldLabel('출생연도'),
+        const SizedBox(height: 8),
+        _BirthYearPicker(
+          birthYear: profile.birthYear,
+          onChanged: (year) => _save(ref, profile.copyWith(birthYear: year)),
+        ),
+        const SizedBox(height: 20),
+
+        // ── 기저질환 ─────────────────────────────────────────
         _FieldLabel('기저질환'),
         const SizedBox(height: 8),
         Row(
@@ -577,10 +562,13 @@ class _BasicInfoSection extends StatelessWidget {
               child: _ToggleChip(
                 label: '없음',
                 selected: !profile.hasCondition,
-                onTap: () => onUpdate(profile.copyWith(
-                  hasCondition: false,
-                  conditionType: ConditionType.none,
-                )),
+                onTap: () => _save(
+                  ref,
+                  profile.copyWith(
+                    hasCondition: false,
+                    conditionType: ConditionType.none,
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: 10),
@@ -588,7 +576,8 @@ class _BasicInfoSection extends StatelessWidget {
               child: _ToggleChip(
                 label: '있음',
                 selected: profile.hasCondition,
-                onTap: () => onUpdate(profile.copyWith(hasCondition: true)),
+                onTap: () =>
+                    _save(ref, profile.copyWith(hasCondition: true)),
               ),
             ),
           ],
@@ -603,7 +592,8 @@ class _BasicInfoSection extends StatelessWidget {
                 .toList(),
             selected: profile.conditionType,
             labelOf: (v) => v.label,
-            onSelect: (v) => onUpdate(profile.copyWith(conditionType: v)),
+            onSelect: (v) =>
+                _save(ref, profile.copyWith(conditionType: v)),
           ),
           const SizedBox(height: 14),
           _FieldLabel('질환 수준'),
@@ -612,12 +602,12 @@ class _BasicInfoSection extends StatelessWidget {
             values: Severity.values,
             selected: profile.severity,
             labelOf: (v) => v.label,
-            onSelect: (v) => onUpdate(profile.copyWith(severity: v)),
+            onSelect: (v) => _save(ref, profile.copyWith(severity: v)),
           ),
           CheckboxListTile(
             value: profile.isDiagnosed,
             onChanged: (v) =>
-                onUpdate(profile.copyWith(isDiagnosed: v ?? false)),
+                _save(ref, profile.copyWith(isDiagnosed: v ?? false)),
             title: const Text('병원 진단받은 질환',
                 style: TextStyle(fontSize: 14)),
             activeColor: AppColors.primary,
@@ -627,16 +617,18 @@ class _BasicInfoSection extends StatelessWidget {
         ],
         const SizedBox(height: 20),
 
+        // ── 야외 활동 빈도 ────────────────────────────────────
         _FieldLabel('야외 활동 빈도'),
         const SizedBox(height: 8),
         _ChipGroup<ActivityLevel>(
           values: ActivityLevel.values,
           selected: profile.activityLevel,
           labelOf: (v) => v.label,
-          onSelect: (v) => onUpdate(profile.copyWith(activityLevel: v)),
+          onSelect: (v) => _save(ref, profile.copyWith(activityLevel: v)),
         ),
         const SizedBox(height: 20),
 
+        // ── 알림 민감도 ──────────────────────────────────────
         _FieldLabel('알림 민감도'),
         const SizedBox(height: 4),
         const Text(
@@ -648,9 +640,151 @@ class _BasicInfoSection extends StatelessWidget {
           values: SensitivityLevel.values,
           selected: profile.sensitivity,
           labelOf: (v) => v.label,
-          onSelect: (v) => onUpdate(profile.copyWith(sensitivity: v)),
+          onSelect: (v) => _save(ref, profile.copyWith(sensitivity: v)),
         ),
       ],
+    );
+  }
+}
+
+// ── 출생연도 피커 ──────────────────────────────────────────
+
+class _BirthYearPicker extends StatelessWidget {
+  final int? birthYear;
+  final ValueChanged<int?> onChanged;
+
+  const _BirthYearPicker({
+    required this.birthYear,
+    required this.onChanged,
+  });
+
+  void _showPicker(BuildContext context) {
+    final now = DateTime.now().year;
+    final initial = birthYear ?? (now - 30);
+    int tempYear = initial;
+
+    showModalBottomSheet(
+      context: context,
+      useRootNavigator: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return SizedBox(
+          height: 320,
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20, vertical: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        onChanged(null);
+                        Navigator.pop(context);
+                      },
+                      child: const Text('초기화',
+                          style: TextStyle(color: AppColors.textSecondary)),
+                    ),
+                    const Text('출생연도',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
+                    TextButton(
+                      onPressed: () {
+                        onChanged(tempYear);
+                        Navigator.pop(context);
+                      },
+                      child: const Text('확인',
+                          style: TextStyle(color: AppColors.primary)),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: CupertinoPicker(
+                  scrollController: FixedExtentScrollController(
+                    initialItem: initial - (now - 90),
+                  ),
+                  itemExtent: 44,
+                  onSelectedItemChanged: (i) {
+                    tempYear = (now - 90) + i;
+                  },
+                  children: List.generate(
+                    91, // now-90 ~ now
+                    (i) {
+                      final year = (now - 90) + i;
+                      return Center(
+                        child: Text(
+                          '$year년',
+                          style: const TextStyle(fontSize: 18),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now().year;
+    final ageText = birthYear != null ? '만 ${now - birthYear!}세' : null;
+
+    return GestureDetector(
+      onTap: () => _showPicker(context),
+      child: Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.cake_outlined,
+                size: 18, color: AppColors.primary),
+            const SizedBox(width: 10),
+            Text(
+              birthYear != null ? '$birthYear년' : '출생연도 선택',
+              style: TextStyle(
+                fontSize: 14,
+                color: birthYear != null
+                    ? AppColors.textPrimary
+                    : AppColors.textHint,
+              ),
+            ),
+            if (ageText != null) ...[
+              const SizedBox(width: 8),
+              Text(
+                ageText,
+                style: const TextStyle(
+                    fontSize: 13, color: AppColors.textSecondary),
+              ),
+            ],
+            const Spacer(),
+            const Icon(Icons.chevron_right,
+                size: 18, color: AppColors.textHint),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -696,8 +830,7 @@ class _SettingRow extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color:
-                isActive ? AppColors.primary : AppColors.textPrimary,
+            color: isActive ? AppColors.primary : AppColors.textPrimary,
           ),
         ),
         subtitle: Text(
@@ -759,7 +892,6 @@ class _AddStateSheetState extends ConsumerState<_AddStateSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 핸들
           Center(
             child: Container(
               width: 40,
@@ -771,7 +903,6 @@ class _AddStateSheetState extends ConsumerState<_AddStateSheet> {
             ),
           ),
           const SizedBox(height: 20),
-
           Text(
             widget.type.label,
             style: const TextStyle(

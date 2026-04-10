@@ -13,8 +13,8 @@ abstract class ProfileDataSource {
   Future<void> saveTemporaryStates(List<TemporaryState> states);
 
   // ── Tier 3 — 오늘의 상황 ─────────────────────────────────
-  Future<TodaySituation?> loadTodaySituation();
-  Future<void> saveTodaySituation(TodaySituation? situation);
+  Future<List<TodaySituation>> loadTodaySituations();
+  Future<void> saveTodaySituations(List<TodaySituation> situations);
 
   // ── 알림 설정 ─────────────────────────────────────────────
   Future<NotificationSetting> loadNotificationSetting();

@@ -67,25 +67,37 @@ class LocalProfileDataSource implements ProfileDataSource {
   // ── Tier 3 — 오늘의 상황 ─────────────────────────────────
 
   @override
-  Future<TodaySituation?> loadTodaySituation() async {
+  Future<List<TodaySituation>> loadTodaySituations() async {
     final raw = _prefs.getString(_todaySitKey);
-    if (raw == null) return null;
+    if (raw == null) return [];
     try {
-      final situation = TodaySituation.fromJson(
-          jsonDecode(raw) as Map<String, dynamic>);
-      // 당일이 아니면 null 반환 (자동 만료)
-      return situation.isActive ? situation : null;
+      final decoded = jsonDecode(raw);
+      // 이전 버전 호환: 단일 객체로 저장된 경우
+      if (decoded is Map<String, dynamic>) {
+        final sit = TodaySituation.fromJson(decoded);
+        return sit.isActive ? [sit] : [];
+      }
+      // 새 버전: 배열로 저장
+      final list = decoded as List<dynamic>;
+      return list
+          .map((e) => TodaySituation.fromJson(e as Map<String, dynamic>))
+          .where((s) => s.isActive)
+          .toList();
     } catch (_) {
-      return null;
+      return [];
     }
   }
 
   @override
-  Future<void> saveTodaySituation(TodaySituation? situation) async {
-    if (situation == null) {
+  Future<void> saveTodaySituations(List<TodaySituation> situations) async {
+    final active = situations.where((s) => s.isActive).toList();
+    if (active.isEmpty) {
       await _prefs.remove(_todaySitKey);
     } else {
-      await _prefs.setString(_todaySitKey, jsonEncode(situation.toJson()));
+      await _prefs.setString(
+        _todaySitKey,
+        jsonEncode(active.map((s) => s.toJson()).toList()),
+      );
     }
   }
 

@@ -131,7 +131,7 @@ void main() {
       final result = DustCalculator.calculate(
         _normalProfile(),
         _dust(10),
-        todaySituation: outdoorExercise,
+        todaySituations: [outdoorExercise],
       );
       expect(result.maskRequired, isFalse);
     });
@@ -140,7 +140,7 @@ void main() {
       final result = DustCalculator.calculate(
         _normalProfile(),
         _dust(20),
-        todaySituation: outdoorExercise,
+        todaySituations: [outdoorExercise],
       );
       expect(result.maskRequired, isTrue);
       expect(result.maskType, 'KF80');
@@ -160,10 +160,10 @@ void main() {
             startDate: DateTime.now(),
           ),
         ],
-        todaySituation: TodaySituation(
+        todaySituations: [TodaySituation(
           type: TodaySituationType.outdoorExercise,
           date: DateTime.now(),
-        ),
+        )],
       );
       expect(result.maskRequired, isTrue);
       expect(result.maskType, 'KF94');
@@ -192,7 +192,7 @@ void main() {
       final result = DustCalculator.calculate(
         _normalProfile(),
         _dust(20),
-        todaySituation: yesterday,
+        todaySituations: [yesterday],
       );
       expect(result.maskRequired, isFalse);
     });

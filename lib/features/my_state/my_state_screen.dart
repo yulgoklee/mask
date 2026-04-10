@@ -11,7 +11,7 @@ class MyStateScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final temporaryStates = ref.watch(temporaryStatesProvider);
-    final todaySituation = ref.watch(todaySituationProvider);
+    final todaySituations = ref.watch(todaySituationProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -64,21 +64,18 @@ class MyStateScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 10),
           ...TodaySituationType.values.map((type) {
-            final isActive = todaySituation?.isActive == true &&
-                todaySituation?.type == type;
+            final activeTypes = todaySituations
+                .where((s) => s.isActive)
+                .map((s) => s.type)
+                .toSet();
+            final isActive = activeTypes.contains(type);
             return _TodaySituationTile(
               type: type,
               isActive: isActive,
               onToggle: (active) async {
-                if (active) {
-                  await ref
-                      .read(todaySituationProvider.notifier)
-                      .set(type);
-                } else {
-                  await ref
-                      .read(todaySituationProvider.notifier)
-                      .clear();
-                }
+                await ref
+                    .read(todaySituationProvider.notifier)
+                    .toggle(type);
               },
             );
           }),

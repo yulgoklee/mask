@@ -58,14 +58,22 @@ class NotificationScheduler {
               .toList()
           : <TemporaryState>[];
 
-      // ── Tier 3: 오늘의 상황 로드 ───────────────────────
+      // ── Tier 3: 오늘의 상황 로드 (List) ──────────────────
       final todaySitRaw = prefs.getString('today_situation');
-      TodaySituation? todaySituation;
+      List<TodaySituation> todaySituations = [];
       if (todaySitRaw != null) {
         try {
-          final sit = TodaySituation.fromJson(
-              jsonDecode(todaySitRaw) as Map<String, dynamic>);
-          if (sit.isActive) todaySituation = sit;
+          final decoded = jsonDecode(todaySitRaw);
+          if (decoded is Map<String, dynamic>) {
+            // 이전 버전 호환: 단일 객체
+            final sit = TodaySituation.fromJson(decoded);
+            if (sit.isActive) todaySituations = [sit];
+          } else if (decoded is List) {
+            todaySituations = decoded
+                .map((e) => TodaySituation.fromJson(e as Map<String, dynamic>))
+                .where((s) => s.isActive)
+                .toList();
+          }
         } catch (_) {}
       }
 
@@ -80,7 +88,7 @@ class NotificationScheduler {
         profile,
         dust,
         temporaryStates: temporaryStates,
-        todaySituation: todaySituation,
+        todaySituations: todaySituations,
       );
 
       final now = DateTime.now();
@@ -89,7 +97,7 @@ class NotificationScheduler {
       final maskType = result.maskType;
 
       // 가장 유의미한 활성 상태명 (본문에 표기)
-      final stateNote = _primaryStateNote(temporaryStates, todaySituation);
+      final stateNote = _primaryStateNote(temporaryStates, todaySituations);
       // 공기 자체는 괜찮지만 상태 때문에 마스크 필요한 경우
       final stateOnlyMask = result.maskRequired && !baseResult.maskRequired;
 
@@ -307,9 +315,10 @@ Future<T?> _fetchWithRetry<T>(
 /// 가장 유의미한 활성 상태 이름 반환
 /// 우선순위: Tier 2 (기간 상태) > Tier 3 (오늘의 상황)
 String? _primaryStateNote(
-    List<TemporaryState> temporaryStates, TodaySituation? todaySituation) {
+    List<TemporaryState> temporaryStates,
+    List<TodaySituation> todaySituations) {
   if (temporaryStates.isNotEmpty) return temporaryStates.first.label;
-  if (todaySituation != null) return todaySituation.label;
+  if (todaySituations.isNotEmpty) return todaySituations.first.label;
   return null;
 }
 

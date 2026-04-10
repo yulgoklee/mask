@@ -30,10 +30,10 @@ class ProfileRepository {
 
   // ── Tier 3 — 오늘의 상황 ─────────────────────────────────
 
-  Future<TodaySituation?> loadTodaySituation() =>
-      _dataSource.loadTodaySituation();
-  Future<void> saveTodaySituation(TodaySituation? situation) =>
-      _dataSource.saveTodaySituation(situation);
+  Future<List<TodaySituation>> loadTodaySituations() =>
+      _dataSource.loadTodaySituations();
+  Future<void> saveTodaySituations(List<TodaySituation> situations) =>
+      _dataSource.saveTodaySituations(situations);
 
   // ── 알림 설정 ─────────────────────────────────────────────
 
