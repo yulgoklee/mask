@@ -95,43 +95,83 @@ class NotificationService {
   // ── 알림 콘텐츠 생성 (배달앱 카드 스타일) ──────────────────
 
   /// 아침 알림 — 오늘 마스크 여부
+  ///
+  /// [stateNote]   : 활성 취약 상태 이름 ("임신 중", "야외 운동 예정" 등)
+  /// [stateOnlyMask]: true = 공기는 괜찮지만 상태 때문에 마스크 필요
   static NotificationContent morningContent({
     required UserProfile profile,
     required int pm25,
     required String gradeName,
     required bool maskRequired,
     String? maskType,
+    String? stateNote,
+    bool stateOnlyMask = false,
   }) {
     final name = profile.displayName;
+
+    // 이모지: 공기는 괜찮지만 취약 상태 → 🛡️, 공기 나쁨 → 😷, 안전 → ✅
+    final emoji = maskRequired
+        ? (stateOnlyMask ? '🛡️' : '😷')
+        : '✅';
+
     final title = maskRequired
-        ? '😷 $name, 오늘 마스크 챙기세요'
+        ? '$emoji $name, 오늘 마스크 챙기세요'
         : '✅ $name, 오늘은 마스크 없어도 돼요';
 
     final lines = <String>[];
-    if (maskType != null) lines.add('$maskType 이상 권장');
+
+    // 취약 상태가 있을 때 첫 줄에 이유 표기
+    if (stateNote != null) {
+      lines.add(maskType != null
+          ? '$stateNote · $maskType 이상 권장'
+          : stateNote);
+    } else if (maskType != null) {
+      lines.add('$maskType 이상 권장');
+    }
+
     lines.add('PM2.5 $pm25μg/m³ · $gradeName');
-    final note = _personalNote(profile);
-    if (note != null) lines.add(note);
+
+    // stateNote 없을 때만 Tier 1 personalNote 추가
+    if (stateNote == null) {
+      final note = _personalNote(profile);
+      if (note != null) lines.add(note);
+    }
 
     return NotificationContent(title: title, body: lines.join('\n'));
   }
 
   /// 저녁 예보 알림 — 내일 마스크 여부
+  ///
+  /// [maskRequired] : 취약 상태 포함 최종 마스크 필요 여부 (null이면 등급만으로 판단)
+  /// [stateNote]    : 활성 취약 상태 이름
+  /// [stateOnlyMask]: true = 공기 등급은 괜찮지만 상태 때문에 마스크 필요
   static NotificationContent forecastContent({
     required UserProfile profile,
     required String tomorrowGrade,
     String? maskType,
+    bool? maskRequired,
+    String? stateNote,
+    bool stateOnlyMask = false,
   }) {
     final name = profile.displayName;
-    final isBad = tomorrowGrade == '나쁨' || tomorrowGrade == '매우나쁨';
 
+    // maskRequired 재정의가 없으면 등급 기반 판단 (기존 로직)
+    final isBad = maskRequired ??
+        (tomorrowGrade == '나쁨' || tomorrowGrade == '매우나쁨');
+
+    final emoji = isBad ? (stateOnlyMask ? '🛡️' : '🌆') : '🌤';
     final title = isBad
-        ? '🌆 $name, 내일 외출 준비 — 마스크 필요해요'
+        ? '$emoji $name, 내일 외출 준비 — 마스크 필요해요'
         : '🌤 $name, 내일 공기는 괜찮아요';
 
     final lines = <String>['내일 예보: $tomorrowGrade'];
+
     if (isBad) {
-      if (maskType != null) {
+      if (stateNote != null) {
+        lines.add(maskType != null
+            ? '$stateNote · $maskType 이상 권장'
+            : '$stateNote · 마스크 권장');
+      } else if (maskType != null) {
         lines.add('$maskType 이상 권장');
       } else {
         lines.add('마스크 미리 챙겨두세요');
@@ -144,21 +184,35 @@ class NotificationService {
   }
 
   /// 귀가 알림 — 퇴근길 공기 상태
+  ///
+  /// [stateNote]   : 활성 취약 상태 이름
   static NotificationContent eveningReturnContent({
     required UserProfile profile,
     required String gradeName,
     String? maskType,
+    String? stateNote,
+    bool stateOnlyMask = false,
   }) {
     final name = profile.displayName;
     final isBad = gradeName == '나쁨' || gradeName == '매우나쁨';
 
-    final title = isBad
+    // 상태 때문에 마스크 필요하면 등급 무관 "챙기세요"
+    final maskRequired = stateNote != null || isBad;
+
+    final title = maskRequired
         ? '🏠 $name, 퇴근길 마스크 챙기세요'
         : '🏠 $name, 퇴근길 공기 괜찮아요';
 
     final lines = <String>['현재 PM2.5: $gradeName'];
-    if (isBad) {
-      lines.add(maskType != null ? '$maskType 착용 권고' : '마스크 착용을 권장해요');
+
+    if (maskRequired) {
+      if (stateNote != null) {
+        lines.add(maskType != null
+            ? '$stateNote · $maskType 착용 권고'
+            : '$stateNote · 마스크 착용 권고');
+      } else {
+        lines.add(maskType != null ? '$maskType 착용 권고' : '마스크 착용을 권장해요');
+      }
     } else {
       lines.add('오늘 수고하셨어요 😊');
     }
@@ -167,14 +221,18 @@ class NotificationService {
   }
 
   /// 실시간 급등 알림
+  ///
+  /// [stateNote] : 활성 취약 상태 이름 (있으면 더 강한 경고)
   static NotificationContent realtimeContent({
     required UserProfile profile,
     required int pm25,
+    String? stateNote,
   }) {
     final name = profile.displayName;
+    final extraLine = stateNote != null ? '\n$stateNote · 즉시 마스크 착용' : '';
     return NotificationContent(
       title: '🚨 $name, 미세먼지 갑자기 나빠졌어요',
-      body: 'PM2.5 $pm25μg/m³ · 매우나쁨\n야외 활동 즉시 중단 권고',
+      body: 'PM2.5 $pm25μg/m³ · 매우나쁨\n야외 활동 즉시 중단 권고$extraLine',
     );
   }
 

@@ -7,6 +7,7 @@ import '../../core/services/air_korea_service.dart' show AirKoreaService;
 import '../../data/models/forecast_models.dart';
 import '../../providers/providers.dart';
 import '../location_setup/location_setup_screen.dart';
+import '../my_state/my_state_screen.dart';
 import '../../widgets/async_state_widgets.dart';
 import '../../widgets/dust_gauge_widget.dart';
 import 'dust_detail_screen.dart';
@@ -155,6 +156,10 @@ class HomeScreen extends ConsumerWidget {
 
                   // 나의 위험도 카드
                   if (calcResult != null) DustStatusCard(result: calcResult),
+                  const SizedBox(height: 12),
+
+                  // 내 현재 상태 진입점
+                  _MyStateBanner(),
                   const SizedBox(height: 20),
 
                   // 미세먼지 / 초미세먼지 게이지 (탭하면 세부정보)
@@ -494,6 +499,112 @@ class _InlineEmptyTile extends StatelessWidget {
               style: const TextStyle(
                   fontSize: 12, color: AppColors.textSecondary)),
         ],
+      ),
+    );
+  }
+}
+
+// ── 내 현재 상태 배너 ─────────────────────────────────────
+
+class _MyStateBanner extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final temporaryStates = ref.watch(temporaryStatesProvider);
+    final todaySituation = ref.watch(todaySituationProvider);
+
+    final activeTemporary = temporaryStates.where((s) => s.isActive).toList();
+    final hasTodaySit = todaySituation?.isActive == true;
+    final hasAny = activeTemporary.isNotEmpty || hasTodaySit;
+
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const MyStateScreen()),
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: hasAny
+              ? AppColors.primary.withValues(alpha: 0.08)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: hasAny
+                ? AppColors.primary.withValues(alpha: 0.25)
+                : Colors.grey.shade200,
+          ),
+        ),
+        child: Row(
+          children: [
+            Text(
+              hasAny ? '🛡️' : '➕',
+              style: const TextStyle(fontSize: 18),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: hasAny
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '내 현재 상태',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Wrap(
+                          spacing: 6,
+                          children: [
+                            if (hasTodaySit)
+                              _StateChip(todaySituation!.type.label),
+                            ...activeTemporary.map(
+                              (s) => _StateChip(s.type.label),
+                            ),
+                          ],
+                        ),
+                      ],
+                    )
+                  : const Text(
+                      '현재 상태 추가하기',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+            ),
+            const Icon(
+              Icons.chevron_right,
+              color: AppColors.textHint,
+              size: 18,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StateChip extends StatelessWidget {
+  final String label;
+  const _StateChip(this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: AppColors.primary,
+        ),
       ),
     );
   }
