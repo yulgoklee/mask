@@ -110,7 +110,7 @@ class MyStateScreen extends ConsumerWidget {
                   !temporaryStates.any((s) => s.type == t && s.isActive))
               .map((type) => _AddStateTile(
                     type: type,
-                    onAdd: () => _showAddStateSheet(context, ref, type),
+                    onAdd: () => _showAddStateSheet(context, type),
                   )),
 
           const SizedBox(height: 40),
@@ -119,13 +119,14 @@ class MyStateScreen extends ConsumerWidget {
     );
   }
 
-  void _showAddStateSheet(
-      BuildContext context, WidgetRef ref, TemporaryStateType type) {
+  void _showAddStateSheet(BuildContext context, TemporaryStateType type) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _AddStateSheet(type: type, ref: ref),
+      // useRootNavigator: MaterialLocalizations 상속을 위해 루트 context 사용
+      useRootNavigator: true,
+      builder: (_) => _AddStateSheet(type: type),
     );
   }
 }
@@ -359,9 +360,8 @@ class _AddStateTile extends StatelessWidget {
 
 class _AddStateSheet extends ConsumerStatefulWidget {
   final TemporaryStateType type;
-  final WidgetRef ref;
 
-  const _AddStateSheet({required this.type, required this.ref});
+  const _AddStateSheet({required this.type});
 
   @override
   ConsumerState<_AddStateSheet> createState() => _AddStateSheetState();
@@ -529,16 +529,28 @@ class _AddStateSheetState extends ConsumerState<_AddStateSheet> {
   }
 
   Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate:
-          _expiryDate ?? DateTime.now().add(const Duration(days: 7)),
-      firstDate: DateTime.now().add(const Duration(days: 1)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      locale: const Locale('ko'),
-    );
-    if (picked != null) {
-      setState(() => _expiryDate = picked);
+    try {
+      final picked = await showDatePicker(
+        context: context,
+        initialDate:
+            _expiryDate ?? DateTime.now().add(const Duration(days: 7)),
+        firstDate: DateTime.now().add(const Duration(days: 1)),
+        lastDate: DateTime.now().add(const Duration(days: 365)),
+        locale: const Locale('ko', 'KR'),
+      );
+      if (picked != null && mounted) {
+        setState(() => _expiryDate = picked);
+      }
+    } catch (_) {
+      // 날짜 선택 실패 시 — 앱 흐름 유지, 만료일 없이 계속 진행 가능
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('날짜 선택을 불러올 수 없어요. 만료일 없이 적용할 수 있어요.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 
@@ -548,7 +560,11 @@ class _AddStateSheetState extends ConsumerState<_AddStateSheet> {
       startDate: DateTime.now(),
       expiryDate: _noExpiry ? null : _expiryDate,
     );
-    await ref.read(temporaryStatesProvider.notifier).add(state);
+    try {
+      await ref.read(temporaryStatesProvider.notifier).add(state);
+    } catch (_) {
+      // 저장 실패해도 팝 처리
+    }
     if (mounted) Navigator.pop(context);
   }
 }
