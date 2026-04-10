@@ -2,7 +2,16 @@
 class UserProfile {
   /// 표시 이름 (선택). null이면 "님"으로 호칭.
   final String? name;
+
+  /// 성별 (Issue 1)
+  final Gender? gender;
+
+  /// 출생연도 (Issue 3). null이면 ageGroup 폴백 사용.
+  final int? birthYear;
+
+  /// 나이대 — 하위 호환용. birthYear가 있으면 isVulnerableAge는 birthYear로 계산.
   final AgeGroup ageGroup;
+
   final bool hasCondition;
   final ConditionType conditionType;
   final Severity severity;
@@ -12,6 +21,8 @@ class UserProfile {
 
   const UserProfile({
     this.name,
+    this.gender,
+    this.birthYear,
     required this.ageGroup,
     required this.hasCondition,
     this.conditionType = ConditionType.none,
@@ -21,11 +32,26 @@ class UserProfile {
     this.sensitivity = SensitivityLevel.normal,
   });
 
+  // ── 계산 속성 ──────────────────────────────────────────────
+
   /// 알림/홈 화면 호칭 ("율곡님" or "님")
   String get displayName => (name != null && name!.isNotEmpty) ? '$name님' : '님';
 
+  /// 실제 나이 (birthYear가 없으면 null)
+  int? get age =>
+      birthYear != null ? DateTime.now().year - birthYear! : null;
+
+  /// 취약 연령 여부 — birthYear 우선, 없으면 ageGroup 폴백
+  bool get isVulnerableAge {
+    final a = age;
+    if (a != null) return a < 18 || a >= 60;
+    return ageGroup.isVulnerable;
+  }
+
   factory UserProfile.defaultProfile() => const UserProfile(
         name: null,
+        gender: null,
+        birthYear: null,
         ageGroup: AgeGroup.thirties,
         hasCondition: false,
         conditionType: ConditionType.none,
@@ -37,6 +63,8 @@ class UserProfile {
 
   UserProfile copyWith({
     Object? name = _sentinel,
+    Object? gender = _sentinel,
+    Object? birthYear = _sentinel,
     AgeGroup? ageGroup,
     bool? hasCondition,
     ConditionType? conditionType,
@@ -47,6 +75,8 @@ class UserProfile {
   }) {
     return UserProfile(
       name: name == _sentinel ? this.name : name as String?,
+      gender: gender == _sentinel ? this.gender : gender as Gender?,
+      birthYear: birthYear == _sentinel ? this.birthYear : birthYear as int?,
       ageGroup: ageGroup ?? this.ageGroup,
       hasCondition: hasCondition ?? this.hasCondition,
       conditionType: conditionType ?? this.conditionType,
@@ -59,6 +89,8 @@ class UserProfile {
 
   Map<String, dynamic> toJson() => {
         'name': name,
+        'gender': gender?.index,
+        'birthYear': birthYear,
         'ageGroup': ageGroup.index,
         'hasCondition': hasCondition,
         'conditionType': conditionType.index,
@@ -70,6 +102,10 @@ class UserProfile {
 
   factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
         name: json['name'] as String?,
+        gender: json['gender'] != null
+            ? Gender.values[json['gender'] as int]
+            : null,
+        birthYear: json['birthYear'] as int?,
         ageGroup: AgeGroup.values[json['ageGroup'] as int],
         hasCondition: json['hasCondition'] as bool,
         conditionType: ConditionType.values[json['conditionType'] as int],
@@ -82,6 +118,19 @@ class UserProfile {
 
 // copyWith에서 null과 "미전달"을 구분하기 위한 센티널
 const _sentinel = Object();
+
+// ── 열거형 ────────────────────────────────────────────────
+
+enum Gender {
+  male,
+  female,
+  other;
+
+  String get label {
+    const labels = ['남성', '여성', '기타'];
+    return labels[index];
+  }
+}
 
 enum AgeGroup {
   teens,

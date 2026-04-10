@@ -180,7 +180,7 @@ class HomeScreen extends ConsumerWidget {
                           ),
                           child: DustGaugeWidget(
                             value: dust.pm10Value,
-                            label: 'PM10',
+                            label: '미세먼지',
                             grade: pm10Grade,
                           ),
                         ),
@@ -201,7 +201,7 @@ class HomeScreen extends ConsumerWidget {
                           ),
                           child: DustGaugeWidget(
                             value: dust.pm25Value,
-                            label: 'PM2.5',
+                            label: '초미세먼지',
                             grade: pm25Grade,
                           ),
                         ),
@@ -509,12 +509,13 @@ class _InlineEmptyTile extends StatelessWidget {
 class _TodayQuickToggle extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final todaySituation = ref.watch(todaySituationProvider);
+    final todaySituations = ref.watch(todaySituationProvider);
+    final activeTypes =
+        todaySituations.where((s) => s.isActive).map((s) => s.type).toSet();
 
     return Row(
       children: TodaySituationType.values.map((type) {
-        final isActive = todaySituation?.isActive == true &&
-            todaySituation?.type == type;
+        final isActive = activeTypes.contains(type);
         final icon =
             type == TodaySituationType.outdoorExercise ? '🏃' : '🤒';
         final label =
@@ -523,11 +524,7 @@ class _TodayQuickToggle extends ConsumerWidget {
         return Expanded(
           child: GestureDetector(
             onTap: () async {
-              if (isActive) {
-                await ref.read(todaySituationProvider.notifier).clear();
-              } else {
-                await ref.read(todaySituationProvider.notifier).set(type);
-              }
+              await ref.read(todaySituationProvider.notifier).toggle(type);
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),

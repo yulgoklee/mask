@@ -20,7 +20,7 @@ class DustCalculator {
     UserProfile profile,
     DustData dust, {
     List<TemporaryState> temporaryStates = const [],
-    TodaySituation? todaySituation,
+    List<TodaySituation> todaySituations = const [],
   }) {
     final pm25 = dust.pm25Value;
     if (pm25 == null) {
@@ -40,7 +40,7 @@ class DustCalculator {
 
     DustGrade effectiveGrade = actualGrade;
 
-    if (profile.ageGroup.isVulnerable) {
+    if (profile.isVulnerableAge) {
       effectiveGrade = _upgradeGrade(effectiveGrade);
     }
     if (profile.hasCondition) {
@@ -78,13 +78,13 @@ class DustCalculator {
     // ── Tier 3: 오늘의 상황 ──────────────────────────────────
 
     String? tier3Note;
-    if (todaySituation != null && todaySituation.isActive) {
+    for (final situation in todaySituations.where((s) => s.isActive)) {
       final needsMask =
-          actualGrade.index >= todaySituation.maskThresholdGrade.index;
+          actualGrade.index >= situation.maskThresholdGrade.index;
       if (needsMask) {
         maskRequired = true;
-        maskType = _stricterMaskType(maskType, todaySituation.maskType);
-        tier3Note = todaySituation.label;
+        maskType = _stricterMaskType(maskType, situation.maskType);
+        tier3Note ??= situation.label;
       }
     }
 
@@ -107,7 +107,7 @@ class DustCalculator {
       shouldSendRealtime: shouldSendRealtime,
       message: _buildMessage(riskLevel, pm25, profile),
       heroText: heroText,
-      reason: 'PM2.5 $pm25μg/m³ · ${actualGrade.label}',
+      reason: '초미세먼지 $pm25μg/m³ · ${actualGrade.label}',
       personalNote: personalNote,
       maskRequired: maskRequired,
       maskType: maskType,
@@ -134,7 +134,7 @@ class DustCalculator {
 
     // Tier 1 — 연령/기저질환/민감도 보정
     DustGrade effectiveGrade = actualGrade;
-    if (profile.ageGroup.isVulnerable) {
+    if (profile.isVulnerableAge) {
       effectiveGrade = _upgradeGrade(effectiveGrade);
     }
     if (profile.hasCondition) {
@@ -185,8 +185,11 @@ class DustCalculator {
     if (profile.hasCondition) {
       return '${profile.conditionType.label} 보유자 기준 적용';
     }
-    if (profile.ageGroup.isVulnerable) {
-      return '${profile.ageGroup.label} 민감 연령 기준 적용';
+    if (profile.isVulnerableAge) {
+      final ageLabel = profile.age != null
+          ? '${profile.age}세'
+          : profile.ageGroup.label;
+      return '$ageLabel 민감 연령 기준 적용';
     }
     if (profile.sensitivity == SensitivityLevel.high) {
       return '고민감도 설정 기준 적용';

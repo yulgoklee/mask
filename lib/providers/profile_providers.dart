@@ -88,29 +88,57 @@ final temporaryStatesProvider =
   return TemporaryStatesNotifier(ref.watch(profileRepositoryProvider));
 });
 
-// ── Tier 3 — 오늘의 상황 ─────────────────────────────────
+// ── Tier 3 — 오늘의 상황 (List) ──────────────────────────
 
-class TodaySituationNotifier extends StateNotifier<TodaySituation?> {
+class TodaySituationNotifier extends StateNotifier<List<TodaySituation>> {
   final ProfileRepository _repo;
 
-  TodaySituationNotifier(this._repo) : super(null) {
-    _repo.loadTodaySituation().then((s) => state = s);
+  TodaySituationNotifier(this._repo) : super([]) {
+    _repo.loadTodaySituations().then((list) => state = list);
   }
 
+  /// 타입 토글: 이미 활성이면 제거, 아니면 추가
+  Future<void> toggle(TodaySituationType type) async {
+    final alreadyActive = state.any((s) => s.isActive && s.type == type);
+    List<TodaySituation> updated;
+    if (alreadyActive) {
+      updated = state.where((s) => s.type != type).toList();
+    } else {
+      updated = [
+        ...state.where((s) => s.type != type),
+        TodaySituation(type: type, date: DateTime.now()),
+      ];
+    }
+    await _repo.saveTodaySituations(updated);
+    state = updated;
+  }
+
+  /// 특정 타입 활성화
   Future<void> set(TodaySituationType type) async {
-    final situation = TodaySituation(type: type, date: DateTime.now());
-    await _repo.saveTodaySituation(situation);
-    state = situation;
+    final updated = [
+      ...state.where((s) => s.type != type),
+      TodaySituation(type: type, date: DateTime.now()),
+    ];
+    await _repo.saveTodaySituations(updated);
+    state = updated;
   }
 
-  Future<void> clear() async {
-    await _repo.saveTodaySituation(null);
-    state = null;
+  /// 특정 타입 비활성화
+  Future<void> remove(TodaySituationType type) async {
+    final updated = state.where((s) => s.type != type).toList();
+    await _repo.saveTodaySituations(updated);
+    state = updated;
+  }
+
+  /// 전체 초기화
+  Future<void> clearAll() async {
+    await _repo.saveTodaySituations([]);
+    state = [];
   }
 }
 
 final todaySituationProvider =
-    StateNotifierProvider<TodaySituationNotifier, TodaySituation?>((ref) {
+    StateNotifierProvider<TodaySituationNotifier, List<TodaySituation>>((ref) {
   return TodaySituationNotifier(ref.watch(profileRepositoryProvider));
 });
 
