@@ -1,11 +1,17 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 import '../constants/app_constants.dart';
 import '../../firebase_options.dart';
+import '../services/air_korea_service.dart';
 import 'notification_scheduler.dart';
+
+/// 백그라운드 GPS 갱신 간격 (밀리초)
+const _kGpsRefreshIntervalMs = 6 * 60 * 60 * 1000; // 6시간
+const _kPrefLastGpsUpdate = 'bg_last_gps_update_ms';
 
 const String _taskCheckDust = 'check_dust_task';
 
@@ -32,14 +38,70 @@ Future<void> _runDustCheck() async {
     // 이미 초기화됐거나 실패해도 알림 체크는 계속 진행
   }
   final prefs = await SharedPreferences.getInstance();
+
+  // GPS 측정소 자동 갱신 (6시간 이상 경과한 경우만)
+  await _tryRefreshStation(prefs);
+
   await NotificationScheduler().runCheck(prefs);
+}
+
+/// 백그라운드에서 GPS 기반 측정소 자동 갱신
+///
+/// 조건:
+/// - 마지막 갱신으로부터 [_kGpsRefreshIntervalMs] 이상 경과
+/// - 위치 권한이 이미 허용된 상태 (권한 요청 절대 금지)
+/// - 실패해도 알림 체크에 영향 없음 (best-effort)
+Future<void> _tryRefreshStation(SharedPreferences prefs) async {
+  try {
+    // 갱신 시간 체크
+    final lastMs = prefs.getInt(_kPrefLastGpsUpdate) ?? 0;
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    if (nowMs - lastMs < _kGpsRefreshIntervalMs) {
+      debugPrint('[BGService] GPS 갱신 스킵 (${((nowMs - lastMs) / 3600000).toStringAsFixed(1)}h 경과)');
+      return;
+    }
+
+    // 권한 확인 — 백그라운드에서는 이미 허용된 경우만 진행
+    final permission = await Geolocator.checkPermission();
+    if (permission != LocationPermission.always &&
+        permission != LocationPermission.whileInUse) {
+      debugPrint('[BGService] GPS 권한 없음 → 갱신 스킵');
+      return;
+    }
+
+    // 마지막 알려진 위치 우선 사용 (배터리 절약)
+    Position? pos = await Geolocator.getLastKnownPosition();
+    pos ??= await Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.medium,
+        timeLimit: Duration(seconds: 20),
+      ),
+    );
+
+    final station = await AirKoreaService.findNearestStation(
+        pos.latitude, pos.longitude);
+    if (station == null) {
+      debugPrint('[BGService] 가까운 측정소를 찾지 못했어요 (lat=${pos.latitude}, lng=${pos.longitude})');
+      return;
+    }
+
+    // 측정소 + 위치 + 갱신 시각 저장
+    await prefs.setString(AppConstants.prefStationName, station);
+    await prefs.setDouble('saved_lat', pos.latitude);
+    await prefs.setDouble('saved_lng', pos.longitude);
+    await prefs.setInt(_kPrefLastGpsUpdate, nowMs);
+    debugPrint('[BGService] 측정소 갱신 완료: $station');
+  } catch (e) {
+    // 백그라운드 GPS 갱신은 best-effort — 절대 throw하지 않음
+    debugPrint('[BGService] GPS 갱신 실패 (무시): $e');
+  }
 }
 
 class BackgroundService {
   static Future<void> initialize() async {
     if (kIsWeb) return;
     // isInDebugMode: 디버그 빌드에서 Workmanager 로그 출력 활성화
-    await Workmanager().initialize(callbackDispatcher, isInDebugMode: kDebugMode);
+    await Workmanager().initialize(callbackDispatcher);
   }
 
   static Future<void> registerPeriodicTask() async {

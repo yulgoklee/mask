@@ -23,6 +23,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final dustAsync = ref.watch(dustDataProvider);
     final calcResult = ref.watch(dustCalculationProvider);
+    final locationState = ref.watch(locationStateProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -120,6 +121,7 @@ class HomeScreen extends ConsumerWidget {
                             fontSize: 14, color: AppColors.textSecondary),
                       ),
                       const SizedBox(width: 6),
+                      // 위치 직접 선택 (변경)
                       GestureDetector(
                         onTap: () => Navigator.push(
                           context,
@@ -127,6 +129,7 @@ class HomeScreen extends ConsumerWidget {
                             builder: (_) => const LocationSetupScreen(),
                           ),
                         ).then((_) {
+                          ref.read(locationStateProvider.notifier).onStationChanged();
                           ref.invalidate(dustDataProvider);
                           ref.invalidate(tomorrowForecastProvider);
                         }),
@@ -134,7 +137,7 @@ class HomeScreen extends ConsumerWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
+                            color: AppColors.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Text(
@@ -142,6 +145,27 @@ class HomeScreen extends ConsumerWidget {
                             style: TextStyle(
                                 fontSize: 12, color: AppColors.primary),
                           ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      // GPS 빠른 갱신 버튼
+                      GestureDetector(
+                        onTap: locationState.isDetecting
+                            ? null
+                            : () => _onGpsRefresh(context, ref),
+                        child: SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: locationState.isDetecting
+                              ? const CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppColors.primary,
+                                )
+                              : const Icon(
+                                  Icons.my_location,
+                                  size: 16,
+                                  color: AppColors.textSecondary,
+                                ),
                         ),
                       ),
                       const Spacer(),
@@ -219,6 +243,39 @@ class HomeScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _onGpsRefresh(BuildContext context, WidgetRef ref) async {
+    _analytics.logEvent(name: 'gps_quick_refresh');
+    final success =
+        await ref.read(locationStateProvider.notifier).detectFromGps();
+    if (!context.mounted) return;
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('내 위치로 측정소를 업데이트했어요'),
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else {
+      final state = ref.read(locationStateProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(state.errorMessage ?? '위치 감지에 실패했어요'),
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          action: state.needsSettings
+              ? SnackBarAction(
+                  label: '설정 열기',
+                  onPressed: () =>
+                      ref.read(locationServiceProvider).openAppSettings(),
+                )
+              : null,
+        ),
+      );
+    }
   }
 
   Widget _buildHourlySection(BuildContext context, WidgetRef ref) {
@@ -381,12 +438,12 @@ class _HourlyForecastTile extends StatelessWidget {
                   const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
               decoration: BoxDecoration(
                 color: isNow
-                    ? AppColors.primary.withOpacity(0.08)
+                    ? AppColors.primary.withValues(alpha: 0.08)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
                 border: isNow
                     ? Border.all(
-                        color: AppColors.primary.withOpacity(0.3))
+                        color: AppColors.primary.withValues(alpha: 0.3))
                     : null,
               ),
               child: Column(
