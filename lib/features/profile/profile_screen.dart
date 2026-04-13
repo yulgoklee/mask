@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/sensitivity_calculator.dart';
 import '../../data/models/temporary_state.dart';
 import '../../data/models/today_situation.dart';
 import '../../data/models/user_profile.dart';
 import '../../providers/providers.dart';
+import '../diagnosis/diagnosis_screen.dart';
+import '../diagnosis/result_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -42,6 +45,10 @@ class ProfileScreen extends ConsumerWidget {
             temporaryStates: temporaryStates,
             todaySituations: todaySituations,
           ),
+          const SizedBox(height: 16),
+
+          // ── 민감도 진단 배너 ─────────────────────────────────
+          _DiagnosisBanner(profile: profile),
           const SizedBox(height: 24),
 
           // ── 오늘 섹션 (Tier 3) ──────────────────────────────
@@ -81,6 +88,187 @@ class ProfileScreen extends ConsumerWidget {
             style: TextStyle(fontSize: 12, color: AppColors.textHint),
           ),
           const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+}
+
+// ── 민감도 진단 배너 ────────────────────────────────────────
+
+class _DiagnosisBanner extends StatelessWidget {
+  final UserProfile profile;
+
+  const _DiagnosisBanner({required this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = SensitivityCalculator.compute(profile);
+    final levelLabel = SensitivityCalculator.label(s);
+    final usesFinal = s >= SensitivityCalculator.sThreshold;
+    final tFinal = usesFinal ? SensitivityCalculator.threshold(s) : 36.0;
+
+    // S 레벨에 따른 강조색
+    final Color accentColor;
+    if (s >= 0.5) {
+      accentColor = AppColors.dustBad;
+    } else if (s >= 0.3) {
+      accentColor = AppColors.dustNormal;
+    } else {
+      accentColor = AppColors.secondary;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              // 아이콘
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child:
+                    Icon(Icons.shield_outlined, color: accentColor, size: 22),
+              ),
+              const SizedBox(width: 14),
+
+              // 텍스트 정보
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          '나만의 마스크 기준',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: accentColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            levelLabel,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: accentColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'PM2.5 ${tFinal.toStringAsFixed(0)} μg/m³ 이상 시 알림  ·  S = ${s.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // 액션 버튼 행
+          Row(
+            children: [
+              // 리포트 보기
+              Expanded(
+                flex: 3,
+                child: GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const ResultScreen()),
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 9),
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.bar_chart_rounded,
+                            size: 15, color: accentColor),
+                        const SizedBox(width: 5),
+                        Text(
+                          '내 리포트 보기',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: accentColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // 재진단
+              Expanded(
+                flex: 2,
+                child: GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const DiagnosisScreen(),
+                      fullscreenDialog: true,
+                    ),
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 9),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.refresh_rounded,
+                            size: 15, color: AppColors.textSecondary),
+                        SizedBox(width: 5),
+                        Text(
+                          '재진단',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

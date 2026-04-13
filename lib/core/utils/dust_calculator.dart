@@ -3,6 +3,7 @@ import '../../data/models/user_profile.dart';
 import '../../data/models/temporary_state.dart';
 import '../../data/models/today_situation.dart';
 import '../constants/dust_standards.dart';
+import 'sensitivity_calculator.dart';
 
 // 예보 체크 결과 레코드 타입
 typedef ForecastCheckResult = ({bool maskRequired, String? maskType});
@@ -61,6 +62,18 @@ class DustCalculator {
     final shouldSendRealtime = actualGrade == DustGrade.veryBad &&
         riskLevel != RiskLevel.low &&
         riskLevel != RiskLevel.normal;
+
+    // ── Tier 1 추가: 민감도 계수(S) 기반 조기 알림 ───────────
+    // 진단을 완료한 사용자(S ≥ 0.3)는 T_final = 35 × (1 − S) 기준 적용
+    // 기존 등급 로직과 OR 조건 — 더 엄격한 결과가 최종 반영됨
+    final s = SensitivityCalculator.compute(profile);
+    if (s >= SensitivityCalculator.sThreshold) {
+      final tFinal = SensitivityCalculator.threshold(s);
+      if (pm25 >= tFinal) {
+        maskRequired = true;
+        maskType = _stricterMaskType(maskType, SensitivityCalculator.maskType(s));
+      }
+    }
 
     // ── Tier 2: 기간 상태 ────────────────────────────────────
 
