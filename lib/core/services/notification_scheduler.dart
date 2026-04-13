@@ -3,6 +3,7 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../data/models/forecast_models.dart';
 import '../../data/models/user_profile.dart';
 import '../../data/models/notification_setting.dart';
 import '../../data/models/temporary_state.dart';
@@ -205,6 +206,22 @@ class NotificationScheduler {
           onSuccess: () => _markSentHour(prefs, 'realtime'),
         );
       }
+
+      // ── 기상 급변 선제 알림 ──────────────────────────────
+      // 이미 매우나쁨이면 실시간 경보가 커버; 급증 예측은 아직 괜찮을 때만 의미 있음
+      if (setting.realtimeAlertEnabled &&
+          pm25 <= DustStandards.pm25Bad &&
+          !_sentThisHour(prefs, 'surge')) {
+        await _checkSurgeAlert(
+          prefs: prefs,
+          service: service,
+          stationName: stationName,
+          notifService: notifService,
+          analytics: analytics,
+          profile: profile,
+          currentPm25: pm25,
+        );
+      }
     } catch (e, st) {
       debugPrint('[NotificationScheduler] 오류: $e\n$st');
       try {
@@ -310,6 +327,92 @@ Future<T?> _fetchWithRetry<T>(
     }
   }
   return null;
+}
+
+// ── 기상 급변 선제 알림 ────────────────────────────────────
+
+/// 급증 감지 최소 상승 속도 (μg/m³/h)
+/// 7 μg/m³/h ≈ 1시간 후 보통→나쁨 경계 돌파 가능 수준
+const double _kSurgeRateThreshold = 7.0;
+
+/// 급증 감지 결과
+class _SurgeResult {
+  final int currentPm25;
+  final String targetGrade; // '나쁨' | '매우나쁨'
+  const _SurgeResult({required this.currentPm25, required this.targetGrade});
+}
+
+/// 시간별 과거 데이터로 1시간 내 등급 악화 여부를 예측
+///
+/// 알고리즘:
+/// 1. 실측 데이터(non-forecast) 마지막 2개 포인트 추출
+/// 2. 시간당 변화율(ratePerHour) 계산
+/// 3. rate ≥ [_kSurgeRateThreshold] 이면 1시간 후 값 예측
+/// 4. 등급 경계(보통→나쁨, 나쁨→매우나쁨) 돌파 예상 시 결과 반환
+_SurgeResult? _detectSurge(List<HourlyDustData> history, int currentPm25) {
+  final measurements = history
+      .where((h) => !h.isForecast && h.pm25 != null)
+      .toList();
+  if (measurements.length < 2) return null;
+
+  final latest = measurements.last;
+  final prev = measurements[measurements.length - 2];
+
+  final diffMins = latest.time.difference(prev.time).inMinutes;
+  if (diffMins <= 0 || diffMins > 180) return null; // 데이터 간격 이상
+
+  final ratePerHour = (latest.pm25! - prev.pm25!) * 60.0 / diffMins;
+  if (ratePerHour < _kSurgeRateThreshold) return null; // 상승 속도 미달
+
+  final projected = currentPm25 + ratePerHour.round();
+
+  // 보통 → 나쁨 예상 (≤35 → >35)
+  if (currentPm25 <= DustStandards.pm25Normal &&
+      projected > DustStandards.pm25Normal) {
+    return _SurgeResult(currentPm25: currentPm25, targetGrade: '나쁨');
+  }
+  // 나쁨 → 매우나쁨 예상 (≤75 → >75)
+  if (currentPm25 > DustStandards.pm25Normal &&
+      currentPm25 <= DustStandards.pm25Bad &&
+      projected > DustStandards.pm25Bad) {
+    return _SurgeResult(currentPm25: currentPm25, targetGrade: '매우나쁨');
+  }
+  return null;
+}
+
+/// 급증 선제 알림 실행
+/// 실패해도 메인 알림 체크에 영향 없도록 내부에서 예외를 흡수
+Future<void> _checkSurgeAlert({
+  required SharedPreferences prefs,
+  required DustDataSource service,
+  required String stationName,
+  required NotificationService notifService,
+  required FirebaseAnalytics analytics,
+  required UserProfile profile,
+  required int currentPm25,
+}) async {
+  try {
+    final history = await service.getHourlyHistory(stationName);
+    final surge = _detectSurge(history, currentPm25);
+    if (surge == null) return;
+
+    final content = NotificationService.surgeContent(
+      profile: profile,
+      currentPm25: surge.currentPm25,
+      targetGrade: surge.targetGrade,
+    );
+    await _sendNotification(
+      notifService: notifService,
+      analytics: analytics,
+      id: NotificationService.surgeAlertId,
+      type: 'surge',
+      title: content.title,
+      body: content.body,
+      onSuccess: () => _markSentHour(prefs, 'surge'),
+    );
+  } catch (e) {
+    debugPrint('[NotificationScheduler] 급증 감지 오류 (무시): $e');
+  }
 }
 
 /// 가장 유의미한 활성 상태 이름 반환

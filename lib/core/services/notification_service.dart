@@ -20,6 +20,7 @@ class NotificationService {
   static const int eveningForecastId = 2;
   static const int eveningReturnId = 3;
   static const int realtimeAlertId = 4;
+  static const int surgeAlertId = 5;
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
@@ -233,6 +234,26 @@ class NotificationService {
     return NotificationContent(
       title: '🚨 $name, 미세먼지 갑자기 나빠졌어요',
       body: 'PM2.5 $pm25μg/m³ · 매우나쁨\n야외 활동 즉시 중단 권고$extraLine',
+    );
+  }
+
+  /// 기상 급변 선제 알림 — 현재는 괜찮지만 1시간 내 등급 악화 예상
+  ///
+  /// [currentPm25] : 현재 PM2.5 μg/m³
+  /// [targetGrade] : 예상 도달 등급 ('나쁨' | '매우나쁨')
+  static NotificationContent surgeContent({
+    required UserProfile profile,
+    required int currentPm25,
+    required String targetGrade,
+  }) {
+    final name = profile.displayName;
+    final isSevere = targetGrade == '매우나쁨';
+    final maskHint = isSevere
+        ? 'KF94 마스크 착용을 강력 권고해요'
+        : '외출하신다면 마스크를 미리 챙기세요';
+    return NotificationContent(
+      title: '⚡ $name, 미세먼지가 빠르게 올라가고 있어요',
+      body: '현재 PM2.5 $currentPm25μg/m³ → 1시간 내 $targetGrade 예상\n$maskHint',
     );
   }
 

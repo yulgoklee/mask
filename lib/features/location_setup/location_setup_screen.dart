@@ -97,6 +97,15 @@ class _LocationSetupScreenState extends ConsumerState<LocationSetupScreen> {
   VoidCallback? _settingsAction;
   String? _selectedSido;
 
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _manualSectionKey = GlobalKey();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   // ── GPS 자동 감지 ───────────────────────────────────────────────
 
   Future<void> _detectLocation() async {
@@ -141,6 +150,22 @@ class _LocationSetupScreenState extends ConsumerState<LocationSetupScreen> {
       _settingsAction = action;
       _selectedSido ??= '서울';
     });
+
+    // GPS 거절 시 수동 선택 영역이 화면에 보이도록 자동 스크롤
+    _scrollToManualSection();
+  }
+
+  void _scrollToManualSection() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _manualSectionKey.currentContext;
+      if (ctx != null) {
+        Scrollable.ensureVisible(
+          ctx,
+          duration: const Duration(milliseconds: 450),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   // ── 지역 직접 선택 ──────────────────────────────────────────────
@@ -170,6 +195,7 @@ class _LocationSetupScreenState extends ConsumerState<LocationSetupScreen> {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
+          controller: _scrollController,
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -264,8 +290,8 @@ class _LocationSetupScreenState extends ConsumerState<LocationSetupScreen> {
 
               const SizedBox(height: 28),
 
-              // ── 구분선 ──────────────────────────────────────────
-              const Row(children: [
+              // ── 구분선 (GPS 거절 시 자동 스크롤 앵커) ──────────
+              Row(key: _manualSectionKey, children: const [
                 Expanded(child: Divider()),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 12),
