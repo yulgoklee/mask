@@ -5,6 +5,16 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import '../../data/models/user_profile.dart';
 
+/// 백그라운드 알림 액션 핸들러
+///
+/// 앱이 종료된 상태에서도 액션 버튼 탭을 처리하려면
+/// isolate 외부 top-level 함수여야 한다.
+@pragma('vm:entry-point')
+void onNotificationActionBackground(NotificationResponse response) {
+  // 백그라운드 액션은 현재 별도 처리 없음.
+  // 향후 "오늘 끄기" 구현 시 SharedPreferences 저장 로직 추가.
+}
+
 /// 알림 제목 + 본문 묶음
 class NotificationContent {
   final String title;
@@ -22,6 +32,52 @@ class NotificationService {
   static const int eveningReturnId = 3;
   static const int realtimeAlertId = 4;
   static const int surgeAlertId = 5;
+
+  // ── Rich Notification 액션 ID ──────────────────────────────────
+  /// "챙겼어요" — 마스크 착용 확인 액션
+  static const String actionAcknowledge = 'action_ack';
+
+  /// "오늘 끄기" — 당일 알림 스누즈 액션
+  static const String actionSnoozeToday = 'action_snooze';
+
+  // ── iOS 카테고리 ID ────────────────────────────────────────────
+  static const String _categoryMask  = 'category_mask';   // 마스크 관련 알림
+  static const String _categoryAlert = 'category_alert';  // 경보 알림
+
+  /// iOS 카테고리: 마스크 알림 (챙겼어요 / 오늘 끄기)
+  static String get categoryMask  => _categoryMask;
+
+  /// iOS 카테고리: 경보 알림 (확인했어요)
+  static String get categoryAlert => _categoryAlert;
+
+  // ── 알림 아이콘 리소스 이름 ────────────────────────────────────
+  static const String _iconMask    = '@drawable/ic_notif_mask';
+  static const String _iconWarning = '@drawable/ic_notif_warning';
+
+  // ── Android 액션 버튼 프리셋 ──────────────────────────────────
+
+  /// 마스크 알림용 액션: [챙겼어요] [오늘 끄기]
+  static final List<AndroidNotificationAction> maskActions = [
+    const AndroidNotificationAction(
+      actionAcknowledge,
+      '챙겼어요 ✓',
+      showsUserInterface: false,
+    ),
+    const AndroidNotificationAction(
+      actionSnoozeToday,
+      '오늘 끄기',
+      showsUserInterface: false,
+    ),
+  ];
+
+  /// 경보 알림용 액션: [확인했어요]
+  static final List<AndroidNotificationAction> alertActions = [
+    const AndroidNotificationAction(
+      actionAcknowledge,
+      '확인했어요',
+      showsUserInterface: false,
+    ),
+  ];
 
   /// 등급별 Android 알림 액센트 색상
   ///
@@ -49,17 +105,40 @@ class NotificationService {
 
     const androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosSettings = DarwinInitializationSettings(
+
+    // iOS 카테고리: 마스크 알림(챙겼어요 / 오늘 끄기) + 경보 알림(확인했어요)
+    final iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
       requestSoundPermission: false,
+      notificationCategories: [
+        DarwinNotificationCategory(
+          _categoryMask,
+          actions: [
+            DarwinNotificationAction.plain(actionAcknowledge, '챙겼어요 ✓'),
+            DarwinNotificationAction.plain(
+              actionSnoozeToday,
+              '오늘 끄기',
+              options: {DarwinNotificationActionOption.destructive},
+            ),
+          ],
+        ),
+        DarwinNotificationCategory(
+          _categoryAlert,
+          actions: [
+            DarwinNotificationAction.plain(actionAcknowledge, '확인했어요'),
+          ],
+        ),
+      ],
     );
 
     await _plugin.initialize(
-      const InitializationSettings(
+      InitializationSettings(
         android: androidSettings,
         iOS: iosSettings,
       ),
+      onDidReceiveBackgroundNotificationResponse:
+          onNotificationActionBackground,
     );
 
     _initialized = true;
@@ -78,13 +157,19 @@ class NotificationService {
 
   /// 알림 즉시 발송
   ///
-  /// [gradeColor] : 등급 기반 Android 알림 액센트 색상.
-  ///               [colorForGrade] 헬퍼로 얻어 전달하면 등급별 색상이 적용된다.
+  /// [gradeColor]   : 등급 기반 Android 알림 액센트 색상 ([colorForGrade] 헬퍼 사용).
+  /// [actions]      : Android 알림 액션 버튼 목록 ([maskActions] / [alertActions]).
+  /// [iosCategory]  : iOS 알림 카테고리 ID ([_categoryMask] / [_categoryAlert]).
+  /// [smallIcon]    : Android 소형 알림 아이콘 리소스명.
+  ///                  null 이면 기본값(@mipmap/ic_launcher) 사용.
   Future<void> showImmediateNotification({
     required int id,
     required String title,
     required String body,
     Color? gradeColor,
+    List<AndroidNotificationAction>? actions,
+    String? iosCategory,
+    String? smallIcon,
   }) async {
     await _plugin.show(
       id,
@@ -97,18 +182,28 @@ class NotificationService {
           channelDescription: _channelDesc,
           importance: Importance.high,
           priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
+          icon: smallIcon ?? '@mipmap/ic_launcher',
           color: gradeColor,
           styleInformation: BigTextStyleInformation(body),
+          actions: actions,
         ),
-        iOS: const DarwinNotificationDetails(
+        iOS: DarwinNotificationDetails(
           presentAlert: true,
           presentBadge: true,
           presentSound: true,
+          categoryIdentifier: iosCategory,
         ),
       ),
     );
   }
+
+  // ── 알림 유형별 아이콘 헬퍼 ──────────────────────────────────
+
+  /// 마스크 관련 알림(아침·귀가·예보)용 소형 아이콘
+  static String get iconMask => _iconMask;
+
+  /// 경보 알림(실시간·급변)용 소형 아이콘
+  static String get iconWarning => _iconWarning;
 
   Future<void> cancel(int id) => _plugin.cancel(id);
   Future<void> cancelAll() => _plugin.cancelAll();
