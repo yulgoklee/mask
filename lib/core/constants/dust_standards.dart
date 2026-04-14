@@ -10,6 +10,18 @@ class DustStandards {
   static const int pm10Normal = 80;
   static const int pm10Bad    = 150;
 
+  // 오존(O3) 기준: 한국 대기환경기준 (ppm 단위)
+  // 좋음 ≤0.030 / 보통 ≤0.090 / 나쁨 ≤0.150 / 매우나쁨 >0.150
+  static const double o3Good   = 0.030;
+  static const double o3Normal = 0.090;
+  static const double o3Bad    = 0.150;
+
+  // 이산화질소(NO2) 기준: 한국 대기환경기준 (ppm 단위)
+  // 좋음 ≤0.030 / 보통 ≤0.060 / 나쁨 ≤0.200 / 매우나쁨 >0.200
+  static const double no2Good   = 0.030;
+  static const double no2Normal = 0.060;
+  static const double no2Bad    = 0.200;
+
   static DustGrade getPm25Grade(int value) {
     if (value <= pm25Good)   return DustGrade.good;
     if (value <= pm25Normal) return DustGrade.normal;
@@ -21,6 +33,20 @@ class DustStandards {
     if (value <= pm10Good)   return DustGrade.good;
     if (value <= pm10Normal) return DustGrade.normal;
     if (value <= pm10Bad)    return DustGrade.bad;
+    return DustGrade.veryBad;
+  }
+
+  static DustGrade getO3Grade(double value) {
+    if (value <= o3Good)   return DustGrade.good;
+    if (value <= o3Normal) return DustGrade.normal;
+    if (value <= o3Bad)    return DustGrade.bad;
+    return DustGrade.veryBad;
+  }
+
+  static DustGrade getNo2Grade(double value) {
+    if (value <= no2Good)   return DustGrade.good;
+    if (value <= no2Normal) return DustGrade.normal;
+    if (value <= no2Bad)    return DustGrade.bad;
     return DustGrade.veryBad;
   }
 

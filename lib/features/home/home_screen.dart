@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/dust_standards.dart';
 import '../../core/services/air_korea_service.dart' show AirKoreaService;
+import '../../data/models/dust_data.dart';
 import '../../data/models/forecast_models.dart';
 import '../../providers/providers.dart';
 import '../../data/models/today_situation.dart';
@@ -232,6 +233,10 @@ class HomeScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 12),
+
+                  // 기타 오염물질 (O3 · NO2)
+                  _ExtraPollutantsRow(dust: dust),
                   const SizedBox(height: 20),
 
                   // 시간별 예보
@@ -557,6 +562,126 @@ class _InlineEmptyTile extends StatelessWidget {
                   fontSize: 12, color: AppColors.textSecondary)),
         ],
       ),
+    );
+  }
+}
+
+// ── 기타 오염물질 행 (O3 · NO2) ───────────────────────────
+
+class _ExtraPollutantsRow extends StatelessWidget {
+  final DustData dust;
+  const _ExtraPollutantsRow({required this.dust});
+
+  @override
+  Widget build(BuildContext context) {
+    final o3 = dust.o3Value;
+    final no2 = dust.no2Value;
+
+    // 두 값이 모두 없으면 표시하지 않음
+    if (o3 == null && no2 == null) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Row(
+        children: [
+          if (o3 != null) ...[
+            Expanded(
+              child: _PollutantChip(
+                label: '오존(O₃)',
+                value: '${o3.toStringAsFixed(3)} ppm',
+                grade: dust.o3Grade,
+              ),
+            ),
+          ],
+          if (o3 != null && no2 != null)
+            Container(
+              width: 1,
+              height: 32,
+              color: AppColors.divider,
+              margin: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+          if (no2 != null) ...[
+            Expanded(
+              child: _PollutantChip(
+                label: '이산화질소(NO₂)',
+                value: '${no2.toStringAsFixed(3)} ppm',
+                grade: dust.no2Grade,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PollutantChip extends StatelessWidget {
+  final String label;
+  final String value;
+  final String grade;     // '좋음'|'보통'|'나쁨'|'매우나쁨'|'알수없음'
+  const _PollutantChip({
+    required this.label,
+    required this.value,
+    required this.grade,
+  });
+
+  Color _gradeColor() {
+    switch (grade) {
+      case '좋음':    return AppColors.dustGood;
+      case '보통':    return AppColors.dustNormal;
+      case '나쁨':    return AppColors.dustBad;
+      case '매우나쁨': return AppColors.dustVeryBad;
+      default:       return AppColors.textHint;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: _gradeColor().withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                grade == '알수없음' ? '-' : grade,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: _gradeColor(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
