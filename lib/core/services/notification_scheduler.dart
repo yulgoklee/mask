@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:ui' show Color;
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart'
+    show AndroidNotificationAction;
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -126,6 +128,15 @@ class NotificationScheduler {
           title: content.title,
           body: content.body,
           gradeColor: NotificationService.colorForGrade(gradeName),
+          actions: result.maskRequired
+              ? NotificationService.maskActions
+              : null,
+          iosCategory: result.maskRequired
+              ? NotificationService.categoryMask
+              : null,
+          smallIcon: result.maskRequired
+              ? NotificationService.iconMask
+              : null,
           onSuccess: () => _markSent(prefs, 'morning'),
         );
       }
@@ -164,6 +175,15 @@ class NotificationScheduler {
           title: content.title,
           body: content.body,
           gradeColor: NotificationService.colorForGrade(tomorrowGrade),
+          actions: forecastCheck.maskRequired
+              ? NotificationService.maskActions
+              : null,
+          iosCategory: forecastCheck.maskRequired
+              ? NotificationService.categoryMask
+              : null,
+          smallIcon: forecastCheck.maskRequired
+              ? NotificationService.iconMask
+              : null,
           onSuccess: () => _markSent(prefs, 'forecast'),
         );
       }
@@ -179,6 +199,8 @@ class NotificationScheduler {
           stateNote: stateNote,
           stateOnlyMask: stateOnlyMask,
         );
+        final returnMaskRequired = stateNote != null ||
+            gradeName == '나쁨' || gradeName == '매우나쁨';
         await _sendNotification(
           notifService: notifService,
           analytics: analytics,
@@ -187,6 +209,15 @@ class NotificationScheduler {
           title: content.title,
           body: content.body,
           gradeColor: NotificationService.colorForGrade(gradeName),
+          actions: returnMaskRequired
+              ? NotificationService.maskActions
+              : null,
+          iosCategory: returnMaskRequired
+              ? NotificationService.categoryMask
+              : null,
+          smallIcon: returnMaskRequired
+              ? NotificationService.iconMask
+              : null,
           onSuccess: () => _markSent(prefs, 'return'),
         );
       }
@@ -208,6 +239,9 @@ class NotificationScheduler {
           title: content.title,
           body: content.body,
           gradeColor: NotificationService.colorForGrade('매우나쁨'),
+          actions: NotificationService.alertActions,
+          iosCategory: NotificationService.categoryAlert,
+          smallIcon: NotificationService.iconWarning,
           onSuccess: () => _markSentHour(prefs, 'realtime'),
         );
       }
@@ -243,7 +277,10 @@ class NotificationScheduler {
 
 /// 알림 발송 + 성공/실패 추적
 ///
-/// [gradeColor] : 등급 기반 Android 알림 액센트 색상 (선택)
+/// [gradeColor]  : 등급 기반 Android 알림 액센트 색상 (선택)
+/// [actions]     : Android 알림 액션 버튼 목록 (선택)
+/// [iosCategory] : iOS 알림 카테고리 ID (선택)
+/// [smallIcon]   : Android 소형 알림 아이콘 리소스명 (선택)
 Future<void> _sendNotification({
   required NotificationService notifService,
   required FirebaseAnalytics analytics,
@@ -252,6 +289,9 @@ Future<void> _sendNotification({
   required String title,
   required String body,
   Color? gradeColor,
+  List<AndroidNotificationAction>? actions,
+  String? iosCategory,
+  String? smallIcon,
   required VoidCallback onSuccess,
 }) async {
   try {
@@ -260,6 +300,9 @@ Future<void> _sendNotification({
       title: title,
       body: body,
       gradeColor: gradeColor,
+      actions: actions,
+      iosCategory: iosCategory,
+      smallIcon: smallIcon,
     );
     onSuccess();
     analytics.logEvent(
@@ -418,6 +461,9 @@ Future<void> _checkSurgeAlert({
       title: content.title,
       body: content.body,
       gradeColor: NotificationService.colorForGrade(surge.targetGrade),
+      actions: NotificationService.alertActions,
+      iosCategory: NotificationService.categoryAlert,
+      smallIcon: NotificationService.iconWarning,
       onSuccess: () => _markSentHour(prefs, 'surge'),
     );
   } catch (e) {
