@@ -28,6 +28,27 @@ class NotificationScheduler {
       final stationName = prefs.getString(AppConstants.prefStationName);
       if (stationName == null) return;
 
+      // ── 설정·시간 윈도우 선체크 (API 호출 전) ──────────────
+      // 배터리 절약: 발송할 알림이 없는 시간대는 API 호출 없이 즉시 종료
+      final settingJson = prefs.getString(AppConstants.prefNotificationSetting);
+      final setting = settingJson != null
+          ? NotificationSetting.fromJson(
+              jsonDecode(settingJson) as Map<String, dynamic>)
+          : const NotificationSetting();
+
+      final now = DateTime.now();
+      final needsScheduledAlert = _needsAnyScheduledAlert(prefs, setting, now);
+      // 실시간·급변 알림이 꺼져 있고 예약 알림도 없으면 바로 종료
+      if (!setting.realtimeAlertEnabled && !needsScheduledAlert) {
+        debugPrint('[NotificationScheduler] 발송 대상 없음 — 조기 종료');
+        return;
+      }
+
+      final profileJson = prefs.getString(AppConstants.prefUserProfile);
+      final profile = profileJson != null
+          ? UserProfile.fromJson(jsonDecode(profileJson) as Map<String, dynamic>)
+          : UserProfile.defaultProfile();
+
       // Cloud Functions URL이 설정된 경우 서버 프록시 사용 (API 키 보안)
       // 미설정 시 직접 호출로 폴백 (개발 환경 등)
       final DustDataSource service =
@@ -41,17 +62,6 @@ class NotificationScheduler {
         debugPrint('[NotificationScheduler] 데이터 조회 실패 (재시도 포함) — 알림 건너뜀');
         return;
       }
-
-      final profileJson = prefs.getString(AppConstants.prefUserProfile);
-      final profile = profileJson != null
-          ? UserProfile.fromJson(jsonDecode(profileJson) as Map<String, dynamic>)
-          : UserProfile.defaultProfile();
-
-      final settingJson = prefs.getString(AppConstants.prefNotificationSetting);
-      final setting = settingJson != null
-          ? NotificationSetting.fromJson(
-              jsonDecode(settingJson) as Map<String, dynamic>)
-          : const NotificationSetting();
 
       // ── Tier 2: 기간 상태 로드 ─────────────────────────
       final tempStatesRaw = prefs.getString('temporary_states');
@@ -95,7 +105,6 @@ class NotificationScheduler {
         todaySituations: todaySituations,
       );
 
-      final now = DateTime.now();
       final pm25 = dust.pm25Value ?? 0;
       final gradeName = _gradeLabel(DustStandards.getPm25Grade(pm25));
       final maskType = result.maskType;
@@ -469,6 +478,27 @@ Future<void> _checkSurgeAlert({
   } catch (e) {
     debugPrint('[NotificationScheduler] 급증 감지 오류 (무시): $e');
   }
+}
+
+/// 지금 시각에 발송해야 할 예약 알림(아침/예보/귀가)이 하나라도 있는지 확인
+///
+/// 실시간·급변 알림은 시간 무관 → 이 함수 대상 아님 (호출 측에서 별도 처리).
+/// 이미 오늘 발송됐으면 윈도우 내라도 false 반환 (중복 발송 방지).
+bool _needsAnyScheduledAlert(
+    SharedPreferences prefs, NotificationSetting setting, DateTime now) {
+  if (setting.morningAlertEnabled &&
+      _inWindow(now, setting.morningAlertHour, setting.morningAlertMinute) &&
+      !_sentToday(prefs, 'morning')) return true;
+
+  if (setting.eveningForecastEnabled &&
+      _inWindow(now, setting.eveningForecastHour, setting.eveningForecastMinute) &&
+      !_sentToday(prefs, 'forecast')) return true;
+
+  if (setting.eveningReturnEnabled &&
+      _inWindow(now, setting.eveningReturnHour, setting.eveningReturnMinute) &&
+      !_sentToday(prefs, 'return')) return true;
+
+  return false;
 }
 
 /// 가장 유의미한 활성 상태 이름 반환
