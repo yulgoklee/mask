@@ -154,12 +154,16 @@ enum ConditionType {
   cardiovascular,
   allergy,
   asthma,
+  pregnancy, // 여성 전용 — UI에서 gender == female 조건으로만 노출
   other;
 
   String get label {
-    const labels = ['없음', '호흡기 질환', '심혈관 질환', '알레르기', '천식', '기타'];
+    const labels = ['없음', '호흡기 질환', '심혈관 질환', '알레르기', '천식', '임신 중', '기타'];
     return labels[index];
   }
+
+  /// 성별 조건이 필요한 항목 여부 (true = 여성에게만 노출)
+  bool get requiresFemale => this == ConditionType.pregnancy;
 }
 
 enum Severity {

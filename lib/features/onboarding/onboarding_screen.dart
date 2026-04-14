@@ -5,6 +5,7 @@ import '../../core/constants/app_colors.dart';
 import '../../data/models/user_profile.dart';
 import '../../providers/providers.dart';
 import 'step_name.dart';
+import 'step_gender.dart';
 import 'step_age.dart';
 import 'step_condition.dart';
 import 'step_severity.dart';
@@ -26,6 +27,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // 온보딩 중 수집하는 임시 프로필 데이터
   String? _name;
+  Gender? _gender;           // Step 2 — 성별 (선택)
   AgeGroup _ageGroup = AgeGroup.thirties;
   bool _hasCondition = false;
   ConditionType _conditionType = ConditionType.none;
@@ -34,8 +36,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   ActivityLevel _activityLevel = ActivityLevel.normal;
   SensitivityLevel _sensitivity = SensitivityLevel.normal;
 
-  // 이름(1) + 나이(1) + 질환(1) + [수준(1)] + 활동(1) + 민감도(1)
-  int get _totalPages => _hasCondition ? 6 : 5;
+  // 이름(1) + 성별(1) + 나이(1) + 질환(1) + [수준(1)] + 활동(1) + 민감도(1)
+  int get _totalPages => _hasCondition ? 7 : 6;
 
   @override
   void initState() {
@@ -57,8 +59,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       );
       setState(() {
         _currentPage++;
-        if (_currentPage == 2) {
-          _analytics.logEvent(name: 'onboarding_step_3');
+        if (_currentPage == 3) {
+          _analytics.logEvent(name: 'onboarding_step_4');
         }
       });
     } else {
@@ -79,6 +81,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Future<void> _completeOnboarding() async {
     final profile = UserProfile(
       name: _name,
+      gender: _gender,
       ageGroup: _ageGroup,
       hasCondition: _hasCondition,
       conditionType: _conditionType,
@@ -217,15 +220,29 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         initialName: _name,
         onChanged: (v) => setState(() => _name = v),
       ),
-      // 2. 나이
+      // 2. 성별 (선택) — 임신 옵션 노출 여부 결정
+      StepGender(
+        selected: _gender,
+        onChanged: (v) => setState(() {
+          _gender = v;
+          // 남성/기타로 변경 시 임신 선택 초기화
+          if (v != Gender.female &&
+              _conditionType == ConditionType.pregnancy) {
+            _conditionType = ConditionType.none;
+            _hasCondition = false;
+          }
+        }),
+      ),
+      // 3. 나이
       StepAge(
         selected: _ageGroup,
         onChanged: (v) => setState(() => _ageGroup = v),
       ),
-      // 3. 기저질환 여부
+      // 4. 기저질환 여부 — 성별 전달하여 임신 분기 적용
       StepCondition(
         hasCondition: _hasCondition,
         conditionType: _conditionType,
+        gender: _gender,
         onConditionChanged: (v) => setState(() {
           _hasCondition = v;
           if (!v) _conditionType = ConditionType.none;
@@ -234,7 +251,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       ),
     ];
 
-    // 4. 질환 수준 (기저질환이 있을 경우만)
+    // 5. 질환 수준 (기저질환이 있을 경우만)
     if (_hasCondition) {
       pages.add(
         StepSeverity(
@@ -246,7 +263,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       );
     }
 
-    // 5. 야외 활동 빈도
+    // 6. 야외 활동 빈도
     pages.add(
       StepLifestyle(
         activityLevel: _activityLevel,
@@ -254,7 +271,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       ),
     );
 
-    // 6. 알림 민감도
+    // 7. 알림 민감도
     pages.add(
       StepSensitivity(
         sensitivity: _sensitivity,

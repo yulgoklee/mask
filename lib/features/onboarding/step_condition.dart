@@ -8,12 +8,16 @@ class StepCondition extends StatelessWidget {
   final ValueChanged<bool> onConditionChanged;
   final ValueChanged<ConditionType> onTypeChanged;
 
+  /// 성별 정보 — null이면 모든 선택지 노출, female이면 임신 항목 추가 노출
+  final Gender? gender;
+
   const StepCondition({
     super.key,
     required this.hasCondition,
     required this.conditionType,
     required this.onConditionChanged,
     required this.onTypeChanged,
+    this.gender,
   });
 
   @override
@@ -76,6 +80,8 @@ class StepCondition extends StatelessWidget {
               child: ListView(
                 children: ConditionType.values
                     .where((c) => c != ConditionType.none)
+                    // 임신은 여성(또는 미선택)에게만 노출
+                    .where((c) => !c.requiresFemale || gender == Gender.female || gender == null)
                     .map((type) {
                   final isSelected = conditionType == type;
                   return Padding(
