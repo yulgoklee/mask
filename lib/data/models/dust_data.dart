@@ -7,6 +7,10 @@ class DustData {
   final int? pm10Value;       // PM10 (μg/m³)
   final String pm25Grade;     // PM2.5 등급 (1:좋음 2:보통 3:나쁨 4:매우나쁨)
   final String pm10Grade;     // PM10 등급
+  final double? o3Value;      // 오존 (ppm)
+  final String o3Grade;       // 오존 등급
+  final double? no2Value;     // 이산화질소 (ppm)
+  final String no2Grade;      // 이산화질소 등급
   final DateTime dataTime;    // 측정 시각
   final DateTime fetchedAt;   // 조회 시각
 
@@ -16,6 +20,10 @@ class DustData {
     this.pm10Value,
     required this.pm25Grade,
     required this.pm10Grade,
+    this.o3Value,
+    this.no2Value,
+    this.o3Grade = '알수없음',
+    this.no2Grade = '알수없음',
     required this.dataTime,
     required this.fetchedAt,
   });
@@ -27,6 +35,10 @@ class DustData {
       pm10Value: _parseIntOrNull(json['pm10Value']),
       pm25Grade: _gradeLabel(json['pm25Grade']),
       pm10Grade: _gradeLabel(json['pm10Grade']),
+      o3Value: _parseDoubleOrNull(json['o3Value']),
+      o3Grade: _gradeLabel(json['o3Grade']),
+      no2Value: _parseDoubleOrNull(json['no2Value']),
+      no2Grade: _gradeLabel(json['no2Grade']),
       dataTime: _parseDataTime(json['dataTime'] as String?),
       fetchedAt: DateTime.now(),
     );
@@ -38,6 +50,10 @@ class DustData {
     'pm10Value': pm10Value,
     'pm25Grade': pm25Grade,
     'pm10Grade': pm10Grade,
+    'o3Value': o3Value,
+    'o3Grade': o3Grade,
+    'no2Value': no2Value,
+    'no2Grade': no2Grade,
     'dataTime': dataTime.toIso8601String(),
     'fetchedAt': fetchedAt.toIso8601String(),
   };
@@ -49,6 +65,10 @@ class DustData {
       pm10Value: json['pm10Value'] as int?,
       pm25Grade: json['pm25Grade'] as String? ?? '알수없음',
       pm10Grade: json['pm10Grade'] as String? ?? '알수없음',
+      o3Value: (json['o3Value'] as num?)?.toDouble(),
+      o3Grade: json['o3Grade'] as String? ?? '알수없음',
+      no2Value: (json['no2Value'] as num?)?.toDouble(),
+      no2Grade: json['no2Grade'] as String? ?? '알수없음',
       dataTime: _parseDataTime(json['dataTime'] as String?),
       fetchedAt: _parseDataTime(json['fetchedAt'] as String?),
     );
@@ -87,6 +107,11 @@ class DustData {
     return int.tryParse(value.toString());
   }
 
+  static double? _parseDoubleOrNull(dynamic value) {
+    if (value == null || value == '-') return null;
+    return double.tryParse(value.toString());
+  }
+
   static String _gradeLabel(dynamic gradeCode) {
     switch (gradeCode?.toString()) {
       case '1': return '좋음';
@@ -99,5 +124,5 @@ class DustData {
 
   @override
   String toString() =>
-      'DustData(station: $stationName, PM2.5: $pm25Value($pm25Grade), PM10: $pm10Value($pm10Grade))';
+      'DustData(station: $stationName, PM2.5: $pm25Value($pm25Grade), PM10: $pm10Value($pm10Grade), O3: $o3Value($o3Grade), NO2: $no2Value($no2Grade))';
 }
