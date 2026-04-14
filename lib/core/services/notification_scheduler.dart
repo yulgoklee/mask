@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui' show Color;
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
@@ -124,6 +125,7 @@ class NotificationScheduler {
           type: 'morning',
           title: content.title,
           body: content.body,
+          gradeColor: NotificationService.colorForGrade(gradeName),
           onSuccess: () => _markSent(prefs, 'morning'),
         );
       }
@@ -161,6 +163,7 @@ class NotificationScheduler {
           type: 'forecast',
           title: content.title,
           body: content.body,
+          gradeColor: NotificationService.colorForGrade(tomorrowGrade),
           onSuccess: () => _markSent(prefs, 'forecast'),
         );
       }
@@ -183,6 +186,7 @@ class NotificationScheduler {
           type: 'return',
           title: content.title,
           body: content.body,
+          gradeColor: NotificationService.colorForGrade(gradeName),
           onSuccess: () => _markSent(prefs, 'return'),
         );
       }
@@ -203,6 +207,7 @@ class NotificationScheduler {
           type: 'realtime',
           title: content.title,
           body: content.body,
+          gradeColor: NotificationService.colorForGrade('매우나쁨'),
           onSuccess: () => _markSentHour(prefs, 'realtime'),
         );
       }
@@ -237,6 +242,8 @@ class NotificationScheduler {
 }
 
 /// 알림 발송 + 성공/실패 추적
+///
+/// [gradeColor] : 등급 기반 Android 알림 액센트 색상 (선택)
 Future<void> _sendNotification({
   required NotificationService notifService,
   required FirebaseAnalytics analytics,
@@ -244,6 +251,7 @@ Future<void> _sendNotification({
   required String type,
   required String title,
   required String body,
+  Color? gradeColor,
   required VoidCallback onSuccess,
 }) async {
   try {
@@ -251,6 +259,7 @@ Future<void> _sendNotification({
       id: id,
       title: title,
       body: body,
+      gradeColor: gradeColor,
     );
     onSuccess();
     analytics.logEvent(
@@ -408,6 +417,7 @@ Future<void> _checkSurgeAlert({
       type: 'surge',
       title: content.title,
       body: content.body,
+      gradeColor: NotificationService.colorForGrade(surge.targetGrade),
       onSuccess: () => _markSentHour(prefs, 'surge'),
     );
   } catch (e) {
