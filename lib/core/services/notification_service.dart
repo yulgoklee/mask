@@ -5,35 +5,82 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import '../../data/datasources/defense_repository.dart';
+import '../../data/datasources/feedback_repository.dart';
 import '../../data/models/defense_record.dart';
+import '../../data/models/notification_feedback.dart';
 import '../../data/models/user_profile.dart';
 
-/// 배경 isolate: "챙겼어요" 탭 시 방어 기록 저장
+/// 배경 isolate: 알림 액션 버튼 탭 처리
 ///
-/// 스케줄러가 알림 발송 전 SharedPreferences에 저장해 둔
-/// `_last_notif_pm25` / `_last_notif_mask_type` 값을 읽어
-/// [DefenseRecord]를 생성하고 [DefenseRepository.addRecordToPrefs]로 저장한다.
+/// ┌────────────────────────────────────────────────────────┐
+/// │ actionAcknowledge ("챙겼어요")                          │
+/// │  → DefenseRecord 생성 + 저장                            │
+/// │  → FeedbackType.acknowledged 기록                      │
+/// │                                                        │
+/// │ actionSnoozeToday ("오늘 끄기")                         │
+/// │  → prefSnoozedDate 에 오늘 날짜 저장                     │
+/// │  → FeedbackType.snoozed 기록                           │
+/// │  → 스케줄러가 당일 모든 예약 알림 건너뜀                   │
+/// └────────────────────────────────────────────────────────┘
 ///
-/// 이 함수는 top-level isolate 환경이므로 Riverpod를 사용할 수 없다.
-/// SharedPreferences는 동일한 앱 컨테이너를 공유하므로 직접 접근 가능.
+/// top-level 함수 제약: Riverpod 사용 불가 → SharedPreferences 직접 접근.
 @pragma('vm:entry-point')
 void onNotificationActionBackground(NotificationResponse response) async {
-  if (response.actionId != NotificationService.actionAcknowledge) return;
-
   try {
     final prefs = await SharedPreferences.getInstance();
-    final pm25 = prefs.getInt(NotificationService.prefLastNotifPm25) ?? 0;
-    final maskType =
-        prefs.getString(NotificationService.prefLastNotifMaskType) ?? 'KF80';
+    final pm25  = prefs.getInt(NotificationService.prefLastNotifPm25) ?? 0;
 
-    if (pm25 <= 0) return; // 유효하지 않은 데이터 무시
+    if (response.actionId == NotificationService.actionAcknowledge) {
+      // ── "챙겼어요" ──────────────────────────────────────────
+      if (pm25 > 0) {
+        final maskType =
+            prefs.getString(NotificationService.prefLastNotifMaskType) ??
+                'KF80';
+        final record = DefenseRecord.create(pm25: pm25, maskType: maskType);
+        await DefenseRepository.addRecordToPrefs(prefs, record);
+      }
+      // 피드백 기록 (pm25 == 0이어도 응답 의사는 기록)
+      final pending = _loadPendingNotifId(prefs);
+      await FeedbackRepository.addFeedbackToPrefs(
+        prefs,
+        NotificationFeedback(
+          notifId: pending ?? _nowId(),
+          timestamp: DateTime.now(),
+          pm25: pm25,
+          type: FeedbackType.acknowledged,
+        ),
+      );
+    } else if (response.actionId == NotificationService.actionSnoozeToday) {
+      // ── "오늘 끄기" ─────────────────────────────────────────
+      final today = _dateKey(DateTime.now());
+      await prefs.setString(NotificationService.prefSnoozedDate, today);
 
-    final record = DefenseRecord.create(pm25: pm25, maskType: maskType);
-    await DefenseRepository.addRecordToPrefs(prefs, record);
+      final pending = _loadPendingNotifId(prefs);
+      await FeedbackRepository.addFeedbackToPrefs(
+        prefs,
+        NotificationFeedback(
+          notifId: pending ?? _nowId(),
+          timestamp: DateTime.now(),
+          pm25: pm25,
+          type: FeedbackType.snoozed,
+        ),
+      );
+    }
   } catch (_) {
     // 배경 핸들러 오류는 조용히 무시 (앱 충돌 방지)
   }
 }
+
+String? _loadPendingNotifId(SharedPreferences prefs) {
+  final raw = prefs.getString(FeedbackRepository.pendingKey);
+  if (raw == null) return null;
+  return raw.split('|').firstOrNull;
+}
+
+String _nowId() => DateTime.now().millisecondsSinceEpoch.toString();
+String _dateKey(DateTime dt) =>
+    '${dt.year}${dt.month.toString().padLeft(2, '0')}'
+    '${dt.day.toString().padLeft(2, '0')}';
 
 /// 알림 제목 + 본문 묶음
 class NotificationContent {
@@ -53,12 +100,15 @@ class NotificationService {
   static const int realtimeAlertId = 4;
   static const int surgeAlertId = 5;
 
-  // ── SharedPreferences 키 — 알림 발송 시 PM2.5 컨텍스트 저장용 ─
+  // ── SharedPreferences 키 ──────────────────────────────────────
   /// 가장 최근 마스크 알림 발송 시점의 PM2.5 값 (int)
   static const String prefLastNotifPm25 = '_last_notif_pm25';
 
   /// 가장 최근 마스크 알림 발송 시점의 마스크 종류 ('KF80' | 'KF94')
   static const String prefLastNotifMaskType = '_last_notif_mask_type';
+
+  /// "오늘 끄기" 탭 날짜 — 'yyyyMMdd' 형식, 스케줄러가 당일 알림 억제에 사용
+  static const String prefSnoozedDate = 'notif_snoozed_date';
 
   // ── Rich Notification 액션 ID ──────────────────────────────────
   /// "챙겼어요" — 마스크 착용 확인 액션
