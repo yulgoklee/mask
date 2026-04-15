@@ -13,8 +13,10 @@ class AppConstants {
 
   // ── 알림 ─────────────────────────────────────────────────
   /// 알림 발송 허용 윈도우: 설정 시간 ±이 분(분) 이내일 때 발송
-  /// backgroundTaskIntervalMinutes(15) / 2 = 7 → WorkManager 1회 실행 시 알림 1개만 발송
-  static const int notificationWindowMinutes = 7;
+  ///
+  /// 15로 설정 시 8:00 알림 → 7:45~8:15 사이 WorkManager 실행에서 발송.
+  /// 즉 외출 최대 15분 전에 사전 체크가 가능해져 "출발 전 여유 알림" 효과.
+  static const int notificationWindowMinutes = 15;
 
   /// Workmanager 백그라운드 체크 주기 (분)
   static const int backgroundTaskIntervalMinutes = 15;
