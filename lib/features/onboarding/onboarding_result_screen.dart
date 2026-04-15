@@ -391,12 +391,13 @@ class _SensitivityRadarChart extends StatelessWidget {
                     borderColor: AppColors.primary,
                     borderWidth: 2,
                     entryRadius: 4,
+                    // fl_chart 0.69.2: max 자동 스케일 — 모두 0일 때 깨짐 방지로
+                    // _values()에서 최솟값 5.0 보정 처리
                     dataEntries: display
                         .map((v) => RadarEntry(value: v))
                         .toList(),
                   ),
                 ],
-                radarMaxEntryValue: 100,
               ),
             ),
           ),
