@@ -19,6 +19,17 @@ class UserProfile {
   final ActivityLevel activityLevel;
   final SensitivityLevel sensitivity;
 
+  // ── Phase 1.4 특별 상태 (w_spec) ──────────────────────────
+  /// 피부 시술 후 2주 내 (w_spec: -0.25)
+  final bool hasSkinProcedure;
+
+  /// 영유아·고령자 부양 중 (w_spec: -0.15)
+  final bool hasDependents;
+
+  // ── Phase 1.5 편의 성향 (w_pref) ──────────────────────────
+  /// 마스크 착용 시 답답함·김 서림이 심한 편 (w_pref: +0.08 → T_final 소폭 상향)
+  final bool maskDiscomfort;
+
   const UserProfile({
     this.name,
     this.gender,
@@ -30,6 +41,9 @@ class UserProfile {
     this.isDiagnosed = false,
     required this.activityLevel,
     this.sensitivity = SensitivityLevel.normal,
+    this.hasSkinProcedure = false,
+    this.hasDependents = false,
+    this.maskDiscomfort = false,
   });
 
   // ── 계산 속성 ──────────────────────────────────────────────
@@ -72,6 +86,9 @@ class UserProfile {
     bool? isDiagnosed,
     ActivityLevel? activityLevel,
     SensitivityLevel? sensitivity,
+    bool? hasSkinProcedure,
+    bool? hasDependents,
+    bool? maskDiscomfort,
   }) {
     return UserProfile(
       name: name == _sentinel ? this.name : name as String?,
@@ -84,6 +101,9 @@ class UserProfile {
       isDiagnosed: isDiagnosed ?? this.isDiagnosed,
       activityLevel: activityLevel ?? this.activityLevel,
       sensitivity: sensitivity ?? this.sensitivity,
+      hasSkinProcedure: hasSkinProcedure ?? this.hasSkinProcedure,
+      hasDependents: hasDependents ?? this.hasDependents,
+      maskDiscomfort: maskDiscomfort ?? this.maskDiscomfort,
     );
   }
 
@@ -98,6 +118,9 @@ class UserProfile {
         'isDiagnosed': isDiagnosed,
         'activityLevel': activityLevel.index,
         'sensitivity': sensitivity.index,
+        'hasSkinProcedure': hasSkinProcedure,
+        'hasDependents': hasDependents,
+        'maskDiscomfort': maskDiscomfort,
       };
 
   factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
@@ -113,6 +136,10 @@ class UserProfile {
         isDiagnosed: json['isDiagnosed'] as bool,
         activityLevel: ActivityLevel.values[json['activityLevel'] as int],
         sensitivity: SensitivityLevel.values[json['sensitivity'] as int],
+        // 하위 호환: 구버전 저장 데이터에는 없을 수 있으므로 기본값 false
+        hasSkinProcedure: json['hasSkinProcedure'] as bool? ?? false,
+        hasDependents: json['hasDependents'] as bool? ?? false,
+        maskDiscomfort: json['maskDiscomfort'] as bool? ?? false,
       );
 }
 

@@ -38,6 +38,9 @@ dependencies:
 
   # 아이콘
   cupertino_icons: ^1.0.6
+
+  # 로딩 애니메이션 (분석 화면)
+  flutter_spinkit: ^5.2.1
   firebase_core: ^4.6.0
   firebase_analytics: ^12.2.0
   firebase_crashlytics: ^5.1.0

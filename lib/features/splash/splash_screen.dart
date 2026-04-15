@@ -3,6 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/providers.dart';
 
+/// 스플래시 화면 — Phase 1 리디자인
+///
+/// 배경색: #A2D2FF (AppColors.primaryLight)
+/// 헤드라인: "당신의 기관지는 남들과 다릅니다."
+/// 서브: "당신만을 위한 마스크 타이밍."
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -11,28 +16,52 @@ class SplashScreen extends ConsumerStatefulWidget {
 }
 
 class _SplashScreenState extends ConsumerState<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final Animation<double> _fadeAnim;
-  late final Animation<double> _scaleAnim;
+    with TickerProviderStateMixin {
+  late final AnimationController _iconCtrl;
+  late final AnimationController _textCtrl;
+
+  late final Animation<double> _iconFade;
+  late final Animation<double> _iconScale;
+  late final Animation<double> _textFade;
+  late final Animation<Offset> _textSlide;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(
+
+    // 아이콘 애니메이션 (0 → 0.7초)
+    _iconCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: const Duration(milliseconds: 700),
     );
-    _fadeAnim = CurvedAnimation(parent: _ctrl, curve: Curves.easeIn);
-    _scaleAnim = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeOutBack),
+    _iconFade = CurvedAnimation(parent: _iconCtrl, curve: Curves.easeOut);
+    _iconScale = Tween<double>(begin: 0.75, end: 1.0).animate(
+      CurvedAnimation(parent: _iconCtrl, curve: Curves.easeOutBack),
     );
-    _ctrl.forward();
+
+    // 텍스트 애니메이션 (0.35초 딜레이 후)
+    _textCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _textFade = CurvedAnimation(parent: _textCtrl, curve: Curves.easeOut);
+    _textSlide = Tween<Offset>(
+      begin: const Offset(0, 0.15),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _textCtrl, curve: Curves.easeOut));
+
+    _startAnimations();
     _navigate();
   }
 
+  Future<void> _startAnimations() async {
+    _iconCtrl.forward();
+    await Future.delayed(const Duration(milliseconds: 350));
+    if (mounted) _textCtrl.forward();
+  }
+
   Future<void> _navigate() async {
-    await Future.delayed(const Duration(milliseconds: 1800));
+    await Future.delayed(const Duration(milliseconds: 2200));
     if (!mounted) return;
 
     final repo = ref.read(profileRepositoryProvider);
@@ -51,60 +80,83 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   void dispose() {
-    _ctrl.dispose();
+    _iconCtrl.dispose();
+    _textCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primary,
+      backgroundColor: AppColors.primaryLight,
       body: Center(
-        child: FadeTransition(
-          opacity: _fadeAnim,
-          child: ScaleTransition(
-            scale: _scaleAnim,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(28),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 36),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // ── 앱 아이콘 ────────────────────────────────────
+              FadeTransition(
+                opacity: _iconFade,
+                child: ScaleTransition(
+                  scale: _iconScale,
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.25),
+                          blurRadius: 28,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: const Center(
+                      child: Text('😷', style: TextStyle(fontSize: 52)),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 40),
+
+              // ── 헤드라인 텍스트 ──────────────────────────────
+              FadeTransition(
+                opacity: _textFade,
+                child: SlideTransition(
+                  position: _textSlide,
+                  child: Column(
+                    children: [
+                      const Text(
+                        '당신의 기관지는\n남들과 다릅니다.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                          height: 1.35,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        '당신만을 위한 마스크 타이밍.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: AppColors.textPrimary.withValues(alpha: 0.65),
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: -0.3,
+                        ),
                       ),
                     ],
                   ),
-                  child: const Center(
-                    child: Text('😷', style: TextStyle(fontSize: 48)),
-                  ),
                 ),
-                const SizedBox(height: 24),
-                const Text(
-                  '마스크 알림',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  '나에게 맞는 미세먼지 알림',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 15,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

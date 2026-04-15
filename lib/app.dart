@@ -15,6 +15,7 @@ import 'features/onboarding/notification_time_screen.dart';
 import 'features/onboarding/permission_screen.dart';
 import 'features/onboarding/complete_screen.dart';
 import 'features/onboarding/onboarding_result_screen.dart';
+import 'features/onboarding/analysis_loading_screen.dart';
 
 class MaskAlertApp extends ConsumerWidget {
   const MaskAlertApp({super.key});
@@ -54,6 +55,7 @@ scaffoldBackgroundColor: AppColors.background,
         '/permission': (_) => const PermissionScreen(),
         '/onboarding_complete': (_) => const OnboardingCompleteScreen(),
         '/onboarding_result':   (_) => const OnboardingResultScreen(),
+        '/analysis_loading':    (_) => const AnalysisLoadingScreen(),
       },
     );
   }
