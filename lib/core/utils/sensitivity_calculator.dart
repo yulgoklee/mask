@@ -4,22 +4,27 @@ import '../../data/models/user_profile.dart';
 /// 개인 프로필 → 민감도 계수(S) 계산
 ///
 /// ────────────────────────────────────────────────────────
-///  공식: S = min(w1 + w2 + w3, 0.6)
+///  공식: S = clamp(w1 + w2 + w3 + w_spec + w_pref, 0.0, 0.6)
 ///
-///   w1 — 기저질환 가중치
-///        없음: 0.0 / 경증: 0.2 / 중등도·중증: 0.3
+///   w1     — 기저질환 가중치
+///            없음: 0.0 / 경증: 0.2 / 중등도·중증: 0.3
 ///
-///   w2 — 야외 활동량 가중치
-///        낮음(주 1~2회): 0.0 / 보통(매일 외출): 0.1 / 높음: 0.2
+///   w2     — 야외 활동량 가중치
+///            낮음: 0.0 / 보통: 0.1 / 높음: 0.2
 ///
-///   w3 — 주관적 민감도 가중치
-///        낮음: 0.0 / 보통: 0.1 / 높음: 0.2
+///   w3     — 주관적 민감도 가중치
+///            낮음: 0.0 / 보통: 0.1 / 높음: 0.2
+///
+///   w_spec — 특별 상태 가중치
+///            피부 시술 후 2주: +0.25 / 영유아·고령자 부양: +0.15
+///
+///   w_pref — 편의 성향 가중치 (마스크 답답함 → T_final 소폭 완화)
+///            답답함 있음: -0.08  (T_final 상향 → 덜 자주 울림)
 ///
 ///  최종 알림 임계치: T_final = T_standard × (1 − S)
 ///  T_standard = 35 μg/m³  (PM2.5 '보통' 상한, 환경부 기준)
 ///
 ///  예시: S = 0.5  →  T_final = 35 × 0.5 = 17.5 μg/m³
-///        (일반인 기준 36 μg/m³보다 18.5 낮은 수치에서 알림)
 /// ────────────────────────────────────────────────────────
 class SensitivityCalculator {
   SensitivityCalculator._();
@@ -42,10 +47,12 @@ class SensitivityCalculator {
 
   /// 프로필로부터 민감도 계수(S) 계산
   static double compute(UserProfile profile) {
-    final w1 = _conditionWeight(profile);
-    final w2 = _activityWeight(profile.activityLevel);
-    final w3 = _sensitivityWeight(profile.sensitivity);
-    return (w1 + w2 + w3).clamp(0.0, sMax);
+    final w1    = _conditionWeight(profile);
+    final w2    = _activityWeight(profile.activityLevel);
+    final w3    = _sensitivityWeight(profile.sensitivity);
+    final wSpec = _specialStateWeight(profile);
+    final wPref = _prefWeight(profile);
+    return (w1 + w2 + w3 + wSpec + wPref).clamp(0.0, sMax);
   }
 
   /// S → 최종 PM2.5 알림 임계치 (μg/m³)
@@ -61,8 +68,6 @@ class SensitivityCalculator {
   // ── SharedPreferences 저장 / 로드 ─────────────────────────
 
   /// 프로필로부터 S·T_final 계산 후 prefs에 저장
-  ///
-  /// 프로필 저장 시 항상 함께 호출해 캐시를 최신 상태로 유지한다.
   static Future<void> saveToPrefs(
       SharedPreferences prefs, UserProfile profile) async {
     final s = compute(profile);
@@ -70,18 +75,13 @@ class SensitivityCalculator {
     await prefs.setDouble(_prefKeyThreshold, threshold(s));
   }
 
-  /// 저장된 민감도 계수(S) 반환. 저장값이 없으면 null.
   static double? loadS(SharedPreferences prefs) =>
       prefs.getDouble(_prefKeyS);
 
-  /// 저장된 최종 알림 임계치(T_final) 반환. 저장값이 없으면 null.
   static double? loadThreshold(SharedPreferences prefs) =>
       prefs.getDouble(_prefKeyThreshold);
 
   /// S → "일반인 대비 X.X배 민감" 배율
-  ///
-  /// T_standard / T_final = 1 / (1 - S)
-  /// S=0 → 1.0배, S=0.3 → 1.43배, S=0.6 → 2.5배
   static double sensitivityMultiplier(double s) {
     if (s >= 1.0) return double.infinity;
     return 1.0 / (1.0 - s);
@@ -97,50 +97,50 @@ class SensitivityCalculator {
 
   // ── 가중치 계산 (공개 API) ────────────────────────────────
 
-  /// w1 — 기저질환 가중치 (공개)
-  ///  없음: 0.0 / 경증: 0.2 / 중등도·중증: 0.3
   static double conditionWeight(UserProfile profile) =>
       _conditionWeight(profile);
-
-  /// w2 — 야외 활동량 가중치 (공개)
-  ///  낮음: 0.0 / 보통: 0.1 / 높음: 0.2
   static double activityWeight(ActivityLevel level) =>
       _activityWeight(level);
-
-  /// w3 — 주관적 민감도 가중치 (공개)
-  ///  낮음: 0.0 / 보통: 0.1 / 높음: 0.2
   static double sensitivityWeight(SensitivityLevel level) =>
       _sensitivityWeight(level);
+  static double specialStateWeight(UserProfile profile) =>
+      _specialStateWeight(profile);
+  static double prefWeight(UserProfile profile) =>
+      _prefWeight(profile);
 
   // ── 가중치 계산 (내부) ───────────────────────────────────
 
-  /// w1 — 기저질환 가중치
   static double _conditionWeight(UserProfile profile) {
     if (!profile.hasCondition) return 0.0;
     return profile.severity == Severity.mild ? 0.2 : 0.3;
   }
 
-  /// w2 — 야외 활동량 가중치
   static double _activityWeight(ActivityLevel level) {
     switch (level) {
-      case ActivityLevel.low:
-        return 0.0;
-      case ActivityLevel.normal:
-        return 0.1;
-      case ActivityLevel.high:
-        return 0.2;
+      case ActivityLevel.low:    return 0.0;
+      case ActivityLevel.normal: return 0.1;
+      case ActivityLevel.high:   return 0.2;
     }
   }
 
-  /// w3 — 주관적 민감도 가중치
   static double _sensitivityWeight(SensitivityLevel level) {
     switch (level) {
-      case SensitivityLevel.low:
-        return 0.0;
-      case SensitivityLevel.normal:
-        return 0.1;
-      case SensitivityLevel.high:
-        return 0.2;
+      case SensitivityLevel.low:    return 0.0;
+      case SensitivityLevel.normal: return 0.1;
+      case SensitivityLevel.high:   return 0.2;
     }
   }
+
+  /// w_spec — 특별 상태 가중치 (누적 가능)
+  static double _specialStateWeight(UserProfile profile) {
+    double w = 0.0;
+    if (profile.hasSkinProcedure) w += 0.25; // 피부 시술 후 2주 → 매우 민감
+    if (profile.hasDependents)    w += 0.15; // 영유아·고령자 부양 → 보호 강화
+    return w;
+  }
+
+  /// w_pref — 마스크 불편 성향 (T_final 소폭 완화)
+  /// 답답함이 심하면 알림 기준을 약간 올려줌 (강제보다는 편의 반영)
+  static double _prefWeight(UserProfile profile) =>
+      profile.maskDiscomfort ? -0.08 : 0.0;
 }

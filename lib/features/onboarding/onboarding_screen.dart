@@ -4,16 +4,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../data/models/user_profile.dart';
 import '../../providers/providers.dart';
-import 'step_name.dart';
-import 'step_gender.dart';
-import 'step_age.dart';
-import 'step_condition.dart';
-import 'step_severity.dart';
+import 'step_basic_info.dart';
+import 'step_body_sensitivity.dart';
+import 'step_special_state.dart';
 import 'step_lifestyle.dart';
-import 'step_sensitivity.dart';
 
 final _analytics = FirebaseAnalytics.instance;
 
+/// Phase 1 온보딩 — 4단계 새 흐름
+///
+///  1. 기본 정보    (이름 · 출생연도 · 성별)
+///  2. 신체 민감도  (증상 복수 선택 + 강도)
+///  3. 특별 상태    (임신 · 피부 시술 · 부양가족)
+///  4. 생활 환경    (야외 활동량 + 마스크 편의 성향)
+///
+///  완료 → analysis_loading_screen → onboarding_result
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -25,24 +30,32 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  // 온보딩 중 수집하는 임시 프로필 데이터
-  String? _name;
-  Gender? _gender;           // Step 2 — 성별 (선택)
-  AgeGroup _ageGroup = AgeGroup.thirties;
-  bool _hasCondition = false;
-  ConditionType _conditionType = ConditionType.none;
-  Severity _severity = Severity.mild;
-  bool _isDiagnosed = false;
-  ActivityLevel _activityLevel = ActivityLevel.normal;
-  SensitivityLevel _sensitivity = SensitivityLevel.normal;
+  static const int _totalPages = 4;
 
-  // 이름(1) + 성별(1) + 나이(1) + 질환(1) + [수준(1)] + 활동(1) + 민감도(1)
-  int get _totalPages => _hasCondition ? 7 : 6;
+  // ── 1단계: 기본 정보 ────────────────────────────────────────
+  String? _name;
+  int? _birthYear;
+  Gender? _gender;
+
+  // ── 2단계: 신체 민감도 ──────────────────────────────────────
+  Set<ConditionType> _selectedSymptoms = {};
+  Severity _severity = Severity.mild;
+
+  // ── 3단계: 특별 상태 ────────────────────────────────────────
+  bool _isPregnant = false;
+  bool _hasSkinProcedure = false;
+  bool _hasDependents = false;
+
+  // ── 4단계: 생활 환경 ────────────────────────────────────────
+  ActivityLevel _activityLevel = ActivityLevel.normal;
+  bool _maskDiscomfort = false;
+
+  // ── 네비게이션 ───────────────────────────────────────────────
 
   @override
   void initState() {
     super.initState();
-    _analytics.logEvent(name: 'onboarding_step_1');
+    _analytics.logEvent(name: 'onboarding_start');
   }
 
   @override
@@ -57,12 +70,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
-      setState(() {
-        _currentPage++;
-        if (_currentPage == 3) {
-          _analytics.logEvent(name: 'onboarding_step_4');
-        }
-      });
+      setState(() => _currentPage++);
+      _analytics.logEvent(
+          name: 'onboarding_step_${_currentPage + 1}');
     } else {
       _completeOnboarding();
     }
@@ -79,29 +89,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Future<void> _completeOnboarding() async {
-    final profile = UserProfile(
-      name: _name,
-      gender: _gender,
-      ageGroup: _ageGroup,
-      hasCondition: _hasCondition,
-      conditionType: _conditionType,
-      severity: _severity,
-      isDiagnosed: _isDiagnosed,
-      activityLevel: _activityLevel,
-      sensitivity: _sensitivity,
-    );
+    final profile = _buildProfile();
 
     try {
       await ref.read(profileProvider.notifier).saveProfile(profile);
       await ref.read(profileRepositoryProvider).completeOnboarding();
     } catch (_) {
-      // 저장 실패해도 홈으로 진행 (다음 실행 시 재시도 가능)
+      // 저장 실패해도 분석 화면으로 진행
     }
 
     await _analytics.logEvent(name: 'onboarding_completed');
 
     if (mounted) {
-      Navigator.of(context).pushReplacementNamed('/onboarding_result');
+      Navigator.of(context).pushReplacementNamed('/analysis_loading');
     }
   }
 
@@ -110,41 +110,121 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     try {
       await ref.read(profileRepositoryProvider).completeOnboarding();
-    } catch (_) {
-      // 저장 실패해도 홈으로 진행
-    }
+    } catch (_) {}
 
     if (mounted) {
       Navigator.of(context).pushReplacementNamed('/location_setup');
     }
   }
 
+  // ── 프로필 조립 ──────────────────────────────────────────────
+
+  /// selectedSymptoms → 대표 conditionType (우선순위 기반)
+  ConditionType _primaryCondition() {
+    if (_isPregnant) return ConditionType.pregnancy;
+    if (_selectedSymptoms.contains(ConditionType.asthma)) {
+      return ConditionType.asthma;
+    }
+    if (_selectedSymptoms.contains(ConditionType.cardiovascular)) {
+      return ConditionType.cardiovascular;
+    }
+    if (_selectedSymptoms.contains(ConditionType.respiratory)) {
+      return ConditionType.respiratory;
+    }
+    if (_selectedSymptoms.contains(ConditionType.allergy)) {
+      return ConditionType.allergy;
+    }
+    return ConditionType.none;
+  }
+
+  /// Severity → SensitivityLevel 매핑 (w3 계산용)
+  SensitivityLevel _deriveSensitivity() {
+    if (_selectedSymptoms.isEmpty && !_isPregnant) {
+      return SensitivityLevel.low;
+    }
+    switch (_severity) {
+      case Severity.severe:   return SensitivityLevel.high;
+      case Severity.moderate: return SensitivityLevel.normal;
+      case Severity.mild:     return SensitivityLevel.low;
+    }
+  }
+
+  /// birthYear → AgeGroup (하위 호환 폴백)
+  AgeGroup _ageGroupFromYear(int? year) {
+    if (year == null) return AgeGroup.thirties;
+    final age = DateTime.now().year - year;
+    if (age < 20) return AgeGroup.teens;
+    if (age < 30) return AgeGroup.twenties;
+    if (age < 40) return AgeGroup.thirties;
+    if (age < 50) return AgeGroup.forties;
+    if (age < 60) return AgeGroup.fifties;
+    return AgeGroup.sixtyPlus;
+  }
+
+  UserProfile _buildProfile() {
+    final hasCondition =
+        _selectedSymptoms.isNotEmpty || _isPregnant;
+
+    return UserProfile(
+      name: _name,
+      gender: _gender,
+      birthYear: _birthYear,
+      ageGroup: _ageGroupFromYear(_birthYear),
+      hasCondition: hasCondition,
+      conditionType: _primaryCondition(),
+      severity: hasCondition ? _severity : Severity.mild,
+      isDiagnosed: false,
+      activityLevel: _activityLevel,
+      sensitivity: _deriveSensitivity(),
+      hasSkinProcedure: _hasSkinProcedure,
+      hasDependents: _hasDependents,
+      maskDiscomfort: _maskDiscomfort,
+    );
+  }
+
+  // ── 빌드 ─────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
-    final pages = _buildPages();
-
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
-            // 진행 바 + 건너뛰기
+            // ── 상단 진행 바 ───────────────────────────────────
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Row(
                 children: [
                   Expanded(
-                    child: LinearProgressIndicator(
-                      value: (_currentPage + 1) / _totalPages,
-                      backgroundColor: AppColors.divider,
-                      color: AppColors.primary,
+                    child: ClipRRect(
                       borderRadius: BorderRadius.circular(4),
-                      minHeight: 6,
+                      child: LinearProgressIndicator(
+                        value: (_currentPage + 1) / _totalPages,
+                        backgroundColor: AppColors.divider,
+                        color: AppColors.primary,
+                        minHeight: 6,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
+                  Text(
+                    '${_currentPage + 1}/$_totalPages',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
                   TextButton(
                     onPressed: _skipOnboarding,
+                    style: TextButton.styleFrom(
+                      minimumSize: Size.zero,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                    ),
                     child: const Text(
                       '나중에',
                       style: TextStyle(color: AppColors.textSecondary),
@@ -154,52 +234,61 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ),
             ),
 
-            // 페이지
+            // ── 페이지 콘텐츠 ──────────────────────────────────
             Expanded(
               child: PageView(
                 controller: _pageController,
                 physics: const NeverScrollableScrollPhysics(),
-                children: pages,
+                children: _buildPages(),
               ),
             ),
 
-            // 하단 버튼
+            // ── 하단 버튼 ──────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
               child: Row(
                 children: [
-                  if (_currentPage > 0)
-                    Expanded(
+                  if (_currentPage > 0) ...[
+                    SizedBox(
+                      width: 52,
+                      height: 52,
                       child: OutlinedButton(
                         onPressed: _prevPage,
                         style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          side: const BorderSide(color: AppColors.primary),
+                          padding: EdgeInsets.zero,
+                          side:
+                              const BorderSide(color: AppColors.divider),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text('이전'),
+                        child: const Icon(Icons.arrow_back_ios_new,
+                            size: 16, color: AppColors.textSecondary),
                       ),
                     ),
-                  if (_currentPage > 0) const SizedBox(width: 12),
+                    const SizedBox(width: 12),
+                  ],
                   Expanded(
-                    flex: 2,
-                    child: ElevatedButton(
-                      onPressed: _nextPage,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    child: SizedBox(
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: _nextPage,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        _currentPage == _totalPages - 1 ? '시작하기' : '다음',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                        child: Text(
+                          _currentPage == _totalPages - 1
+                              ? '분석 시작하기 →'
+                              : '다음',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
@@ -213,72 +302,48 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  List<Widget> _buildPages() {
-    final pages = <Widget>[
-      // 1. 이름
-      StepName(
-        initialName: _name,
-        onChanged: (v) => setState(() => _name = v),
-      ),
-      // 2. 성별 (선택) — 임신 옵션 노출 여부 결정
-      StepGender(
-        selected: _gender,
-        onChanged: (v) => setState(() {
-          _gender = v;
-          // 남성/기타로 변경 시 임신 선택 초기화
-          if (v != Gender.female &&
-              _conditionType == ConditionType.pregnancy) {
-            _conditionType = ConditionType.none;
-            _hasCondition = false;
-          }
-        }),
-      ),
-      // 3. 나이
-      StepAge(
-        selected: _ageGroup,
-        onChanged: (v) => setState(() => _ageGroup = v),
-      ),
-      // 4. 기저질환 여부 — 성별 전달하여 임신 분기 적용
-      StepCondition(
-        hasCondition: _hasCondition,
-        conditionType: _conditionType,
-        gender: _gender,
-        onConditionChanged: (v) => setState(() {
-          _hasCondition = v;
-          if (!v) _conditionType = ConditionType.none;
-        }),
-        onTypeChanged: (v) => setState(() => _conditionType = v),
-      ),
-    ];
-
-    // 5. 질환 수준 (기저질환이 있을 경우만)
-    if (_hasCondition) {
-      pages.add(
-        StepSeverity(
-          severity: _severity,
-          isDiagnosed: _isDiagnosed,
-          onSeverityChanged: (v) => setState(() => _severity = v),
-          onDiagnosedChanged: (v) => setState(() => _isDiagnosed = v),
+  List<Widget> _buildPages() => [
+        // 1단계 — 기본 정보
+        StepBasicInfo(
+          initialName: _name,
+          initialBirthYear: _birthYear,
+          initialGender: _gender,
+          onNameChanged: (v) => setState(() => _name = v),
+          onBirthYearChanged: (v) => setState(() => _birthYear = v),
+          onGenderChanged: (v) => setState(() {
+            _gender = v;
+            // 성별 변경 시 임신 초기화 (여성 아닌 경우)
+            if (v != Gender.female) _isPregnant = false;
+          }),
         ),
-      );
-    }
 
-    // 6. 야외 활동 빈도
-    pages.add(
-      StepLifestyle(
-        activityLevel: _activityLevel,
-        onChanged: (v) => setState(() => _activityLevel = v),
-      ),
-    );
+        // 2단계 — 신체 민감도
+        StepBodySensitivity(
+          selectedSymptoms: _selectedSymptoms,
+          severity: _severity,
+          onSymptomsChanged: (v) => setState(() => _selectedSymptoms = v),
+          onSeverityChanged: (v) => setState(() => _severity = v),
+        ),
 
-    // 7. 알림 민감도
-    pages.add(
-      StepSensitivity(
-        sensitivity: _sensitivity,
-        onChanged: (v) => setState(() => _sensitivity = v),
-      ),
-    );
+        // 3단계 — 특별 상태
+        StepSpecialState(
+          isPregnant: _isPregnant,
+          hasSkinProcedure: _hasSkinProcedure,
+          hasDependents: _hasDependents,
+          gender: _gender,
+          onPregnantChanged: (v) => setState(() => _isPregnant = v),
+          onSkinProcedureChanged: (v) =>
+              setState(() => _hasSkinProcedure = v),
+          onDependentsChanged: (v) => setState(() => _hasDependents = v),
+        ),
 
-    return pages;
-  }
+        // 4단계 — 생활 환경
+        StepLifestyle(
+          activityLevel: _activityLevel,
+          maskDiscomfort: _maskDiscomfort,
+          onActivityChanged: (v) => setState(() => _activityLevel = v),
+          onMaskDiscomfortChanged: (v) =>
+              setState(() => _maskDiscomfort = v),
+        ),
+      ];
 }
