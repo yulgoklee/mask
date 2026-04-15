@@ -42,20 +42,22 @@ class NotificationScheduler {
 
       final now = DateTime.now();
 
-      // ── "오늘 끄기" 스누즈 체크 ────────────────────────────
-      // "오늘 끄기"를 탭한 날짜이면 예약 알림 전부 건너뜀
-      if (_isSnoozedToday(prefs, now)) {
-        debugPrint('[NotificationScheduler] 오늘 끄기 활성 — 예약 알림 건너뜀');
-        // 실시간·급변은 스누즈와 무관하게 허용
-        if (!setting.realtimeAlertEnabled) return;
-      }
-
-      // ── 무응답 처리 + 학습 평가 ────────────────────────────
-      // 이전 알림의 무응답 여부 확인 후 ignored 기록 추가
+      // ── 무응답 처리 + 학습 평가 ─────────────────────────────
+      // 스누즈 여부와 무관하게 항상 먼저 실행:
+      //   - 이전 알림 무응답 → ignored 기록
+      //   - 피드백 데이터로 sOffset 재계산
+      // (알림을 끄더라도 학습은 계속 누적되어야 함)
       final feedbackRepo = FeedbackRepository(prefs);
       await feedbackRepo.resolveIgnoredIfAny();
-      // 피드백 데이터로 sOffset 재계산
       await AdaptiveLearner.evaluate(prefs, feedbackRepo);
+
+      // ── "오늘 끄기" 스누즈 체크 ─────────────────────────────
+      // 학습 처리 후에 스누즈 여부를 판단
+      if (_isSnoozedToday(prefs, now)) {
+        debugPrint('[NotificationScheduler] 오늘 끄기 활성 — 예약 알림 건너뜀');
+        // 실시간·급변은 스누즈와 무관하게 계속 처리
+        if (!setting.realtimeAlertEnabled) return;
+      }
 
       final needsScheduledAlert = _needsAnyScheduledAlert(prefs, setting, now);
       // 실시간·급변 알림이 꺼져 있고 예약 알림도 없으면 바로 종료
