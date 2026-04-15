@@ -128,6 +128,16 @@ class NotificationScheduler {
 
       final analytics = FirebaseAnalytics.instance;
 
+      // ── 마스크 알림 발송 전 PM2.5 컨텍스트 저장 ─────────────────
+      // "챙겼어요" 탭 시 배경 isolate가 이 값을 읽어 DefenseRecord 생성
+      if (result.maskRequired) {
+        await prefs.setInt(NotificationService.prefLastNotifPm25, pm25);
+        await prefs.setString(
+          NotificationService.prefLastNotifMaskType,
+          maskType ?? 'KF80',
+        );
+      }
+
       // ── 오전 알림 ────────────────────────────────────────
       if (setting.morningAlertEnabled &&
           _inWindow(now, setting.morningAlertHour, setting.morningAlertMinute) &&
