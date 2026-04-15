@@ -189,9 +189,9 @@ enum ActivityLevel {
 
   String get description {
     switch (this) {
-      case ActivityLevel.low:    return '주 1~2회 정도 외출해요';
-      case ActivityLevel.normal: return '매일 출퇴근 등 외출해요';
-      case ActivityLevel.high:   return '야외 활동이 많아요';
+      case ActivityLevel.low:    return '하루 1시간 미만 외출해요';
+      case ActivityLevel.normal: return '하루 1~3시간 외출해요';
+      case ActivityLevel.high:   return '하루 3시간 이상 야외 활동해요';
     }
   }
 }

@@ -101,7 +101,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     await _analytics.logEvent(name: 'onboarding_completed');
 
     if (mounted) {
-      Navigator.of(context).pushReplacementNamed('/location_setup');
+      Navigator.of(context).pushReplacementNamed('/onboarding_result');
     }
   }
 

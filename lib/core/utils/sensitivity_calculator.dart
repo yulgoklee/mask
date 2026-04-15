@@ -1,3 +1,4 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/models/user_profile.dart';
 
 /// 개인 프로필 → 민감도 계수(S) 계산
@@ -33,6 +34,10 @@ class SensitivityCalculator {
   /// S < sThreshold 이면 기존 등급(Grade) 로직만 사용
   static const double sThreshold = 0.3;
 
+  // ── SharedPreferences 키 ───────────────────────────────────
+  static const String _prefKeyS         = 'sensitivity_score_s';
+  static const String _prefKeyThreshold = 'sensitivity_threshold';
+
   // ── 메인 API ──────────────────────────────────────────────
 
   /// 프로필로부터 민감도 계수(S) 계산
@@ -51,6 +56,35 @@ class SensitivityCalculator {
     if (s >= 0.4) return 'KF94';
     if (s >= sThreshold) return 'KF80';
     return null;
+  }
+
+  // ── SharedPreferences 저장 / 로드 ─────────────────────────
+
+  /// 프로필로부터 S·T_final 계산 후 prefs에 저장
+  ///
+  /// 프로필 저장 시 항상 함께 호출해 캐시를 최신 상태로 유지한다.
+  static Future<void> saveToPrefs(
+      SharedPreferences prefs, UserProfile profile) async {
+    final s = compute(profile);
+    await prefs.setDouble(_prefKeyS, s);
+    await prefs.setDouble(_prefKeyThreshold, threshold(s));
+  }
+
+  /// 저장된 민감도 계수(S) 반환. 저장값이 없으면 null.
+  static double? loadS(SharedPreferences prefs) =>
+      prefs.getDouble(_prefKeyS);
+
+  /// 저장된 최종 알림 임계치(T_final) 반환. 저장값이 없으면 null.
+  static double? loadThreshold(SharedPreferences prefs) =>
+      prefs.getDouble(_prefKeyThreshold);
+
+  /// S → "일반인 대비 X.X배 민감" 배율
+  ///
+  /// T_standard / T_final = 1 / (1 - S)
+  /// S=0 → 1.0배, S=0.3 → 1.43배, S=0.6 → 2.5배
+  static double sensitivityMultiplier(double s) {
+    if (s >= 1.0) return double.infinity;
+    return 1.0 / (1.0 - s);
   }
 
   /// S → 민감도 레이블 (UI 표시용)
