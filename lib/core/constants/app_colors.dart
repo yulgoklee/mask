@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // 브랜드 색상
-  static const Color primary = Color(0xFF3B82F6);      // 파랑
-  static const Color primaryLight = Color(0xFFEFF6FF);
-  static const Color secondary = Color(0xFF10B981);    // 초록
+  // 브랜드 색상 — Sky Blue + Coral 테마
+  static const Color primary      = Color(0xFF42A5F5);  // Sky Blue (버튼·포인트용)
+  static const Color primaryLight = Color(0xFFA2D2FF);  // Sky Blue Light (틴트 배경)
+  static const Color secondary    = Color(0xFFFF865E);  // Coral (강조·배지)
+  static const Color coral        = Color(0xFFFF865E);  // Coral (별칭)
 
   // 미세먼지 등급별 색상
   static const Color dustGood = Color(0xFF10B981);     // 초록
