@@ -33,11 +33,17 @@ class AdaptiveLearner {
   AdaptiveLearner._();
 
   // ── 하이퍼파라미터 ──────────────────────────────────────────
-  static const double kAlpha       = 0.05;   // 학습률 (한 스텝 조정량)
-  static const double kOffsetMin   = -0.30;  // sOffset 최솟값 (T 최대 상향)
-  static const double kOffsetMax   =  0.10;  // sOffset 최댓값 (T 소폭 하향)
-  static const int    kWindowSize  = 10;     // 평가 최근 N건
-  static const int    kMinSamples  = 3;      // 조정 발동 최소 샘플 수
+  static const double kAlpha            = 0.05;  // 학습률 (한 스텝 조정량)
+  static const double kOffsetMin        = -0.30; // sOffset 최솟값 (T 최대 상향)
+  static const double kOffsetMax        =  0.10; // sOffset 최댓값 (T 소폭 하향)
+  static const int    kWindowSize       = 10;    // 평가 최근 N건
+  static const int    kMinSamples       = 3;     // 조정 발동 최소 샘플 수
+  /// 평가 쿨다운 (시간)
+  ///
+  /// WorkManager가 15분마다 실행되므로, 쿨다운 없이 평가하면
+  /// 조건 충족 시 하루 최대 96 × 0.05 = 4.8 → kOffsetMin 하루 도달.
+  /// 24시간 쿨다운으로 1일 최대 1회 조정.
+  static const int    kEvalCooldownHours = 24;
 
   static const double kHighIgnoreThreshold = 0.60; // 무시율 ≥ 60% → 과다 알림
   static const double kLowAckThreshold     = 0.30; // 응답률 < 30% → 무관심
@@ -64,11 +70,28 @@ class AdaptiveLearner {
   /// 피드백을 평가하고 필요 시 sOffset 갱신
   ///
   /// 스케줄러 `runCheck()` 내에서 알림 발송 전에 호출.
-  /// [kMinSamples] 미만이면 조정 없이 반환.
+  ///
+  /// 조기 반환 조건:
+  ///  1. [kMinSamples] 미만 — 데이터 부족
+  ///  2. 마지막 평가로부터 [kEvalCooldownHours]시간 미경과 — 과도한 조정 방지
+  ///     (WorkManager 15분 주기에서 96회/일 실행 → 조정이 하루 만에 한계 도달하는 문제)
   static Future<void> evaluate(
     SharedPreferences prefs,
     FeedbackRepository feedbackRepo,
   ) async {
+    // 쿨다운 체크: 마지막 평가로부터 24시간 이내이면 skip
+    final lastEvalStr = prefs.getString(_prefKeyLastEval);
+    if (lastEvalStr != null) {
+      try {
+        final lastEval = DateTime.parse(lastEvalStr);
+        if (DateTime.now().difference(lastEval).inHours < kEvalCooldownHours) {
+          return; // 아직 쿨다운 중
+        }
+      } catch (_) {
+        // 파싱 실패 시 무시하고 평가 진행
+      }
+    }
+
     final feedbacks = feedbackRepo.loadAll().take(kWindowSize).toList();
     if (feedbacks.length < kMinSamples) return;
 
@@ -100,7 +123,7 @@ class AdaptiveLearner {
       debugPrint('[AdaptiveLearner] sOffset: $currentOffset → $newOffset');
     }
 
-    // 평가 메타 기록
+    // 평가 메타 기록 (쿨다운 기준점 갱신)
     await prefs.setString(_prefKeyLastEval, DateTime.now().toIso8601String());
     await prefs.setInt(
         _prefKeyEvalCount, (prefs.getInt(_prefKeyEvalCount) ?? 0) + 1);

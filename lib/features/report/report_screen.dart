@@ -120,8 +120,10 @@ class _WeeklyBarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maxY = dailyTotals.isEmpty
-        ? 20.0
+    // dailyTotals는 항상 길이 7인 리스트(List.filled)이므로 isEmpty는 절대 true가 되지 않음.
+    // hasData(실제 기록 존재 여부)로 분기해야 빈 상태 maxY가 올바르게 설정됨.
+    final maxY = !hasData
+        ? 20.0 // 빈 상태: 샘플 데이터(최대 18)에 맞는 고정값
         : (dailyTotals.reduce((a, b) => a > b ? a : b) * 1.3)
             .clamp(5.0, double.infinity);
 
