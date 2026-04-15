@@ -8,3 +8,4 @@ export 'core_providers.dart';
 export 'profile_providers.dart';
 export 'dust_providers.dart';
 export 'location_providers.dart';
+export 'defense_providers.dart';

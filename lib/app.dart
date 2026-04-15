@@ -6,6 +6,7 @@ import 'features/home/home_screen.dart';
 import 'features/notification_setting/notification_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'features/profile/profile_screen.dart';
+import 'features/report/report_screen.dart';
 import 'features/info/info_screen.dart';
 import 'features/splash/splash_screen.dart';
 import 'features/tutorial/tutorial_screen.dart';
@@ -71,6 +72,7 @@ class _MainShellState extends State<MainShell> {
 
   static const _screens = [
     HomeScreen(),
+    ReportScreen(),
     NotificationScreen(),
     ProfileScreen(),
   ];
@@ -92,6 +94,11 @@ class _MainShellState extends State<MainShell> {
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home, color: AppColors.primary),
             label: '홈',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.shield_outlined),
+            selectedIcon: Icon(Icons.shield, color: AppColors.primary),
+            label: '리포트',
           ),
           NavigationDestination(
             icon: Icon(Icons.notifications_outlined),
