@@ -6,7 +6,9 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart'
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../data/datasources/feedback_repository.dart';
 import '../../data/models/forecast_models.dart';
+import '../../data/models/notification_feedback.dart';
 import '../../data/models/user_profile.dart';
 import '../../data/models/notification_setting.dart';
 import '../../data/models/temporary_state.dart';
@@ -14,6 +16,7 @@ import '../../data/models/today_situation.dart';
 import '../config/app_config.dart';
 import '../constants/app_constants.dart';
 import '../constants/dust_standards.dart';
+import '../utils/adaptive_learner.dart';
 import '../utils/dust_calculator.dart';
 import '../utils/sensitivity_calculator.dart';
 import 'air_korea_service.dart';
@@ -38,6 +41,22 @@ class NotificationScheduler {
           : const NotificationSetting();
 
       final now = DateTime.now();
+
+      // ── "오늘 끄기" 스누즈 체크 ────────────────────────────
+      // "오늘 끄기"를 탭한 날짜이면 예약 알림 전부 건너뜀
+      if (_isSnoozedToday(prefs, now)) {
+        debugPrint('[NotificationScheduler] 오늘 끄기 활성 — 예약 알림 건너뜀');
+        // 실시간·급변은 스누즈와 무관하게 허용
+        if (!setting.realtimeAlertEnabled) return;
+      }
+
+      // ── 무응답 처리 + 학습 평가 ────────────────────────────
+      // 이전 알림의 무응답 여부 확인 후 ignored 기록 추가
+      final feedbackRepo = FeedbackRepository(prefs);
+      await feedbackRepo.resolveIgnoredIfAny();
+      // 피드백 데이터로 sOffset 재계산
+      await AdaptiveLearner.evaluate(prefs, feedbackRepo);
+
       final needsScheduledAlert = _needsAnyScheduledAlert(prefs, setting, now);
       // 실시간·급변 알림이 꺼져 있고 예약 알림도 없으면 바로 종료
       if (!setting.realtimeAlertEnabled && !needsScheduledAlert) {
@@ -57,10 +76,19 @@ class NotificationScheduler {
               ? CloudFunctionsDataSource()
               : AirKoreaService(prefs);
 
-      // 네트워크 실패 시 최대 2회 재시도 (3초 간격)
-      final dust = await _fetchWithRetry(() => service.getDustData(stationName));
+      // 네트워크 실패 시 최대 2회 재시도 → 그래도 실패 시 로컬 캐시로 폴백
+      // AirKoreaService는 내부적으로 캐시를 관리하므로,
+      // CloudFunctions 실패 시에도 캐시 데이터가 있으면 알림 발송 가능.
+      var dust = await _fetchWithRetry(() => service.getDustData(stationName));
       if (dust == null) {
-        debugPrint('[NotificationScheduler] 데이터 조회 실패 (재시도 포함) — 알림 건너뜀');
+        // Fallback: AirKorea 캐시에서 마지막 유효 데이터 시도
+        dust = await _fetchWithRetry(
+          () => AirKoreaService(prefs).getDustData(stationName),
+          maxRetries: 0, // 캐시 조회이므로 재시도 불필요
+        );
+      }
+      if (dust == null) {
+        debugPrint('[NotificationScheduler] 데이터 조회 실패 (캐시 포함) — 알림 건너뜀');
         return;
       }
 
@@ -116,15 +144,20 @@ class NotificationScheduler {
       final stateOnlyMask = result.maskRequired && !baseResult.maskRequired;
 
       // ── 개인 임계치(T_final) 트리거 여부 계산 ─────────────────
+      // sOffset(학습 조정값)을 반영한 S_eff 기반으로 임계치 계산
       // T_final triggered = 개인 기준선 초과 AND 표준 '나쁨' 미달
-      // → 일반 사용자는 알림 안 받지만 본인은 받는 상황 → 개인화 근거 표시
-      final s = SensitivityCalculator.compute(profile);
-      final tFinalValue = s >= SensitivityCalculator.sThreshold
-          ? SensitivityCalculator.threshold(s)
+      final s    = SensitivityCalculator.compute(profile);
+      final sEff = AdaptiveLearner.effectiveS(s, prefs);   // sOffset 반영
+      final tFinalValue = sEff >= SensitivityCalculator.sThreshold
+          ? AdaptiveLearner.effectiveThreshold(s, prefs)
           : null;
       final tFinalTriggered = tFinalValue != null &&
           pm25.toDouble() >= tFinalValue &&
           pm25 <= DustStandards.pm25Normal;
+
+      debugPrint('[NotificationScheduler] S=$s sEff=$sEff '
+          'T_eff=${tFinalValue?.toStringAsFixed(1)} '
+          '${AdaptiveLearner.debugSummary(prefs)}');
 
       final analytics = FirebaseAnalytics.instance;
 
@@ -136,6 +169,9 @@ class NotificationScheduler {
           NotificationService.prefLastNotifMaskType,
           maskType ?? 'KF80',
         );
+        // 피드백 수집: 발송 이후 응답 대기 등록
+        final notifId = DateTime.now().millisecondsSinceEpoch.toString();
+        await feedbackRepo.markPending(notifId, DateTime.now(), pm25);
       }
 
       // ── 오전 알림 ────────────────────────────────────────
@@ -381,6 +417,15 @@ String _dateKey() {
       '${now.day.toString().padLeft(2, '0')}';
 }
 
+/// "오늘 끄기"가 오늘 활성화되어 있는지 확인
+bool _isSnoozedToday(SharedPreferences prefs, DateTime now) {
+  final snoozedDate = prefs.getString(NotificationService.prefSnoozedDate);
+  if (snoozedDate == null) return false;
+  final today = '${now.year}${now.month.toString().padLeft(2, '0')}'
+      '${now.day.toString().padLeft(2, '0')}';
+  return snoozedDate == today;
+}
+
 bool _sentThisHour(SharedPreferences prefs, String type) {
   return prefs.getBool('notif_sent_${type}_${_hourKey()}') ?? false;
 }
@@ -397,6 +442,7 @@ String _hourKey() {
 }
 
 /// 최대 [maxRetries]회 재시도. 각 시도 사이 [delaySeconds]초 대기.
+/// [maxRetries]=0 이면 단 1회 시도 (캐시 조회 등에서 사용).
 Future<T?> _fetchWithRetry<T>(
   Future<T?> Function() fetch, {
   int maxRetries = 2,
