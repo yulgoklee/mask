@@ -15,6 +15,7 @@ import '../config/app_config.dart';
 import '../constants/app_constants.dart';
 import '../constants/dust_standards.dart';
 import '../utils/dust_calculator.dart';
+import '../utils/sensitivity_calculator.dart';
 import 'air_korea_service.dart';
 import 'cloud_functions_data_source.dart';
 import 'dust_data_source.dart';
@@ -114,6 +115,17 @@ class NotificationScheduler {
       // 공기 자체는 괜찮지만 상태 때문에 마스크 필요한 경우
       final stateOnlyMask = result.maskRequired && !baseResult.maskRequired;
 
+      // ── 개인 임계치(T_final) 트리거 여부 계산 ─────────────────
+      // T_final triggered = 개인 기준선 초과 AND 표준 '나쁨' 미달
+      // → 일반 사용자는 알림 안 받지만 본인은 받는 상황 → 개인화 근거 표시
+      final s = SensitivityCalculator.compute(profile);
+      final tFinalValue = s >= SensitivityCalculator.sThreshold
+          ? SensitivityCalculator.threshold(s)
+          : null;
+      final tFinalTriggered = tFinalValue != null &&
+          pm25.toDouble() >= tFinalValue &&
+          pm25 <= DustStandards.pm25Normal;
+
       final analytics = FirebaseAnalytics.instance;
 
       // ── 오전 알림 ────────────────────────────────────────
@@ -128,6 +140,8 @@ class NotificationScheduler {
           maskType: maskType,
           stateNote: stateNote,
           stateOnlyMask: stateOnlyMask,
+          tFinalTriggered: tFinalTriggered,
+          tFinal: tFinalValue,
         );
         await _sendNotification(
           notifService: notifService,
@@ -207,6 +221,8 @@ class NotificationScheduler {
           maskType: maskType,
           stateNote: stateNote,
           stateOnlyMask: stateOnlyMask,
+          tFinalTriggered: tFinalTriggered,
+          tFinal: tFinalValue,
         );
         final returnMaskRequired = stateNote != null ||
             gradeName == '나쁨' || gradeName == '매우나쁨';

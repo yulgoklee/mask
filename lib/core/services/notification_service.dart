@@ -81,12 +81,12 @@ class NotificationService {
 
   /// 등급별 Android 알림 액센트 색상
   ///
-  /// 알림 트레이에서 등급을 색으로 즉시 인지할 수 있도록 한다.
+  /// 좋음=파랑(안심), 보통=초록(여유), 나쁨=주황(주의), 매우나쁨=빨강(위험)
   static const Map<String, Color> _gradeColors = {
-    '좋음':    Color(0xFF4CAF50), // green
-    '보통':    Color(0xFF42A5F5), // blue
-    '나쁨':    Color(0xFFFF7043), // deep orange
-    '매우나쁨': Color(0xFFEF5350), // red
+    '좋음':    Color(0xFF42A5F5), // sky blue  — 안심
+    '보통':    Color(0xFF4CAF50), // green     — 여유
+    '나쁨':    Color(0xFFFF7043), // deep orange — 주의
+    '매우나쁨': Color(0xFFEF5350), // red       — 위험
   };
 
   /// 등급 이름으로 Android 알림 액센트 색상 반환
@@ -208,17 +208,20 @@ class NotificationService {
   Future<void> cancel(int id) => _plugin.cancel(id);
   Future<void> cancelAll() => _plugin.cancelAll();
 
-  // ── 알림 콘텐츠 생성 — Action First 원칙 ─────────────────────
+  // ── 알림 콘텐츠 생성 — 다정한 조언자 원칙 ──────────────────────
   //
-  // 원칙: 제목 = 지금 당장 해야 할 행동 (마스크 종류 포함)
-  //       본문 = 행동의 근거 (PM2.5 수치·등급·상태)
-  //
-  // "KF80 챙기세요" 처럼 제목만 봐도 무엇을 해야 하는지 명확하게.
+  // 원칙:
+  //  - 제목 = 지금 해야 할 행동 (명확하게, 마스크 종류 포함)
+  //  - 본문 = 부드러운 이유 설명 ("공기가 조금 무겁네요" 스타일)
+  //  - T_final 트리거 시 = 개인 기준선 도달 사실을 본문에 명시
+  //    ("당신의 기준 {X}μg/m³을 넘었어요" → 개인화 가치 체감)
 
   /// 아침 알림 — 오늘 마스크 여부
   ///
-  /// [stateNote]    : 활성 취약 상태 이름 ("임신 중", "야외 운동 예정" 등)
-  /// [stateOnlyMask]: 공기는 괜찮지만 취약 상태 때문에 마스크 필요할 때 true
+  /// [tFinalTriggered] : 개인 임계치(T_final)가 발송 트리거인 경우 true
+  /// [tFinal]          : 개인 임계치 값 (tFinalTriggered=true일 때 표시)
+  /// [stateNote]       : 활성 취약 상태 이름 ("임신 중", "야외 운동 예정" 등)
+  /// [stateOnlyMask]   : 공기는 괜찮지만 취약 상태 때문에 마스크 필요할 때 true
   static NotificationContent morningContent({
     required UserProfile profile,
     required int pm25,
@@ -227,37 +230,54 @@ class NotificationService {
     String? maskType,
     String? stateNote,
     bool stateOnlyMask = false,
+    bool tFinalTriggered = false,
+    double? tFinal,
   }) {
     final name = profile.displayName;
 
-    // ── 제목: Action First ──────────────────────────────────────
+    // ── 제목: Action First — 부드러운 권유형 ─────────────────────
     final String title;
     if (maskRequired) {
       final emoji = stateOnlyMask ? '🛡️' : '😷';
-      // 마스크 종류가 있으면 제목에 포함 → 즉각적인 행동 단서 제공
-      final action = maskType != null ? '$maskType 챙기세요' : '마스크 챙기세요';
+      final action = maskType != null
+          ? '오늘 $maskType 마스크를 챙기는 게 좋아요'
+          : '오늘 마스크를 챙기는 게 좋아요';
       title = '$emoji $name, $action';
     } else {
-      title = '✅ $name, 오늘 쾌적해요';
+      title = '✅ $name, 오늘 공기가 맑아요';
     }
 
-    // ── 본문: PM2.5 데이터 → 상태 컨텍스트 순 ─────────────────────
+    // ── 본문: 이유를 부드럽게 ────────────────────────────────────
     final lines = <String>[];
-    lines.add('PM2.5 $pm25μg/m³ · $gradeName');
 
-    if (stateNote != null) {
-      lines.add(maskRequired
-          ? '$stateNote · 착용 권고'
-          : stateNote);
-    } else if (maskRequired && maskType != null) {
-      lines.add('$maskType 이상 착용 권고');
-    } else if (!maskRequired) {
-      lines.add('마스크 없이 외출 가능해요');
-    }
-
-    if (stateNote == null) {
-      final note = _personalNote(profile);
-      if (note != null) lines.add(note);
+    if (maskRequired) {
+      if (tFinalTriggered && tFinal != null) {
+        // 개인 기준선 도달 → 이유를 명확히 설명
+        lines.add('PM2.5 ${pm25}μg/m³ · $gradeName');
+        lines.add('당신의 기준(${tFinal.toStringAsFixed(1)}μg/m³)을 넘었어요.');
+        lines.add(maskType != null
+            ? '$maskType 착용을 권해드려요 😊'
+            : '마스크 착용을 권해드려요 😊');
+      } else if (stateNote != null) {
+        lines.add('PM2.5 ${pm25}μg/m³ · $gradeName');
+        lines.add('$stateNote 상태라 더 신경 쓰는 게 좋아요.');
+        if (maskType != null) lines.add('$maskType 착용을 권해드려요 😊');
+      } else {
+        lines.add('PM2.5 ${pm25}μg/m³ · $gradeName');
+        lines.add('공기가 조금 무겁네요.');
+        lines.add(maskType != null
+            ? '$maskType 착용을 권해드려요 😊'
+            : '마스크를 꼭 챙겨주세요 😊');
+      }
+    } else {
+      lines.add('PM2.5 ${pm25}μg/m³ · $gradeName');
+      if (stateNote != null) {
+        lines.add('$stateNote 상태를 참고해 주세요.');
+      } else {
+        lines.add('마스크 없이 외출하셔도 좋아요 😊');
+        final note = _personalNote(profile);
+        if (note != null) lines.add(note);
+      }
     }
 
     return NotificationContent(title: title, body: lines.join('\n'));
@@ -280,27 +300,30 @@ class NotificationService {
     final isBad = maskRequired ??
         (tomorrowGrade == '나쁨' || tomorrowGrade == '매우나쁨');
 
-    // ── 제목 ────────────────────────────────────────────────────
+    // ── 제목 ─────────────────────────────────────────────────────
     final String title;
     if (isBad) {
       final emoji = stateOnlyMask ? '🛡️' : '🌆';
-      final action = maskType != null ? '내일 $maskType 챙기세요' : '내일 마스크 챙기세요';
+      final action = maskType != null
+          ? '내일 $maskType 마스크를 미리 챙겨두세요'
+          : '내일 마스크를 미리 챙겨두세요';
       title = '$emoji $name, $action';
     } else {
-      title = '🌤 $name, 내일 공기 좋아요';
+      title = '🌤 $name, 내일 공기가 좋을 것 같아요';
     }
 
-    // ── 본문 ────────────────────────────────────────────────────
+    // ── 본문 ─────────────────────────────────────────────────────
     final lines = <String>['내일 PM2.5 예보: $tomorrowGrade'];
 
     if (isBad) {
       if (stateNote != null) {
-        lines.add('$stateNote · ${maskType != null ? "$maskType 이상 권장" : "마스크 권장"}');
+        lines.add('$stateNote 상태라 조금 더 주의하는 게 좋겠어요.');
+        if (maskType != null) lines.add('$maskType 이상을 권해드려요 😊');
       } else {
-        lines.add(maskType != null ? '$maskType 이상 미리 준비하세요' : '마스크 미리 챙겨두세요');
+        lines.add('내일 출발 전에 미리 ${ maskType ?? "마스크"}를 챙겨두시면 좋겠어요 😊');
       }
     } else {
-      lines.add('마스크 없이 외출해도 좋아요');
+      lines.add('내일은 마스크 없이 쾌적하게 외출하실 수 있어요 😊');
     }
 
     return NotificationContent(title: title, body: lines.join('\n'));
@@ -308,38 +331,51 @@ class NotificationService {
 
   /// 귀가 알림 — 퇴근길 공기 상태
   ///
-  /// [stateNote] : 활성 취약 상태 이름
+  /// [tFinalTriggered] : 개인 임계치(T_final)가 발송 트리거인 경우 true
+  /// [tFinal]          : 개인 임계치 값
+  /// [stateNote]       : 활성 취약 상태 이름
   static NotificationContent eveningReturnContent({
     required UserProfile profile,
     required String gradeName,
     String? maskType,
     String? stateNote,
     bool stateOnlyMask = false,
+    bool tFinalTriggered = false,
+    double? tFinal,
   }) {
     final name = profile.displayName;
     final isBad = gradeName == '나쁨' || gradeName == '매우나쁨';
-    final maskRequired = stateNote != null || isBad;
+    final maskRequired = tFinalTriggered || stateNote != null || isBad;
 
-    // ── 제목 ────────────────────────────────────────────────────
+    // ── 제목 ─────────────────────────────────────────────────────
     final String title;
     if (maskRequired) {
-      final action = maskType != null ? '퇴근길 $maskType 챙기세요' : '퇴근길 마스크 챙기세요';
+      final action = maskType != null
+          ? '퇴근길에 $maskType 마스크를 챙겨주세요'
+          : '퇴근길에 마스크를 챙겨주세요';
       title = '🏠 $name, $action';
     } else {
-      title = '🏠 $name, 퇴근길 공기 좋아요';
+      title = '🏠 $name, 퇴근길 공기가 좋아요';
     }
 
-    // ── 본문 ────────────────────────────────────────────────────
-    final lines = <String>['PM2.5 $gradeName'];
+    // ── 본문 ─────────────────────────────────────────────────────
+    final lines = <String>[];
 
     if (maskRequired) {
-      if (stateNote != null) {
-        lines.add('$stateNote · ${maskType != null ? "$maskType 착용 권고" : "마스크 착용 권고"}');
+      lines.add('PM2.5 $gradeName');
+      if (tFinalTriggered && tFinal != null) {
+        lines.add('당신의 기준(${tFinal.toStringAsFixed(1)}μg/m³)을 넘었어요.');
+        lines.add('귀가 시 마스크를 꼭 챙겨주세요 😊');
+      } else if (stateNote != null) {
+        lines.add('$stateNote 상태라 조금 더 신경 써주세요.');
+        if (maskType != null) lines.add('$maskType 착용을 권해드려요 😊');
       } else {
-        lines.add(maskType != null ? '$maskType 착용 권고' : '마스크 착용을 권장해요');
+        lines.add('퇴근길 공기가 다소 무거워요.');
+        lines.add(maskType != null ? '$maskType 착용을 권해드려요 😊' : '마스크를 챙겨주세요 😊');
       }
     } else {
-      lines.add('오늘 수고하셨어요 😊');
+      lines.add('PM2.5 $gradeName');
+      lines.add('오늘 하루도 수고 많으셨어요. 편하게 귀가하세요 😊');
     }
 
     return NotificationContent(title: title, body: lines.join('\n'));
@@ -355,10 +391,15 @@ class NotificationService {
   }) {
     final name = profile.displayName;
 
-    // 매우나쁨 = KF94 필수 → 제목에 마스크 종류 명시
-    final title = '🚨 $name, KF94 지금 쓰세요';
-    final lines = <String>['PM2.5 $pm25μg/m³ · 매우나쁨 · 야외 즉시 중단'];
-    if (stateNote != null) lines.add('$stateNote · 즉시 착용');
+    // 매우나쁨 = 안전 최우선 → 명확하되 당황하지 않게
+    final title = '🚨 $name, 지금 KF94 마스크가 꼭 필요해요';
+    final lines = <String>[
+      'PM2.5 ${pm25}μg/m³ · 매우나쁨',
+      '가능하면 야외 활동을 줄이시고, KF94 마스크를 착용해 주세요.',
+    ];
+    if (stateNote != null) {
+      lines.add('$stateNote 상태라 특히 주의가 필요해요.');
+    }
 
     return NotificationContent(title: title, body: lines.join('\n'));
   }
@@ -374,27 +415,24 @@ class NotificationService {
   }) {
     final name = profile.displayName;
     final isSevere = targetGrade == '매우나쁨';
+    final maskHint = isSevere ? 'KF94' : 'KF80';
 
-    // 예상 등급에 맞는 마스크 종류를 제목에 포함
-    final maskHintTitle = isSevere ? 'KF94 미리 챙기세요' : 'KF80 미리 챙기세요';
-    final title = '⚡ $name, $maskHintTitle';
+    final title = '⚡ $name, 미리 $maskHint 마스크를 챙겨두세요';
+    final lines = <String>[
+      'PM2.5 ${currentPm25}μg/m³ → 1시간 내 $targetGrade 예상',
+      '지금은 괜찮지만 곧 나빠질 것 같아요.',
+      '외출 전에 $maskHint 마스크를 챙겨두시면 안심이에요 😊',
+    ];
 
-    final maskHintBody = isSevere
-        ? 'KF94 착용을 강력 권고해요'
-        : '외출 전 마스크를 꼭 챙기세요';
-
-    return NotificationContent(
-      title: title,
-      body: 'PM2.5 $currentPm25μg/m³ → 1시간 내 $targetGrade 예상\n$maskHintBody',
-    );
+    return NotificationContent(title: title, body: lines.join('\n'));
   }
 
   // ── 내부 헬퍼 ─────────────────────────────────────────────
 
   static String? _personalNote(UserProfile profile) {
-    if (profile.hasCondition) return '${profile.conditionType.label} 기준 적용';
-    if (profile.ageGroup.isVulnerable) return '${profile.ageGroup.label} 민감 연령 기준';
-    if (profile.sensitivity == SensitivityLevel.high) return '고민감도 기준 적용';
+    if (profile.hasCondition) return '${profile.conditionType.label} 기준으로 맞춤 관리 중이에요';
+    if (profile.ageGroup.isVulnerable) return '${profile.ageGroup.label} 민감 연령 기준으로 관리 중이에요';
+    if (profile.sensitivity == SensitivityLevel.high) return '고민감도 기준으로 맞춤 관리 중이에요';
     return null;
   }
 }

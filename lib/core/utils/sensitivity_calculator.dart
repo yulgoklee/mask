@@ -95,17 +95,32 @@ class SensitivityCalculator {
     return '낮음';
   }
 
-  // ── 가중치 계산 ───────────────────────────────────────────
+  // ── 가중치 계산 (공개 API) ────────────────────────────────
+
+  /// w1 — 기저질환 가중치 (공개)
+  ///  없음: 0.0 / 경증: 0.2 / 중등도·중증: 0.3
+  static double conditionWeight(UserProfile profile) =>
+      _conditionWeight(profile);
+
+  /// w2 — 야외 활동량 가중치 (공개)
+  ///  낮음: 0.0 / 보통: 0.1 / 높음: 0.2
+  static double activityWeight(ActivityLevel level) =>
+      _activityWeight(level);
+
+  /// w3 — 주관적 민감도 가중치 (공개)
+  ///  낮음: 0.0 / 보통: 0.1 / 높음: 0.2
+  static double sensitivityWeight(SensitivityLevel level) =>
+      _sensitivityWeight(level);
+
+  // ── 가중치 계산 (내부) ───────────────────────────────────
 
   /// w1 — 기저질환 가중치
-  ///  없음: 0.0 / 경증: 0.2 / 중등도·중증: 0.3
   static double _conditionWeight(UserProfile profile) {
     if (!profile.hasCondition) return 0.0;
     return profile.severity == Severity.mild ? 0.2 : 0.3;
   }
 
   /// w2 — 야외 활동량 가중치
-  ///  낮음: 0.0 / 보통: 0.1 / 높음: 0.2
   static double _activityWeight(ActivityLevel level) {
     switch (level) {
       case ActivityLevel.low:
@@ -118,7 +133,6 @@ class SensitivityCalculator {
   }
 
   /// w3 — 주관적 민감도 가중치
-  ///  낮음: 0.0 / 보통: 0.1 / 높음: 0.2
   static double _sensitivityWeight(SensitivityLevel level) {
     switch (level) {
       case SensitivityLevel.low:
