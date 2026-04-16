@@ -157,8 +157,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final profile = _buildProfile();
 
     try {
+      // 프로필만 저장 — completeOnboarding()은 notification_time_screen에서 호출
       await ref.read(profileProvider.notifier).saveProfile(profile);
-      await ref.read(profileRepositoryProvider).completeOnboarding();
     } catch (_) {
       // 저장 실패해도 다음 화면으로 진행
     }
