@@ -13,116 +13,94 @@ DustData _dust(int pm25, {int pm10 = 30}) => DustData(
       fetchedAt: DateTime.now(),
     );
 
-UserProfile _profile({
-  AgeGroup age = AgeGroup.thirties,
-  bool hasCondition = false,
-  ConditionType conditionType = ConditionType.none,
-  Severity severity = Severity.mild,
-  SensitivityLevel sensitivity = SensitivityLevel.normal,
-}) =>
-    UserProfile(
-      ageGroup: age,
-      hasCondition: hasCondition,
-      conditionType: conditionType,
-      severity: severity,
-      activityLevel: ActivityLevel.normal,
-      sensitivity: sensitivity,
+/// 기본 프로필: S=0.1(min) → T_final=31.5
+UserProfile get _defaultProfile => UserProfile.defaultProfile();
+
+/// 고민감 프로필: 비염(+0.15) + 예민(+0.10) + 임신여성(+0.30) → S=0.55 → T_final≈15.75
+UserProfile get _sensitiveProfile => UserProfile(
+      nickname: '테스트',
+      birthYear: 1990,
+      gender: 'female',
+      respiratoryStatus: 1,  // 비염
+      sensitivityLevel: 2,   // 예민
+      isPregnant: true,       // +0.30
+      recentSkinTreatment: false,
+      outdoorMinutes: 1,
+      activityTags: const [],
+      discomfortLevel: 0,
     );
 
 void main() {
-  group('DustCalculator - 기본 프로필 (30대, 건강)', () {
-    test('PM2.5=10 → 안전, 마스크 불필요', () {
-      final r = DustCalculator.calculate(_profile(), _dust(10));
+  group('DustCalculator - 기본 프로필 (T_final=31.5)', () {
+    // T_final=31.5 기준
+    // ratio<0.5 → low (pm25 < 15.75)
+    // 0.5~1.0   → normal (15.75 ~ 31.5)
+    // 1.0~1.5   → warning (31.5 ~ 47.25)
+    // 1.5~2.0   → danger  (47.25 ~ 63.0)
+    // ≥2.0      → critical (≥63.0)
+
+    test('PM2.5=10 → 안전(low), 마스크 불필요', () {
+      final r = DustCalculator.calculate(_defaultProfile, _dust(10));
       expect(r.riskLevel, RiskLevel.low);
       expect(r.maskRequired, false);
       expect(r.maskType, null);
     });
 
-    test('PM2.5=25 → 보통', () {
-      final r = DustCalculator.calculate(_profile(), _dust(25));
+    test('PM2.5=20 → 보통(normal)', () {
+      final r = DustCalculator.calculate(_defaultProfile, _dust(20));
       expect(r.riskLevel, RiskLevel.normal);
       expect(r.maskRequired, false);
     });
 
-    test('PM2.5=50 → 주의, 마스크 KF80', () {
-      final r = DustCalculator.calculate(_profile(), _dust(50));
+    test('PM2.5=35 → 주의(warning), 마스크 KF80', () {
+      final r = DustCalculator.calculate(_defaultProfile, _dust(35));
       expect(r.riskLevel, RiskLevel.warning);
       expect(r.maskRequired, true);
       expect(r.maskType, 'KF80');
     });
 
-    test('PM2.5=100 → 매우나쁨, 마스크 KF94', () {
-      final r = DustCalculator.calculate(_profile(), _dust(100));
+    test('PM2.5=50 → 나쁨(danger), 마스크 KF94', () {
+      final r = DustCalculator.calculate(_defaultProfile, _dust(50));
+      expect(r.riskLevel, RiskLevel.danger);
+      expect(r.maskRequired, true);
+      expect(r.maskType, 'KF94');
+    });
+
+    test('PM2.5=70 → 매우나쁨(critical), 마스크 KF94', () {
+      final r = DustCalculator.calculate(_defaultProfile, _dust(70));
       expect(r.riskLevel, RiskLevel.critical);
       expect(r.maskRequired, true);
       expect(r.maskType, 'KF94');
     });
   });
 
-  group('DustCalculator - 취약 연령 (60대 이상)', () {
-    test('PM2.5=25(보통) → 한 단계 상향 → 주의', () {
-      final r = DustCalculator.calculate(
-        _profile(age: AgeGroup.sixtyPlus),
-        _dust(25),
-      );
+  group('DustCalculator - 고민감 프로필 (T_final≈15.75)', () {
+    // S=0.55 → T_final = 35×0.45 = 15.75
+    // ratio<0.5 → low (pm25 < 7.875)
+    // 0.5~1.0   → normal (< 15.75)
+    // 1.0~1.5   → warning (15.75 ~ 23.6)
+
+    test('PM2.5=10 → 보통(normal)', () {
+      final r = DustCalculator.calculate(_sensitiveProfile, _dust(10));
+      expect(r.riskLevel, RiskLevel.normal);
+    });
+
+    test('PM2.5=20 → 주의(warning)', () {
+      final r = DustCalculator.calculate(_sensitiveProfile, _dust(20));
       expect(r.riskLevel, RiskLevel.warning);
       expect(r.maskRequired, true);
-    });
-
-    test('PM2.5=10(좋음) → 한 단계 상향 → 보통', () {
-      final r = DustCalculator.calculate(
-        _profile(age: AgeGroup.sixtyPlus),
-        _dust(10),
-      );
-      expect(r.riskLevel, RiskLevel.normal);
-    });
-  });
-
-  group('DustCalculator - 기저질환 (호흡기, 경증)', () {
-    test('PM2.5=25(보통) → 한 단계 상향 → 주의', () {
-      final r = DustCalculator.calculate(
-        _profile(hasCondition: true, conditionType: ConditionType.respiratory),
-        _dust(25),
-      );
-      expect(r.riskLevel, RiskLevel.warning);
-      expect(r.maskRequired, true);
-    });
-
-    test('PM2.5=10(좋음) → 그대로 안전', () {
-      final r = DustCalculator.calculate(
-        _profile(hasCondition: true, conditionType: ConditionType.respiratory),
-        _dust(10),
-      );
-      expect(r.riskLevel, RiskLevel.low);
-    });
-  });
-
-  group('DustCalculator - 민감도', () {
-    test('민감도 높음: PM2.5=10(좋음) → 한 단계 상향 → 보통', () {
-      final r = DustCalculator.calculate(
-        _profile(sensitivity: SensitivityLevel.high),
-        _dust(10),
-      );
-      expect(r.riskLevel, RiskLevel.normal);
-    });
-
-    test('민감도 낮음: PM2.5=50(나쁨) → 한 단계 하향 → 보통', () {
-      final r = DustCalculator.calculate(
-        _profile(sensitivity: SensitivityLevel.low),
-        _dust(50),
-      );
-      expect(r.riskLevel, RiskLevel.normal);
     });
   });
 
   group('DustCalculator - 실시간 경보', () {
-    test('PM2.5=100(매우나쁨) + 기본 프로필 → 실시간 알림 발송', () {
-      final r = DustCalculator.calculate(_profile(), _dust(100));
+    test('T_final의 2배 이상 → shouldSendRealtime=true', () {
+      // 기본 T_final=31.5, 2배=63.0
+      final r = DustCalculator.calculate(_defaultProfile, _dust(65));
       expect(r.shouldSendRealtime, true);
     });
 
-    test('PM2.5=25(보통) → 실시간 알림 없음', () {
-      final r = DustCalculator.calculate(_profile(), _dust(25));
+    test('T_final의 2배 미만 → shouldSendRealtime=false', () {
+      final r = DustCalculator.calculate(_defaultProfile, _dust(20));
       expect(r.shouldSendRealtime, false);
     });
   });
@@ -138,9 +116,16 @@ void main() {
         dataTime: DateTime.now(),
         fetchedAt: DateTime.now(),
       );
-      final r = DustCalculator.calculate(_profile(), dust);
+      final r = DustCalculator.calculate(_defaultProfile, dust);
       expect(r.riskLevel, RiskLevel.unknown);
       expect(r.maskRequired, false);
+    });
+  });
+
+  group('DustCalculationResult - tFinal 포함 여부', () {
+    test('결과에 tFinal 값이 포함됨', () {
+      final r = DustCalculator.calculate(_defaultProfile, _dust(20));
+      expect(r.tFinal, closeTo(31.5, 0.5));
     });
   });
 

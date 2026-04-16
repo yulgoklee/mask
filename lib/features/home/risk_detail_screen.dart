@@ -55,28 +55,20 @@ class RiskDetailScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 24),
 
-              // 나이대별
-              _SectionLabel('나이대별 위험도'),
+              // 호흡기 상태별
+              _SectionLabel('호흡기 상태별 위험도'),
               const SizedBox(height: 8),
-              _AgeGroupTable(dust: dust, myAgeGroup: myProfile.ageGroup),
+              _RespiratoryTable(dust: dust, myProfile: myProfile),
               const SizedBox(height: 20),
 
-              // 기저질환별
-              _SectionLabel('기저질환별 위험도'),
-              const SizedBox(height: 8),
-              _ConditionTable(dust: dust, myProfile: myProfile),
-              const SizedBox(height: 20),
-
-              // 활동 빈도별
-              _SectionLabel('활동 빈도별 위험도'),
-              const SizedBox(height: 8),
-              _ActivityTable(dust: dust, myProfile: myProfile),
-              const SizedBox(height: 20),
-
-              // 민감도별
-              _SectionLabel('알림 민감도별 위험도'),
+              // 체감 민감도별
+              _SectionLabel('체감 민감도별 위험도'),
               const SizedBox(height: 8),
               _SensitivityTable(dust: dust, myProfile: myProfile),
+              const SizedBox(height: 20),
+
+              // 나의 T_final 정보
+              _TFinalInfoCard(profile: myProfile),
               const SizedBox(height: 12),
 
               const Text(
@@ -320,79 +312,30 @@ class _TableRow extends StatelessWidget {
   }
 }
 
-// ── 나이대별 테이블 ───────────────────────────────────────
+// ── 호흡기 상태별 테이블 (신규) ──────────────────────────────
 
-class _AgeGroupTable extends StatelessWidget {
-  final DustData dust;
-  final AgeGroup myAgeGroup;
-
-  const _AgeGroupTable({required this.dust, required this.myAgeGroup});
-
-  RiskLevel _calcRisk(AgeGroup age) {
-    final profile = UserProfile(
-      ageGroup: age,
-      hasCondition: false,
-      activityLevel: ActivityLevel.normal,
-    );
-    return DustCalculator.calculate(profile, dust).riskLevel;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final groups = AgeGroup.values;
-    return _TableCard(
-      child: Column(
-        children: groups.asMap().entries.map((e) {
-          final i = e.key;
-          final age = e.value;
-          return _TableRow(
-            label: age.label,
-            level: _calcRisk(age),
-            isMe: age == myAgeGroup,
-            isLast: i == groups.length - 1,
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
-// ── 기저질환별 테이블 ─────────────────────────────────────
-
-class _ConditionTable extends StatelessWidget {
+class _RespiratoryTable extends StatelessWidget {
   final DustData dust;
   final UserProfile myProfile;
 
-  const _ConditionTable({required this.dust, required this.myProfile});
+  const _RespiratoryTable({required this.dust, required this.myProfile});
 
-  RiskLevel _calcRisk(bool hasCondition, Severity severity) {
-    final profile = UserProfile(
-      ageGroup: myProfile.ageGroup,
-      hasCondition: hasCondition,
-      severity: severity,
-      activityLevel: myProfile.activityLevel,
-    );
+  /// 호흡기 상태(0/1/2)만 바꿔서 위험도 계산
+  RiskLevel _calcRisk(int respiratoryStatus) {
+    final profile = myProfile.copyWith(respiratoryStatus: respiratoryStatus);
     return DustCalculator.calculate(profile, dust).riskLevel;
-  }
-
-  String _myKey() {
-    if (!myProfile.hasCondition) return '없음';
-    return myProfile.severity.label;
   }
 
   @override
   Widget build(BuildContext context) {
-    final labels  = ['없음', '경증', '중등도', '중증'];
-    final hasCs   = [false, true,  true,    true];
-    final sevs    = [Severity.mild, Severity.mild, Severity.moderate, Severity.severe];
-    final myKey   = _myKey();
+    const labels = ['튼튼해요', '비염 있어요', '천식 등 질환'];
     return _TableCard(
       child: Column(
         children: List.generate(labels.length, (i) {
           return _TableRow(
             label: labels[i],
-            level: _calcRisk(hasCs[i], sevs[i]),
-            isMe: labels[i] == myKey,
+            level: _calcRisk(i),
+            isMe: myProfile.respiratoryStatus == i,
             isLast: i == labels.length - 1,
           );
         }),
@@ -401,45 +344,7 @@ class _ConditionTable extends StatelessWidget {
   }
 }
 
-// ── 활동 빈도별 테이블 ────────────────────────────────────
-
-class _ActivityTable extends StatelessWidget {
-  final DustData dust;
-  final UserProfile myProfile;
-
-  const _ActivityTable({required this.dust, required this.myProfile});
-
-  RiskLevel _calcRisk(ActivityLevel level) {
-    final profile = UserProfile(
-      ageGroup: myProfile.ageGroup,
-      hasCondition: myProfile.hasCondition,
-      severity: myProfile.severity,
-      activityLevel: level,
-    );
-    return DustCalculator.calculate(profile, dust).riskLevel;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final levels = ActivityLevel.values;
-    return _TableCard(
-      child: Column(
-        children: levels.asMap().entries.map((e) {
-          final i = e.key;
-          final level = e.value;
-          return _TableRow(
-            label: '${level.label} (${level.description})',
-            level: _calcRisk(level),
-            isMe: level == myProfile.activityLevel,
-            isLast: i == levels.length - 1,
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
-// ── 민감도별 테이블 ───────────────────────────────────────
+// ── 체감 민감도별 테이블 ──────────────────────────────────
 
 class _SensitivityTable extends StatelessWidget {
   final DustData dust;
@@ -447,33 +352,72 @@ class _SensitivityTable extends StatelessWidget {
 
   const _SensitivityTable({required this.dust, required this.myProfile});
 
-  RiskLevel _calcRisk(SensitivityLevel sensitivity) {
-    final profile = UserProfile(
-      ageGroup: myProfile.ageGroup,
-      hasCondition: myProfile.hasCondition,
-      severity: myProfile.severity,
-      activityLevel: myProfile.activityLevel,
-      sensitivity: sensitivity,
-    );
+  RiskLevel _calcRisk(int sensitivityLevel) {
+    final profile = myProfile.copyWith(sensitivityLevel: sensitivityLevel);
     return DustCalculator.calculate(profile, dust).riskLevel;
   }
 
   @override
   Widget build(BuildContext context) {
-    final levels = SensitivityLevel.values;
-    final labels = ['낮음 (더 높은 농도에서 반응)', '보통', '높음 (더 낮은 농도에서 반응)'];
+    const labels = ['무던해요', '보통이에요', '매우 예민해요'];
     return _TableCard(
       child: Column(
-        children: levels.asMap().entries.map((e) {
-          final i = e.key;
-          final level = e.value;
+        children: List.generate(labels.length, (i) {
           return _TableRow(
             label: labels[i],
-            level: _calcRisk(level),
-            isMe: level == myProfile.sensitivity,
-            isLast: i == levels.length - 1,
+            level: _calcRisk(i),
+            isMe: myProfile.sensitivityLevel == i,
+            isLast: i == labels.length - 1,
           );
-        }).toList(),
+        }),
+      ),
+    );
+  }
+}
+
+// ── T_final 정보 카드 ─────────────────────────────────────
+
+class _TFinalInfoCard extends StatelessWidget {
+  final UserProfile profile;
+  const _TFinalInfoCard({required this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.splashBackground.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+            color: AppColors.splashBackground.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.science_outlined,
+              color: AppColors.splashBackground, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                    height: 1.5),
+                children: [
+                  TextSpan(text: '${profile.displayName}의 개인 기준선 '),
+                  TextSpan(
+                    text: '${profile.tFinal.toStringAsFixed(1)} μg/m³',
+                    style: const TextStyle(
+                      color: AppColors.splashBackground,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const TextSpan(text: ' 기준으로 위험도가 계산돼요.'),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

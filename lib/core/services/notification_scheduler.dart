@@ -57,6 +57,7 @@ class NotificationScheduler {
 
       final riskLabel = result.riskLevel.label;
       final maskType = result.maskType;
+      final voice = setting.notificationVoice;
 
       final analytics = FirebaseAnalytics.instance;
 
@@ -71,7 +72,8 @@ class NotificationScheduler {
           type: 'morning',
           title: '오늘 미세먼지 안내',
           body: NotificationService.morningMessage(pm25, gradeName,
-              riskLabel: riskLabel, maskType: maskType),
+              riskLabel: riskLabel, maskType: maskType,
+              profile: profile, voice: voice),
           onSuccess: () => _markSent(prefs, 'morning'),
         );
       }
@@ -89,7 +91,7 @@ class NotificationScheduler {
           type: 'forecast',
           title: '내일 미세먼지 예보',
           body: NotificationService.forecastMessage(forecastGrade ?? '보통',
-              riskLabel: riskLabel),
+              riskLabel: riskLabel, profile: profile, voice: voice),
           onSuccess: () => _markSent(prefs, 'forecast'),
         );
       }
@@ -105,7 +107,8 @@ class NotificationScheduler {
           type: 'return',
           title: '귀가 전 미세먼지 확인',
           body: NotificationService.eveningReturnMessage(gradeName,
-              riskLabel: riskLabel, maskType: maskType),
+              riskLabel: riskLabel, maskType: maskType,
+              profile: profile, voice: voice),
           onSuccess: () => _markSent(prefs, 'return'),
         );
       }

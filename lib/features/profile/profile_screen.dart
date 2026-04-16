@@ -66,97 +66,141 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          _SectionLabel('나이대'),
+          // ── 내 기준선 요약 카드 ──────────────────────────────
+          _TFinalSummaryCard(profile: _profile),
+          const SizedBox(height: 28),
+
+          // ── 닉네임 ──────────────────────────────────────────
+          _SectionLabel('닉네임'),
           const SizedBox(height: 10),
-          _ChipGroup<AgeGroup>(
-            values: AgeGroup.values,
-            selected: _profile.ageGroup,
-            labelOf: (v) => v.label,
-            onSelect: (v) => _update(_profile.copyWith(ageGroup: v)),
+          _NicknameField(
+            value: _profile.nickname,
+            onChanged: (v) => _update(_profile.copyWith(nickname: v)),
           ),
           const SizedBox(height: 24),
 
-          _SectionLabel('기저질환'),
+          // ── 성별 ─────────────────────────────────────────────
+          _SectionLabel('성별'),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: _ToggleChip(
-                  label: '없음',
-                  selected: !_profile.hasCondition,
-                  onTap: () => _update(_profile.copyWith(
-                    hasCondition: false,
-                    conditionType: ConditionType.none,
-                  )),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _ToggleChip(
-                  label: '있음',
-                  selected: _profile.hasCondition,
-                  onTap: () =>
-                      _update(_profile.copyWith(hasCondition: true)),
-                ),
-              ),
-            ],
-          ),
-          if (_profile.hasCondition) ...[
-            const SizedBox(height: 16),
-            _SectionLabel('질환 종류'),
-            const SizedBox(height: 10),
-            _ChipGroup<ConditionType>(
-              values: ConditionType.values
-                  .where((c) => c != ConditionType.none)
-                  .toList(),
-              selected: _profile.conditionType,
-              labelOf: (v) => v.label,
-              onSelect: (v) => _update(_profile.copyWith(conditionType: v)),
-            ),
-            const SizedBox(height: 16),
-            _SectionLabel('질환 수준'),
-            const SizedBox(height: 10),
-            _ChipGroup<Severity>(
-              values: Severity.values,
-              selected: _profile.severity,
-              labelOf: (v) => v.label,
-              onSelect: (v) => _update(_profile.copyWith(severity: v)),
-            ),
-            const SizedBox(height: 10),
-            CheckboxListTile(
-              value: _profile.isDiagnosed,
-              onChanged: (v) =>
-                  _update(_profile.copyWith(isDiagnosed: v ?? false)),
-              title: const Text('병원 진단받은 질환'),
-              activeColor: AppColors.primary,
-              contentPadding: EdgeInsets.zero,
-              controlAffinity: ListTileControlAffinity.leading,
-            ),
-          ],
-          const SizedBox(height: 24),
-
-          _SectionLabel('야외 활동 빈도'),
-          const SizedBox(height: 10),
-          _ChipGroup<ActivityLevel>(
-            values: ActivityLevel.values,
-            selected: _profile.activityLevel,
-            labelOf: (v) => v.label,
-            onSelect: (v) => _update(_profile.copyWith(activityLevel: v)),
+          _ChipGroup<String>(
+            values: const ['male', 'female'],
+            selected: _profile.gender,
+            labelOf: (v) => v == 'male' ? '남성' : '여성',
+            onSelect: (v) => _update(_profile.copyWith(
+              gender: v,
+              isPregnant: v == 'male' ? false : _profile.isPregnant,
+            )),
           ),
           const SizedBox(height: 24),
 
-          _SectionLabel('알림 민감도'),
+          // ── 호흡기 상태 ──────────────────────────────────────
+          _SectionLabel('호흡기 상태'),
+          const SizedBox(height: 10),
+          _ChipGroup<int>(
+            values: const [0, 1, 2],
+            selected: _profile.respiratoryStatus,
+            labelOf: (v) => switch (v) {
+              0 => '튼튼해요',
+              1 => '비염 있어요',
+              _ => '천식 등 질환',
+            },
+            onSelect: (v) =>
+                _update(_profile.copyWith(respiratoryStatus: v)),
+          ),
+          const SizedBox(height: 24),
+
+          // ── 체감 민감도 ──────────────────────────────────────
+          _SectionLabel('체감 민감도'),
           const SizedBox(height: 6),
           const Text(
-            '민감도가 높을수록 더 낮은 수치에서도 알림을 보내요.',
+            '예민할수록 기준선이 더 낮아져요.',
             style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 10),
-          _ChipGroup<SensitivityLevel>(
-            values: SensitivityLevel.values,
-            selected: _profile.sensitivity,
-            labelOf: (v) => v.label,
-            onSelect: (v) => _update(_profile.copyWith(sensitivity: v)),
+          _ChipGroup<int>(
+            values: const [0, 1, 2],
+            selected: _profile.sensitivityLevel,
+            labelOf: (v) => switch (v) {
+              0 => '무던해요',
+              1 => '보통이에요',
+              _ => '매우 예민해요',
+            },
+            onSelect: (v) =>
+                _update(_profile.copyWith(sensitivityLevel: v)),
+          ),
+          const SizedBox(height: 24),
+
+          // ── 임신 여부 (여성 전용) ─────────────────────────────
+          if (_profile.gender == 'female') ...[
+            _SectionLabel('임신 여부'),
+            const SizedBox(height: 10),
+            _ChipGroup<bool>(
+              values: const [false, true],
+              selected: _profile.isPregnant,
+              labelOf: (v) => v ? '임신 중' : '해당 없음',
+              onSelect: (v) =>
+                  _update(_profile.copyWith(isPregnant: v)),
+            ),
+            const SizedBox(height: 24),
+          ],
+
+          // ── 피부 시술 ────────────────────────────────────────
+          _SectionLabel('최근 피부 시술 (2주 내)'),
+          const SizedBox(height: 10),
+          _ChipGroup<bool>(
+            values: const [false, true],
+            selected: _profile.recentSkinTreatment,
+            labelOf: (v) => v ? '받았어요' : '없어요',
+            onSelect: (v) =>
+                _update(_profile.copyWith(recentSkinTreatment: v)),
+          ),
+          const SizedBox(height: 24),
+
+          // ── 야외 활동 시간 ────────────────────────────────────
+          _SectionLabel('하루 야외 활동 시간'),
+          const SizedBox(height: 10),
+          _ChipGroup<int>(
+            values: const [0, 1, 2],
+            selected: _profile.outdoorMinutes,
+            labelOf: (v) => switch (v) {
+              0 => '30분 미만',
+              1 => '1~3시간',
+              _ => '3시간 이상',
+            },
+            onSelect: (v) =>
+                _update(_profile.copyWith(outdoorMinutes: v)),
+          ),
+          const SizedBox(height: 24),
+
+          // ── 활동 성격 (멀티) ─────────────────────────────────
+          _SectionLabel('활동 성격'),
+          const SizedBox(height: 10),
+          _MultiChipGroup(
+            options: const [
+              ActivityTag.commute,
+              ActivityTag.walk,
+              ActivityTag.exercise,
+            ],
+            selected: _profile.activityTags,
+            labelOf: ActivityTag.label,
+            onChanged: (v) =>
+                _update(_profile.copyWith(activityTags: v)),
+          ),
+          const SizedBox(height: 24),
+
+          // ── 마스크 불편함 ─────────────────────────────────────
+          _SectionLabel('마스크 착용감'),
+          const SizedBox(height: 10),
+          _ChipGroup<int>(
+            values: const [0, 1, 2],
+            selected: _profile.discomfortLevel,
+            labelOf: (v) => switch (v) {
+              0 => '괜찮아요',
+              1 => '가끔 답답해요',
+              _ => '매우 답답해요',
+            },
+            onSelect: (v) =>
+                _update(_profile.copyWith(discomfortLevel: v)),
           ),
           const SizedBox(height: 40),
 
@@ -164,28 +208,131 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             '* 본 앱은 참고용 정보를 제공합니다. 의료적 진단이나 처방을 대체하지 않습니다.',
             style: TextStyle(fontSize: 12, color: AppColors.textHint),
           ),
+          const SizedBox(height: 24),
         ],
       ),
     );
   }
 }
 
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  const _SectionLabel(this.text);
+// ── T_final 요약 카드 ────────────────────────────────────────
+
+class _TFinalSummaryCard extends StatelessWidget {
+  final UserProfile profile;
+  const _TFinalSummaryCard({required this.profile});
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textPrimary,
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.splashBackground.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+            color: AppColors.splashBackground.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          const Text('🛡️', style: TextStyle(fontSize: 32)),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  profile.displayName,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                RichText(
+                  text: TextSpan(
+                    style: const TextStyle(
+                        fontSize: 13, color: AppColors.textSecondary),
+                    children: [
+                      const TextSpan(text: '나의 기준선 '),
+                      TextSpan(
+                        text:
+                            '${profile.tFinal.toStringAsFixed(1)} μg/m³',
+                        style: const TextStyle(
+                          color: AppColors.splashBackground,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      TextSpan(
+                          text: '  (S = ${profile.sensitivityIndex.toStringAsFixed(2)})'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 }
+
+// ── 닉네임 필드 ───────────────────────────────────────────────
+
+class _NicknameField extends StatefulWidget {
+  final String value;
+  final ValueChanged<String> onChanged;
+  const _NicknameField({required this.value, required this.onChanged});
+
+  @override
+  State<_NicknameField> createState() => _NicknameFieldState();
+}
+
+class _NicknameFieldState extends State<_NicknameField> {
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: widget.value);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: _ctrl,
+      onChanged: widget.onChanged,
+      maxLength: 10,
+      style: const TextStyle(
+          fontSize: 16, fontWeight: FontWeight.w600),
+      decoration: InputDecoration(
+        hintText: '닉네임 (2~10자)',
+        hintStyle: const TextStyle(color: AppColors.textHint),
+        filled: true,
+        fillColor: AppColors.surfaceVariant,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide:
+              const BorderSide(color: AppColors.primary, width: 2),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16, vertical: 14),
+        counterText: '',
+      ),
+    );
+  }
+}
+
+// ── 단일 선택 칩 그룹 ────────────────────────────────────────
 
 class _ChipGroup<T> extends StatelessWidget {
   final List<T> values;
@@ -211,14 +358,11 @@ class _ChipGroup<T> extends StatelessWidget {
           onTap: () => onSelect(v),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             decoration: BoxDecoration(
               color: isSelected ? AppColors.primary : AppColors.surface,
               border: Border.all(
-                color:
-                    isSelected ? AppColors.primary : AppColors.divider,
-              ),
+                  color: isSelected ? AppColors.primary : AppColors.divider),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -237,40 +381,82 @@ class _ChipGroup<T> extends StatelessWidget {
   }
 }
 
-class _ToggleChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
+// ── 다중 선택 칩 그룹 ────────────────────────────────────────
 
-  const _ToggleChip({
-    required this.label,
+class _MultiChipGroup extends StatelessWidget {
+  final List<String> options;
+  final List<String> selected;
+  final String Function(String) labelOf;
+  final ValueChanged<List<String>> onChanged;
+
+  const _MultiChipGroup({
+    required this.options,
     required this.selected,
-    required this.onTap,
+    required this.labelOf,
+    required this.onChanged,
   });
+
+  void _toggle(String value) {
+    final updated = List<String>.from(selected);
+    if (updated.contains(value)) {
+      updated.remove(value);
+    } else {
+      updated.add(value);
+    }
+    onChanged(updated);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primary : AppColors.surface,
-          border:
-              Border.all(color: selected ? AppColors.primary : AppColors.divider),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: selected ? Colors.white : AppColors.textPrimary,
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: options.map((opt) {
+        final isSelected = selected.contains(opt);
+        return GestureDetector(
+          onTap: () => _toggle(opt),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            decoration: BoxDecoration(
+              color:
+                  isSelected ? AppColors.primary : AppColors.surface,
+              border: Border.all(
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.divider),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              labelOf(opt),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight:
+                    isSelected ? FontWeight.w600 : FontWeight.normal,
+                color:
+                    isSelected ? Colors.white : AppColors.textPrimary,
+              ),
             ),
           ),
-        ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
       ),
     );
   }

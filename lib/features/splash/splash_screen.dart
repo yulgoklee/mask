@@ -23,8 +23,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     );
-    _fadeAnim = CurvedAnimation(parent: _ctrl, curve: Curves.easeIn);
-    _scaleAnim = Tween<double>(begin: 0.8, end: 1.0).animate(
+    _fadeAnim  = CurvedAnimation(parent: _ctrl, curve: Curves.easeIn);
+    _scaleAnim = Tween<double>(begin: 0.85, end: 1.0).animate(
       CurvedAnimation(parent: _ctrl, curve: Curves.easeOutBack),
     );
     _ctrl.forward();
@@ -32,18 +32,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 
   Future<void> _navigate() async {
-    await Future.delayed(const Duration(milliseconds: 1800));
+    // 스플래시 2초 유지
+    await Future.delayed(const Duration(milliseconds: 2000));
     if (!mounted) return;
 
     final repo = ref.read(profileRepositoryProvider);
-    final tutorialSeen = await repo.isTutorialSeen();
     final onboardingDone = await repo.isOnboardingCompleted();
     if (!mounted) return;
 
-    if (!tutorialSeen) {
-      Navigator.of(context).pushReplacementNamed('/tutorial');
-    } else if (!onboardingDone) {
-      Navigator.of(context).pushReplacementNamed('/onboarding');
+    if (!onboardingDone) {
+      // 온보딩 미완료 → 로드맵 선언 화면으로
+      Navigator.of(context).pushReplacementNamed('/roadmap');
     } else {
       Navigator.of(context).pushReplacementNamed('/home');
     }
@@ -58,7 +57,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primary,
+      // Soft Sky Blue — 브랜드 메인 컬러
+      backgroundColor: AppColors.splashBackground,
       body: Center(
         child: FadeTransition(
           opacity: _fadeAnim,
@@ -67,40 +67,47 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // 로고 컨테이너
                 Container(
-                  width: 96,
-                  height: 96,
+                  width: 104,
+                  height: 104,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(28),
+                    borderRadius: BorderRadius.circular(32),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
+                        color: Colors.black.withOpacity(0.12),
+                        blurRadius: 32,
+                        offset: const Offset(0, 10),
                       ),
                     ],
                   ),
                   child: const Center(
-                    child: Text('😷', style: TextStyle(fontSize: 48)),
+                    child: Text('😷', style: TextStyle(fontSize: 52)),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 28),
+
+                // 앱 이름
                 const Text(
-                  '마스크 알림',
+                  '마스크 알람이',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 28,
+                    fontSize: 26,
                     fontWeight: FontWeight.bold,
                     letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
+
+                // 브랜드 슬로건
                 const Text(
-                  '나에게 맞는 미세먼지 알림',
+                  '당신의 호흡기 가디언',
                   style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 15,
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ],

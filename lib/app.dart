@@ -4,14 +4,14 @@ import 'core/constants/app_colors.dart';
 import 'features/home/home_screen.dart';
 import 'features/notification_setting/notification_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
+import 'features/onboarding/roadmap_screen.dart';
+import 'features/onboarding/dashboard_screen.dart';
+import 'features/onboarding/notification_custom_screen.dart';
+import 'features/onboarding/permission_screen.dart';
 import 'features/profile/profile_screen.dart';
 import 'features/info/info_screen.dart';
 import 'features/splash/splash_screen.dart';
-import 'features/tutorial/tutorial_screen.dart';
 import 'features/location_setup/location_setup_screen.dart';
-import 'features/onboarding/notification_time_screen.dart';
-import 'features/onboarding/permission_screen.dart';
-import 'features/onboarding/complete_screen.dart';
 
 class MaskAlertApp extends ConsumerWidget {
   const MaskAlertApp({super.key});
@@ -19,12 +19,12 @@ class MaskAlertApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
-      title: '마스크 알림',
+      title: '마스크 알람이',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
         useMaterial3: true,
-scaffoldBackgroundColor: AppColors.background,
+        scaffoldBackgroundColor: AppColors.background,
         appBarTheme: const AppBarTheme(
           backgroundColor: AppColors.background,
           elevation: 0,
@@ -33,22 +33,28 @@ scaffoldBackgroundColor: AppColors.background,
       ),
       home: const SplashScreen(),
       routes: {
-        '/home': (_) => const MainShell(),
+        // ── 홈 (앱 완료 후) ─────────────────────────────────
+        '/home':    (_) => const MainShell(),
         '/profile': (_) => const ProfileScreen(),
         '/notifications': (_) => const NotificationScreen(),
-        '/info': (_) => const InfoScreen(),
-        '/onboarding': (_) => const OnboardingScreen(),
-        '/tutorial': (_) => const TutorialScreen(),
+        '/info':    (_) => const InfoScreen(),
+
+        // ── 온보딩 여정 (Phase 1 → 2 → 3 → 4) ─────────────
+        '/roadmap':              (_) => const RoadmapScreen(),
+        '/onboarding':           (_) => const OnboardingScreen(),
+        '/dashboard':            (_) => const DashboardScreen(),
+        '/notification_custom':  (_) => const NotificationCustomScreen(),
+
+        // ── 온보딩 후 공통 ──────────────────────────────────
         '/location_setup': (_) => const LocationSetupScreen(),
-        '/notification_time': (_) => const NotificationTimeScreen(),
-        '/permission': (_) => const PermissionScreen(),
-        '/onboarding_complete': (_) => const OnboardingCompleteScreen(),
+        '/permission':     (_) => const PermissionScreen(),
       },
     );
   }
 }
 
-/// 하단 탭 네비게이션 Shell
+// ── 하단 탭 네비게이션 Shell ─────────────────────────────────
+
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
@@ -85,7 +91,8 @@ class _MainShellState extends State<MainShell> {
           ),
           NavigationDestination(
             icon: Icon(Icons.notifications_outlined),
-            selectedIcon: Icon(Icons.notifications, color: AppColors.primary),
+            selectedIcon:
+                Icon(Icons.notifications, color: AppColors.primary),
             label: '알림 설정',
           ),
           NavigationDestination(

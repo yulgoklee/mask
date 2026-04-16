@@ -11,9 +11,7 @@ class PermissionScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(profileProvider);
-    final name = (profile.name != null && profile.name!.isNotEmpty)
-        ? '${profile.name}님'
-        : '님';
+    final name = profile.displayName;
 
     return Scaffold(
       backgroundColor: AppColors.background,

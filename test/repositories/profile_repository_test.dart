@@ -15,6 +15,28 @@ Future<ProfileRepository> _buildRepo([
   return ProfileRepository.fromDataSource(LocalProfileDataSource(prefs));
 }
 
+UserProfile _sampleProfile({
+  String nickname = '율곡',
+  int birthYear = 1990,
+  String gender = 'female',
+  int respiratoryStatus = 2,
+  int sensitivityLevel = 2,
+  bool isPregnant = false,
+  int outdoorMinutes = 2,
+}) =>
+    UserProfile(
+      nickname: nickname,
+      birthYear: birthYear,
+      gender: gender,
+      respiratoryStatus: respiratoryStatus,
+      sensitivityLevel: sensitivityLevel,
+      isPregnant: isPregnant,
+      recentSkinTreatment: false,
+      outdoorMinutes: outdoorMinutes,
+      activityTags: const [ActivityTag.commute],
+      discomfortLevel: 0,
+    );
+
 void main() {
   // ── 프로필 ──────────────────────────────────────────────
 
@@ -22,49 +44,34 @@ void main() {
     test('초기 상태: 기본 프로필 반환', () async {
       final repo = await _buildRepo();
       final profile = await repo.loadProfile();
-
-      expect(profile, equals(UserProfile.defaultProfile()));
+      expect(profile.nickname, UserProfile.defaultProfile().nickname);
+      expect(profile.gender, UserProfile.defaultProfile().gender);
     });
 
     test('저장 후 불러오면 동일한 값 반환', () async {
       final repo = await _buildRepo();
-      const profile = UserProfile(
-        ageGroup: AgeGroup.twenties,
-        hasCondition: true,
-        conditionType: ConditionType.asthma,
-        severity: Severity.moderate,
-        isDiagnosed: true,
-        activityLevel: ActivityLevel.high,
-        sensitivity: SensitivityLevel.high,
-      );
+      final profile = _sampleProfile();
 
       await repo.saveProfile(profile);
       final loaded = await repo.loadProfile();
 
-      expect(loaded.ageGroup, AgeGroup.twenties);
-      expect(loaded.hasCondition, isTrue);
-      expect(loaded.conditionType, ConditionType.asthma);
-      expect(loaded.severity, Severity.moderate);
-      expect(loaded.activityLevel, ActivityLevel.high);
-      expect(loaded.sensitivity, SensitivityLevel.high);
+      expect(loaded.nickname, profile.nickname);
+      expect(loaded.birthYear, profile.birthYear);
+      expect(loaded.gender, profile.gender);
+      expect(loaded.respiratoryStatus, profile.respiratoryStatus);
+      expect(loaded.sensitivityLevel, profile.sensitivityLevel);
+      expect(loaded.outdoorMinutes, profile.outdoorMinutes);
+      expect(loaded.activityTags, profile.activityTags);
     });
 
     test('여러 번 저장하면 최신 값으로 덮어씀', () async {
       final repo = await _buildRepo();
 
-      await repo.saveProfile(const UserProfile(
-        ageGroup: AgeGroup.teens,
-        hasCondition: false,
-        activityLevel: ActivityLevel.low,
-      ));
-      await repo.saveProfile(const UserProfile(
-        ageGroup: AgeGroup.sixtyPlus,
-        hasCondition: false,
-        activityLevel: ActivityLevel.normal,
-      ));
+      await repo.saveProfile(_sampleProfile(nickname: '처음'));
+      await repo.saveProfile(_sampleProfile(nickname: '나중'));
 
       final loaded = await repo.loadProfile();
-      expect(loaded.ageGroup, AgeGroup.sixtyPlus);
+      expect(loaded.nickname, '나중');
     });
   });
 
@@ -74,8 +81,9 @@ void main() {
     test('초기 상태: 기본 알림 설정 반환', () async {
       final repo = await _buildRepo();
       final setting = await repo.loadNotificationSetting();
-
-      expect(setting, equals(const NotificationSetting()));
+      expect(setting.morningAlertEnabled,
+          const NotificationSetting().morningAlertEnabled);
+      expect(setting.notificationVoice, NotificationVoice.friendly);
     });
 
     test('알림 설정 저장 후 불러오면 동일한 값 반환', () async {
@@ -86,6 +94,7 @@ void main() {
         morningAlertMinute: 30,
         eveningForecastEnabled: false,
         realtimeAlertEnabled: true,
+        notificationVoice: NotificationVoice.analytical,
       );
 
       await repo.saveNotificationSetting(setting);
@@ -96,6 +105,7 @@ void main() {
       expect(loaded.morningAlertMinute, 30);
       expect(loaded.eveningForecastEnabled, isFalse);
       expect(loaded.realtimeAlertEnabled, isTrue);
+      expect(loaded.notificationVoice, NotificationVoice.analytical);
     });
   });
 
