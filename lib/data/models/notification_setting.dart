@@ -1,3 +1,40 @@
+/// 알림 톤 — 메시지 문체 선택
+class NotificationVoice {
+  static const String friendly   = 'friendly';   // 다정한 가디언 😊
+  static const String analytical = 'analytical'; // 단호한 분석가 🔬
+
+  final String value;
+  const NotificationVoice._(this.value);
+
+  static const NotificationVoice friendlyVoice   = NotificationVoice._(friendly);
+  static const NotificationVoice analyticalVoice = NotificationVoice._(analytical);
+
+  String get label => switch (value) {
+    analytical => '단호한 분석가',
+    _           => '다정한 가디언',
+  };
+
+  String get description => switch (value) {
+    analytical => '수치 중심의 명확한 정보 전달',
+    _           => '따뜻한 말투로 챙겨주는 느낌',
+  };
+
+  String get emoji => switch (value) {
+    analytical => '🔬',
+    _           => '😊',
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is NotificationVoice && other.value == value;
+
+  @override
+  int get hashCode => value.hashCode;
+
+  static NotificationVoice fromString(String? v) =>
+      v == analytical ? analyticalVoice : friendlyVoice;
+}
+
 /// 알림 설정 모델
 class NotificationSetting {
   // 전날 예보 알림 (기본: 오후 9시)
@@ -18,6 +55,9 @@ class NotificationSetting {
   // 실시간 경보 (수치 급등 시)
   final bool realtimeAlertEnabled;
 
+  // 알림 문체 (다정한/단호한)
+  final NotificationVoice notificationVoice;
+
   const NotificationSetting({
     this.eveningForecastEnabled = false,
     this.eveningForecastHour = 21,
@@ -29,6 +69,7 @@ class NotificationSetting {
     this.eveningReturnHour = 18,
     this.eveningReturnMinute = 0,
     this.realtimeAlertEnabled = true,
+    this.notificationVoice = NotificationVoice.friendlyVoice,
   });
 
   NotificationSetting copyWith({
@@ -42,6 +83,7 @@ class NotificationSetting {
     int? eveningReturnHour,
     int? eveningReturnMinute,
     bool? realtimeAlertEnabled,
+    NotificationVoice? notificationVoice,
   }) {
     return NotificationSetting(
       eveningForecastEnabled: eveningForecastEnabled ?? this.eveningForecastEnabled,
@@ -54,6 +96,7 @@ class NotificationSetting {
       eveningReturnHour: eveningReturnHour ?? this.eveningReturnHour,
       eveningReturnMinute: eveningReturnMinute ?? this.eveningReturnMinute,
       realtimeAlertEnabled: realtimeAlertEnabled ?? this.realtimeAlertEnabled,
+      notificationVoice: notificationVoice ?? this.notificationVoice,
     );
   }
 
@@ -68,6 +111,7 @@ class NotificationSetting {
     'eveningReturnHour': eveningReturnHour,
     'eveningReturnMinute': eveningReturnMinute,
     'realtimeAlertEnabled': realtimeAlertEnabled,
+    'notificationVoice': notificationVoice.value,
   };
 
   factory NotificationSetting.fromJson(Map<String, dynamic> json) =>
@@ -82,5 +126,7 @@ class NotificationSetting {
         eveningReturnHour: json['eveningReturnHour'] as int? ?? 18,
         eveningReturnMinute: json['eveningReturnMinute'] as int? ?? 0,
         realtimeAlertEnabled: json['realtimeAlertEnabled'] as bool? ?? true,
+        notificationVoice: NotificationVoice.fromString(
+            json['notificationVoice'] as String?),
       );
 }
