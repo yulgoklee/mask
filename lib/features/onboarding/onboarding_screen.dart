@@ -11,12 +11,12 @@ import 'step_lifestyle.dart';
 
 final _analytics = FirebaseAnalytics.instance;
 
-/// Phase 1 온보딩 — 4단계 새 흐름
+/// Phase 1 온보딩 — 4단계 흐름 (v2 UserProfile 기반)
 ///
 ///  1. 기본 정보    (이름 · 출생연도 · 성별)
-///  2. 신체 민감도  (증상 복수 선택 + 강도)
-///  3. 특별 상태    (임신 · 피부 시술 · 부양가족)
-///  4. 생활 환경    (야외 활동량 + 마스크 편의 성향)
+///  2. 신체 민감도  (호흡기 상태 + 체감 민감도)
+///  3. 특별 상태    (임신 · 피부 시술)
+///  4. 생활 환경    (야외 활동량 + 마스크 불편 정도)
 ///
 ///  완료 → analysis_loading_screen → onboarding_result
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -35,20 +35,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   // ── 1단계: 기본 정보 ────────────────────────────────────────
   String? _name;
   int? _birthYear;
-  Gender? _gender;
+  // gender는 String 으로 관리 ('male'|'female'|'other'|null)
+  String? _genderStr;
 
   // ── 2단계: 신체 민감도 ──────────────────────────────────────
-  Set<ConditionType> _selectedSymptoms = {};
-  Severity _severity = Severity.mild;
+  int _respiratoryStatus = 0;  // 0=건강 1=비염 2=천식등
+  int _sensitivityLevel  = 1;  // 0=무던 1=보통 2=예민
 
   // ── 3단계: 특별 상태 ────────────────────────────────────────
-  bool _isPregnant = false;
-  bool _hasSkinProcedure = false;
-  bool _hasDependents = false;
+  bool _isPregnant         = false;
+  bool _recentSkinTreatment = false;
 
   // ── 4단계: 생활 환경 ────────────────────────────────────────
-  ActivityLevel _activityLevel = ActivityLevel.normal;
-  bool _maskDiscomfort = false;
+  int  _outdoorMinutes   = 1;  // 0=1h미만 1=1~3h 2=3h이상
+  int  _discomfortLevel  = 1;  // 0=안느낌 1=보통 2=많이불편
 
   // ── 네비게이션 ───────────────────────────────────────────────
 
@@ -119,66 +119,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // ── 프로필 조립 ──────────────────────────────────────────────
 
-  /// selectedSymptoms → 대표 conditionType (우선순위 기반)
-  ConditionType _primaryCondition() {
-    if (_isPregnant) return ConditionType.pregnancy;
-    if (_selectedSymptoms.contains(ConditionType.asthma)) {
-      return ConditionType.asthma;
-    }
-    if (_selectedSymptoms.contains(ConditionType.cardiovascular)) {
-      return ConditionType.cardiovascular;
-    }
-    if (_selectedSymptoms.contains(ConditionType.respiratory)) {
-      return ConditionType.respiratory;
-    }
-    if (_selectedSymptoms.contains(ConditionType.allergy)) {
-      return ConditionType.allergy;
-    }
-    return ConditionType.none;
-  }
-
-  /// Severity → SensitivityLevel 매핑 (w3 계산용)
-  SensitivityLevel _deriveSensitivity() {
-    if (_selectedSymptoms.isEmpty && !_isPregnant) {
-      return SensitivityLevel.low;
-    }
-    switch (_severity) {
-      case Severity.severe:   return SensitivityLevel.high;
-      case Severity.moderate: return SensitivityLevel.normal;
-      case Severity.mild:     return SensitivityLevel.low;
-    }
-  }
-
-  /// birthYear → AgeGroup (하위 호환 폴백)
-  AgeGroup _ageGroupFromYear(int? year) {
-    if (year == null) return AgeGroup.thirties;
-    final age = DateTime.now().year - year;
-    if (age < 20) return AgeGroup.teens;
-    if (age < 30) return AgeGroup.twenties;
-    if (age < 40) return AgeGroup.thirties;
-    if (age < 50) return AgeGroup.forties;
-    if (age < 60) return AgeGroup.fifties;
-    return AgeGroup.sixtyPlus;
-  }
-
   UserProfile _buildProfile() {
-    final hasCondition =
-        _selectedSymptoms.isNotEmpty || _isPregnant;
-
     return UserProfile(
-      name: _name,
-      gender: _gender,
-      birthYear: _birthYear,
-      ageGroup: _ageGroupFromYear(_birthYear),
-      hasCondition: hasCondition,
-      conditionType: _primaryCondition(),
-      severity: hasCondition ? _severity : Severity.mild,
-      isDiagnosed: false,
-      activityLevel: _activityLevel,
-      sensitivity: _deriveSensitivity(),
-      hasSkinProcedure: _hasSkinProcedure,
-      hasDependents: _hasDependents,
-      maskDiscomfort: _maskDiscomfort,
+      nickname:            _name ?? '',
+      birthYear:           _birthYear ?? 1990,
+      gender:              _genderStr ?? 'male',
+      respiratoryStatus:   _respiratoryStatus,
+      sensitivityLevel:    _sensitivityLevel,
+      isPregnant:          _isPregnant,
+      recentSkinTreatment: _recentSkinTreatment,
+      outdoorMinutes:      _outdoorMinutes,
+      activityTags:        const [],
+      discomfortLevel:     _discomfortLevel,
     );
   }
 
@@ -307,43 +259,40 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         StepBasicInfo(
           initialName: _name,
           initialBirthYear: _birthYear,
-          initialGender: _gender,
+          initialGenderStr: _genderStr,
           onNameChanged: (v) => setState(() => _name = v),
           onBirthYearChanged: (v) => setState(() => _birthYear = v),
-          onGenderChanged: (v) => setState(() {
-            _gender = v;
+          onGenderStrChanged: (v) => setState(() {
+            _genderStr = v;
             // 성별 변경 시 임신 초기화 (여성 아닌 경우)
-            if (v != Gender.female) _isPregnant = false;
+            if (v != 'female') _isPregnant = false;
           }),
         ),
 
         // 2단계 — 신체 민감도
         StepBodySensitivity(
-          selectedSymptoms: _selectedSymptoms,
-          severity: _severity,
-          onSymptomsChanged: (v) => setState(() => _selectedSymptoms = v),
-          onSeverityChanged: (v) => setState(() => _severity = v),
+          respiratoryStatus: _respiratoryStatus,
+          sensitivityLevel: _sensitivityLevel,
+          onRespiratoryChanged: (v) => setState(() => _respiratoryStatus = v),
+          onSensitivityChanged: (v) => setState(() => _sensitivityLevel = v),
         ),
 
         // 3단계 — 특별 상태
         StepSpecialState(
           isPregnant: _isPregnant,
-          hasSkinProcedure: _hasSkinProcedure,
-          hasDependents: _hasDependents,
-          gender: _gender,
+          recentSkinTreatment: _recentSkinTreatment,
+          genderStr: _genderStr,
           onPregnantChanged: (v) => setState(() => _isPregnant = v),
-          onSkinProcedureChanged: (v) =>
-              setState(() => _hasSkinProcedure = v),
-          onDependentsChanged: (v) => setState(() => _hasDependents = v),
+          onSkinTreatmentChanged: (v) =>
+              setState(() => _recentSkinTreatment = v),
         ),
 
         // 4단계 — 생활 환경
         StepLifestyle(
-          activityLevel: _activityLevel,
-          maskDiscomfort: _maskDiscomfort,
-          onActivityChanged: (v) => setState(() => _activityLevel = v),
-          onMaskDiscomfortChanged: (v) =>
-              setState(() => _maskDiscomfort = v),
+          outdoorMinutes: _outdoorMinutes,
+          discomfortLevel: _discomfortLevel,
+          onOutdoorChanged: (v) => setState(() => _outdoorMinutes = v),
+          onDiscomfortChanged: (v) => setState(() => _discomfortLevel = v),
         ),
       ];
 }

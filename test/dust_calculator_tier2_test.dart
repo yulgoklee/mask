@@ -7,9 +7,16 @@ import 'package:mask_alert/data/models/today_situation.dart';
 
 /// 기본 프로필 (일반 성인, 기저질환 없음)
 UserProfile _normalProfile() => const UserProfile(
-      ageGroup: AgeGroup.thirties,
-      hasCondition: false,
-      activityLevel: ActivityLevel.normal,
+      nickname: '',
+      birthYear: 1990,
+      gender: 'male',
+      respiratoryStatus: 0,
+      sensitivityLevel: 1,
+      isPregnant: false,
+      recentSkinTreatment: false,
+      outdoorMinutes: 1,
+      activityTags: [],
+      discomfortLevel: 1,
     );
 
 /// pm25 값으로 DustData 생성

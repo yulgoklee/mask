@@ -1,53 +1,38 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
-import '../../data/models/user_profile.dart';
 
-/// 2단계 — 신체 민감도 진단
+/// 2단계 — 신체 민감도 진단 (v2)
 ///
-/// "미세먼지가 심할 때 즉각적인 반응이 있나요?"
-/// 선택지: 안구 건조 / 비염 / 천식·가슴 답답함 (복수 선택)
-/// + 강도: 약함 / 보통 / 심함 → Severity 매핑
+/// Q4: 호흡기 상태 (0=건강 1=비염 2=천식등)
+/// Q5: 체감 민감도 (0=무던 1=보통 2=예민)
 class StepBodySensitivity extends StatelessWidget {
-  final Set<ConditionType> selectedSymptoms;
-  final Severity severity;
-  final ValueChanged<Set<ConditionType>> onSymptomsChanged;
-  final ValueChanged<Severity> onSeverityChanged;
+  final int respiratoryStatus;
+  final int sensitivityLevel;
+  final ValueChanged<int> onRespiratoryChanged;
+  final ValueChanged<int> onSensitivityChanged;
 
   const StepBodySensitivity({
     super.key,
-    required this.selectedSymptoms,
-    required this.severity,
-    required this.onSymptomsChanged,
-    required this.onSeverityChanged,
+    required this.respiratoryStatus,
+    required this.sensitivityLevel,
+    required this.onRespiratoryChanged,
+    required this.onSensitivityChanged,
   });
 
-  static const _symptoms = [
-    (type: ConditionType.allergy,       emoji: '👁️', label: '안구 건조·충혈',  hint: '눈이 따갑고 빨개져요'),
-    (type: ConditionType.respiratory,   emoji: '👃', label: '비염·콧물',        hint: '코가 막히고 재채기가 나요'),
-    (type: ConditionType.asthma,        emoji: '🫁', label: '천식·가슴 답답함', hint: '숨이 막히거나 기침이 심해요'),
-    (type: ConditionType.cardiovascular,emoji: '💓', label: '심혈관 불편감',    hint: '두근거림·호흡 곤란이 생겨요'),
+  static const _respiratoryOptions = [
+    (0, '😊', '건강해요',      '호흡기 관련 증상이 없어요',         '+0%'),
+    (1, '👃', '비염 있어요',   '코막힘·재채기가 자주 발생해요',     '+15%'),
+    (2, '🫁', '천식 등 질환',  '천식·심혈관·호흡기 질환이 있어요', '+30%'),
   ];
 
-  static const _severityOptions = [
-    (value: Severity.mild,     label: '약함',  desc: '조금 불편한 정도예요'),
-    (value: Severity.moderate, label: '보통',  desc: '일상에 지장이 생겨요'),
-    (value: Severity.severe,   label: '심함',  desc: '활동이 어려울 정도예요'),
+  static const _sensitivityOptions = [
+    (0, '😶', '무던해요',     '공기 변화를 잘 못 느껴요'),
+    (1, '😌', '보통이에요',   '가끔 느끼는 편이에요'),
+    (2, '😣', '매우 예민해요','조금만 탁해도 바로 느껴요'),
   ];
-
-  void _toggleSymptom(ConditionType type) {
-    final next = Set<ConditionType>.from(selectedSymptoms);
-    if (next.contains(type)) {
-      next.remove(type);
-    } else {
-      next.add(type);
-    }
-    onSymptomsChanged(next);
-  }
 
   @override
   Widget build(BuildContext context) {
-    final hasAny = selectedSymptoms.isNotEmpty;
-
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -57,7 +42,7 @@ class StepBodySensitivity extends StatelessWidget {
           _questionBadge('신체 민감도'),
           const SizedBox(height: 12),
           Text(
-            '미세먼지가 심한 날\n몸이 어떻게 반응하나요?',
+            '호흡기 상태와\n체감 민감도를 알려주세요',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
@@ -66,24 +51,33 @@ class StepBodySensitivity extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '해당하는 항목을 모두 선택해주세요. (복수 선택 가능)',
+            '정확할수록 맞춤 알림 기준이 세밀해져요.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.textSecondary,
                 ),
           ),
           const SizedBox(height: 28),
 
-          // ── 증상 선택 카드 ────────────────────────────────
-          ...(_symptoms.map((s) {
-            final selected = selectedSymptoms.contains(s.type);
+          // ── 호흡기 상태 ───────────────────────────────────
+          Text(
+            '호흡기 상태',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+          ),
+          const SizedBox(height: 12),
+          ...(_respiratoryOptions.map((opt) {
+            final (value, emoji, label, hint, badge) = opt;
+            final selected = respiratoryStatus == value;
             return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.only(bottom: 10),
               child: GestureDetector(
-                onTap: () => _toggleSymptom(s.type),
+                onTap: () => onRespiratoryChanged(value),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
                   curve: Curves.easeOut,
-                  padding: const EdgeInsets.all(18),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: selected
                         ? AppColors.primary.withValues(alpha: 0.08)
@@ -96,14 +90,14 @@ class StepBodySensitivity extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Text(s.emoji, style: const TextStyle(fontSize: 28)),
-                      const SizedBox(width: 16),
+                      Text(emoji, style: const TextStyle(fontSize: 26)),
+                      const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              s.label,
+                              label,
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 15,
@@ -114,31 +108,32 @@ class StepBodySensitivity extends StatelessWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              s.hint,
+                              hint,
                               style: const TextStyle(
-                                fontSize: 13,
+                                fontSize: 12,
                                 color: AppColors.textSecondary,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        width: 24,
-                        height: 24,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: selected ? AppColors.primary : Colors.transparent,
-                          border: Border.all(
-                            color: selected ? AppColors.primary : AppColors.textHint,
-                            width: 2,
-                          ),
-                          borderRadius: BorderRadius.circular(6),
+                          color: selected
+                              ? AppColors.primary
+                              : AppColors.primary.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        child: selected
-                            ? const Icon(Icons.check,
-                                size: 16, color: Colors.white)
-                            : null,
+                        child: Text(
+                          badge,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: selected ? Colors.white : AppColors.primary,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -147,115 +142,70 @@ class StepBodySensitivity extends StatelessWidget {
             );
           })),
 
-          // ── "해당 없음" 버튼 ──────────────────────────────
-          GestureDetector(
-            onTap: () => onSymptomsChanged({}),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: hasAny ? AppColors.surfaceVariant : AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: !hasAny ? AppColors.primary : AppColors.divider,
-                  width: !hasAny ? 2 : 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Text('😌', style: TextStyle(fontSize: 28)),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '딱히 반응 없어요',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                            color: !hasAny
-                                ? AppColors.primary
-                                : AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        const Text(
-                          '미세먼지에 크게 예민하지 않아요',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          const SizedBox(height: 20),
 
-          // ── 강도 선택 (증상 있을 때만) ─────────────────────
-          if (hasAny) ...[
-            const SizedBox(height: 28),
-            Text(
-              '증상이 얼마나 심한가요?',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: _severityOptions.map((opt) {
-                final sel = severity == opt.value;
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 10),
-                    child: GestureDetector(
-                      onTap: () => onSeverityChanged(opt.value),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        decoration: BoxDecoration(
-                          color: sel ? AppColors.primary : AppColors.surfaceVariant,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              opt.label,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: sel ? Colors.white : AppColors.textPrimary,
-                                fontSize: 15,
-                              ),
+          // ── 체감 민감도 ───────────────────────────────────
+          Text(
+            '체감 민감도',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: _sensitivityOptions.map((opt) {
+              final (value, emoji, label, hint) = opt;
+              final sel = sensitivityLevel == value;
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: GestureDetector(
+                    onTap: () => onSensitivityChanged(value),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        color: sel ? AppColors.primary : AppColors.surfaceVariant,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(emoji, style: const TextStyle(fontSize: 22)),
+                          const SizedBox(height: 6),
+                          Text(
+                            label,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: sel ? Colors.white : AppColors.textPrimary,
+                              fontSize: 13,
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              opt.desc,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: sel
-                                    ? Colors.white70
-                                    : AppColors.textSecondary,
-                              ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            hint,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: sel
+                                  ? Colors.white70
+                                  : AppColors.textSecondary,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                );
-              }).toList(),
-            ),
-          ],
+                ),
+              );
+            }).toList(),
+          ),
 
           // ── 근거 문구 ─────────────────────────────────────
           const SizedBox(height: 24),
           _insightBox(
-            '비염 여부를 체크하면 20% 더 정밀하게 감지합니다. '
+            '비염 여부를 체크하면 15% 더 정밀하게 감지합니다. '
             '천식이 있는 분은 일반인보다 낮은 농도에서 알림이 울려요.',
           ),
           const SizedBox(height: 32),

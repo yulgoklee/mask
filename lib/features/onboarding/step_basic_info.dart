@@ -1,27 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/constants/app_colors.dart';
-import '../../data/models/user_profile.dart';
 
 /// 1단계 — 기본 정보 (이름 + 출생연도 + 성별)
 ///
-/// 여성 선택 시 이후 임신 여부 분기 활성화
+/// v2: gender는 String ('male'|'female'|'other'|null)
 class StepBasicInfo extends StatefulWidget {
   final String? initialName;
   final int? initialBirthYear;
-  final Gender? initialGender;
+  final String? initialGenderStr;
   final ValueChanged<String?> onNameChanged;
   final ValueChanged<int?> onBirthYearChanged;
-  final ValueChanged<Gender?> onGenderChanged;
+  final ValueChanged<String?> onGenderStrChanged;
 
   const StepBasicInfo({
     super.key,
     this.initialName,
     this.initialBirthYear,
-    this.initialGender,
+    this.initialGenderStr,
     required this.onNameChanged,
     required this.onBirthYearChanged,
-    required this.onGenderChanged,
+    required this.onGenderStrChanged,
   });
 
   @override
@@ -31,7 +30,13 @@ class StepBasicInfo extends StatefulWidget {
 class _StepBasicInfoState extends State<StepBasicInfo> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _yearCtrl;
-  Gender? _gender;
+  String? _genderStr;
+
+  static const _genders = [
+    ('male',   '👨', '남성'),
+    ('female', '👩', '여성'),
+    ('other',  '🧑', '기타'),
+  ];
 
   @override
   void initState() {
@@ -39,7 +44,7 @@ class _StepBasicInfoState extends State<StepBasicInfo> {
     _nameCtrl = TextEditingController(text: widget.initialName ?? '');
     _yearCtrl = TextEditingController(
         text: widget.initialBirthYear?.toString() ?? '');
-    _gender = widget.initialGender;
+    _genderStr = widget.initialGenderStr;
   }
 
   @override
@@ -111,15 +116,17 @@ class _StepBasicInfoState extends State<StepBasicInfo> {
           _fieldLabel('성별'),
           const SizedBox(height: 12),
           Row(
-            children: Gender.values.map((g) {
-              final selected = _gender == g;
+            children: _genders.map((g) {
+              final (value, emoji, label) = g;
+              final selected = _genderStr == value;
               return Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(right: 10),
                   child: GestureDetector(
                     onTap: () {
-                      setState(() => _gender = selected ? null : g);
-                      widget.onGenderChanged(selected ? null : g);
+                      final next = selected ? null : value;
+                      setState(() => _genderStr = next);
+                      widget.onGenderStrChanged(next);
                     },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
@@ -140,12 +147,12 @@ class _StepBasicInfoState extends State<StepBasicInfo> {
                       child: Column(
                         children: [
                           Text(
-                            _genderEmoji(g),
+                            emoji,
                             style: const TextStyle(fontSize: 26),
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            g.label,
+                            label,
                             style: TextStyle(
                               color: selected
                                   ? Colors.white
@@ -173,14 +180,6 @@ class _StepBasicInfoState extends State<StepBasicInfo> {
         ],
       ),
     );
-  }
-
-  String _genderEmoji(Gender g) {
-    switch (g) {
-      case Gender.male:   return '👨';
-      case Gender.female: return '👩';
-      case Gender.other:  return '🧑';
-    }
   }
 }
 
