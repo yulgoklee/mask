@@ -1,36 +1,35 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
-import '../../data/models/user_profile.dart';
 
-/// 4단계 — 생활 환경 (야외 활동량 + 마스크 편의 성향)
+/// 4단계 — 생활 환경 (v2)
 ///
-/// w2: ActivityLevel → 낮음 0.0 / 보통 +0.1 / 높음 +0.2
-/// w_pref: maskDiscomfort → 답답함 심하면 T_final 소폭 완화 (−0.08)
+/// Q8: outdoorMinutes (0=1h미만 1=1~3h 2=3h이상)
+/// Q10: discomfortLevel (0=안느낌 1=보통 2=많이불편)
 class StepLifestyle extends StatelessWidget {
-  final ActivityLevel activityLevel;
-  final bool maskDiscomfort;
-  final ValueChanged<ActivityLevel> onActivityChanged;
-  final ValueChanged<bool> onMaskDiscomfortChanged;
+  final int outdoorMinutes;
+  final int discomfortLevel;
+  final ValueChanged<int> onOutdoorChanged;
+  final ValueChanged<int> onDiscomfortChanged;
 
   const StepLifestyle({
     super.key,
-    required this.activityLevel,
-    required this.maskDiscomfort,
-    required this.onActivityChanged,
-    required this.onMaskDiscomfortChanged,
+    required this.outdoorMinutes,
+    required this.discomfortLevel,
+    required this.onOutdoorChanged,
+    required this.onDiscomfortChanged,
   });
 
-  static const _activityIcons = {
-    ActivityLevel.low:    Icons.home_outlined,
-    ActivityLevel.normal: Icons.directions_walk,
-    ActivityLevel.high:   Icons.directions_run,
-  };
+  static const _outdoorOptions = [
+    (0, Icons.home_outlined,    '1시간 미만', '주로 실내에 있어요',   '+0%'),
+    (1, Icons.directions_walk,  '1~3시간',   '매일 외출은 해요',     '+10%'),
+    (2, Icons.directions_run,   '3시간 이상', '야외 활동이 많아요',   '+20%'),
+  ];
 
-  static const _activityBadge = {
-    ActivityLevel.low:    '+0%',
-    ActivityLevel.normal: '+10%',
-    ActivityLevel.high:   '+20%',
-  };
+  static const _discomfortOptions = [
+    (0, '😌', '안 느껴요',     '마스크가 편해요'),
+    (1, '😐', '보통이에요',    '가끔 답답하긴 해요'),
+    (2, '😮‍💨', '많이 불편해요', '답답함·김 서림이 심해요'),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -59,13 +58,14 @@ class StepLifestyle extends StatelessWidget {
           ),
           const SizedBox(height: 28),
 
-          // ── 활동량 선택 카드 ──────────────────────────────
-          ...ActivityLevel.values.map((level) {
-            final isSelected = activityLevel == level;
+          // ── 야외 활동량 ───────────────────────────────────
+          ..._outdoorOptions.map((opt) {
+            final (value, icon, label, sublabel, badge) = opt;
+            final isSelected = outdoorMinutes == value;
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: GestureDetector(
-                onTap: () => onActivityChanged(level),
+                onTap: () => onOutdoorChanged(value),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
                   curve: Curves.easeOut,
@@ -92,7 +92,7 @@ class StepLifestyle extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
-                          _activityIcons[level],
+                          icon,
                           color: isSelected ? Colors.white : AppColors.textSecondary,
                           size: 24,
                         ),
@@ -103,7 +103,7 @@ class StepLifestyle extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              level.label,
+                              label,
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
@@ -114,7 +114,7 @@ class StepLifestyle extends StatelessWidget {
                             ),
                             const SizedBox(height: 3),
                             Text(
-                              level.description,
+                              sublabel,
                               style: const TextStyle(
                                 fontSize: 13,
                                 color: AppColors.textSecondary,
@@ -124,7 +124,6 @@ class StepLifestyle extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      // 가중치 배지
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
@@ -135,7 +134,7 @@ class StepLifestyle extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          _activityBadge[level]!,
+                          badge,
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
@@ -154,7 +153,7 @@ class StepLifestyle extends StatelessWidget {
           const Divider(color: AppColors.divider),
           const SizedBox(height: 20),
 
-          // ── 마스크 편의 성향 ──────────────────────────────
+          // ── 마스크 불편 정도 ───────────────────────────────
           Text(
             '마스크 착용 시 불편함이\n있으신가요?',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -165,117 +164,60 @@ class StepLifestyle extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '답답함·김 서림이 심하면 알림 기준을 조금 완화해드려요.',
+            '많이 불편하면 알림 기준을 조금 완화해드려요.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.textSecondary,
                 ),
           ),
           const SizedBox(height: 16),
 
-          // 답답함 있음
-          GestureDetector(
-            onTap: () => onMaskDiscomfortChanged(true),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: maskDiscomfort
-                    ? AppColors.coral.withValues(alpha: 0.07)
-                    : AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: maskDiscomfort ? AppColors.coral : AppColors.divider,
-                  width: maskDiscomfort ? 2 : 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Text('😮‍💨', style: TextStyle(fontSize: 28)),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '마스크가 좀 답답해요',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                            color: maskDiscomfort
-                                ? AppColors.coral
-                                : AppColors.textPrimary,
+          Row(
+            children: _discomfortOptions.map((opt) {
+              final (value, emoji, label, hint) = opt;
+              final sel = discomfortLevel == value;
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: GestureDetector(
+                    onTap: () => onDiscomfortChanged(value),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        color: sel ? AppColors.primary : AppColors.surfaceVariant,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(emoji, style: const TextStyle(fontSize: 22)),
+                          const SizedBox(height: 6),
+                          Text(
+                            label,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: sel ? Colors.white : AppColors.textPrimary,
+                              fontSize: 12,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 3),
-                        const Text(
-                          '김 서림·압박감이 심해서 오래 착용하기 힘들어요',
-                          style: TextStyle(
-                              fontSize: 13, color: AppColors.textSecondary),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: maskDiscomfort
-                          ? AppColors.coral
-                          : AppColors.coral.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '완화',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: maskDiscomfort ? Colors.white : AppColors.coral,
+                          const SizedBox(height: 3),
+                          Text(
+                            hint,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: sel
+                                  ? Colors.white70
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // 문제없음
-          GestureDetector(
-            onTap: () => onMaskDiscomfortChanged(false),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: !maskDiscomfort
-                    ? AppColors.primary.withValues(alpha: 0.07)
-                    : AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: !maskDiscomfort ? AppColors.primary : AppColors.divider,
-                  width: !maskDiscomfort ? 2 : 1,
                 ),
-              ),
-              child: Row(
-                children: [
-                  const Text('😤', style: TextStyle(fontSize: 28)),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      '마스크 착용에 문제없어요',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        color: !maskDiscomfort
-                            ? AppColors.primary
-                            : AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+              );
+            }).toList(),
           ),
 
           // ── 근거 문구 ─────────────────────────────────────

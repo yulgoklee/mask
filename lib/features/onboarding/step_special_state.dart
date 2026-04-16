@@ -1,35 +1,30 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
-import '../../data/models/user_profile.dart';
 
-/// 3단계 — 특별 상태 진단 (w_spec)
+/// 3단계 — 특별 상태 진단 (v2)
 ///
-/// "현재 특별히 보호가 필요한 상태인가요?"
-/// 임신 중 / 피부 시술 후 2주 내 / 영유아·고령자 부양
+/// Q6: isPregnant (female only)
+/// Q7: recentSkinTreatment
 class StepSpecialState extends StatelessWidget {
-  final bool isPregnant;          // conditionType == pregnancy
-  final bool hasSkinProcedure;
-  final bool hasDependents;
-  final Gender? gender;
+  final bool isPregnant;
+  final bool recentSkinTreatment;
+  final String? genderStr; // 'male'|'female'|'other'|null
   final ValueChanged<bool> onPregnantChanged;
-  final ValueChanged<bool> onSkinProcedureChanged;
-  final ValueChanged<bool> onDependentsChanged;
+  final ValueChanged<bool> onSkinTreatmentChanged;
 
   const StepSpecialState({
     super.key,
     required this.isPregnant,
-    required this.hasSkinProcedure,
-    required this.hasDependents,
-    this.gender,
+    required this.recentSkinTreatment,
+    this.genderStr,
     required this.onPregnantChanged,
-    required this.onSkinProcedureChanged,
-    required this.onDependentsChanged,
+    required this.onSkinTreatmentChanged,
   });
 
   @override
   Widget build(BuildContext context) {
     final showPregnancy =
-        gender == null || gender == Gender.female;
+        genderStr == null || genderStr == 'female';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -77,21 +72,8 @@ class StepSpecialState extends StatelessWidget {
             subLabel: '시술 후 피부 장벽이 약해져 미세먼지 영향이 커요',
             badge: '–25%',
             badgeColor: AppColors.coral,
-            selected: hasSkinProcedure,
-            onTap: () => onSkinProcedureChanged(!hasSkinProcedure),
-          ),
-
-          const SizedBox(height: 12),
-
-          // ── 영유아·고령자 부양 ─────────────────────────────
-          _StateCard(
-            emoji: '👶🏻👴',
-            label: '영유아 또는 고령자와 함께 살아요',
-            subLabel: '함께 사는 가족의 건강까지 고려해 알림을 조정해요',
-            badge: '–15%',
-            badgeColor: AppColors.secondary,
-            selected: hasDependents,
-            onTap: () => onDependentsChanged(!hasDependents),
+            selected: recentSkinTreatment,
+            onTap: () => onSkinTreatmentChanged(!recentSkinTreatment),
           ),
 
           const SizedBox(height: 12),
@@ -100,24 +82,21 @@ class StepSpecialState extends StatelessWidget {
           GestureDetector(
             onTap: () {
               onPregnantChanged(false);
-              onSkinProcedureChanged(false);
-              onDependentsChanged(false);
+              onSkinTreatmentChanged(false);
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: (!isPregnant && !hasSkinProcedure && !hasDependents)
+                color: (!isPregnant && !recentSkinTreatment)
                     ? AppColors.surfaceVariant
                     : AppColors.surface,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: (!isPregnant && !hasSkinProcedure && !hasDependents)
+                  color: (!isPregnant && !recentSkinTreatment)
                       ? AppColors.primary
                       : AppColors.divider,
-                  width: (!isPregnant && !hasSkinProcedure && !hasDependents)
-                      ? 2
-                      : 1,
+                  width: (!isPregnant && !recentSkinTreatment) ? 2 : 1,
                 ),
               ),
               child: Row(
@@ -130,7 +109,7 @@ class StepSpecialState extends StatelessWidget {
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
-                        color: (!isPregnant && !hasSkinProcedure && !hasDependents)
+                        color: (!isPregnant && !recentSkinTreatment)
                             ? AppColors.primary
                             : AppColors.textPrimary,
                       ),
@@ -220,7 +199,6 @@ class _StateCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            // 가중치 배지
             Container(
               padding:
                   const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

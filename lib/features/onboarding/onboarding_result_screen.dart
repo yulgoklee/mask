@@ -279,17 +279,16 @@ class _SensitivityRadarChart extends StatelessWidget {
 
   List<double> _values() {
     final w1 = SensitivityCalculator.conditionWeight(profile);
-    final w2 = SensitivityCalculator.activityWeight(profile.activityLevel);
-    final w3 = SensitivityCalculator.sensitivityWeight(profile.sensitivity);
+    final w2 = SensitivityCalculator.activityWeight(profile);
+    final w3 = SensitivityCalculator.sensitivityWeightFromProfile(profile);
 
-    // 피부·임신: skinProcedure(0.25) or pregnancy conditionType(0.3) 중 최댓값
-    final skinVal = profile.hasSkinProcedure ? 0.25 : 0.0;
-    final pregnancyVal =
-        profile.conditionType == ConditionType.pregnancy ? 0.30 : 0.0;
+    // 피부·임신: skinProcedure(0.25) or pregnancy(0.3) 중 최댓값
+    final skinVal = profile.recentSkinTreatment ? 0.25 : 0.0;
+    final pregnancyVal = profile.isPregnant ? 0.30 : 0.0;
     final axis4 = (skinVal > pregnancyVal ? skinVal : pregnancyVal) / 0.30;
 
-    // 부양가족: 0 or 1
-    final axis5 = profile.hasDependents ? 1.0 : 0.0;
+    // 부양가족: v2에서 제거됨 (0 고정)
+    const axis5 = 0.0;
 
     // 종합 S (clamped 0.6)
     final axis6 = s / SensitivityCalculator.sMax;
@@ -867,8 +866,8 @@ class _WeightExplanationSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final w1    = SensitivityCalculator.conditionWeight(profile);
-    final w2    = SensitivityCalculator.activityWeight(profile.activityLevel);
-    final w3    = SensitivityCalculator.sensitivityWeight(profile.sensitivity);
+    final w2    = SensitivityCalculator.activityWeight(profile);
+    final w3    = SensitivityCalculator.sensitivityWeightFromProfile(profile);
     final wSpec = SensitivityCalculator.specialStateWeight(profile);
     final wPref = SensitivityCalculator.prefWeight(profile);
     final rawSum = w1 + w2 + w3 + wSpec + wPref;
@@ -918,10 +917,12 @@ class _WeightExplanationSheet extends StatelessWidget {
               // w1 기저질환
               _WeightRow(
                 icon: Icons.favorite_outline,
-                label: '기저질환',
-                sublabel: profile.hasCondition
-                    ? '${profile.conditionType.label} · ${profile.severity.label}'
-                    : '해당 없음',
+                label: '호흡기 상태',
+                sublabel: profile.respiratoryStatus == 2
+                    ? '천식 등 질환'
+                    : profile.respiratoryStatus == 1
+                        ? '비염 있음'
+                        : '해당 없음',
                 value: w1,
                 maxValue: 0.3,
                 isPositive: true,
@@ -932,7 +933,11 @@ class _WeightExplanationSheet extends StatelessWidget {
               _WeightRow(
                 icon: Icons.directions_walk,
                 label: '야외 활동량',
-                sublabel: profile.activityLevel.description,
+                sublabel: profile.outdoorMinutes == 2
+                    ? '하루 3시간 이상'
+                    : profile.outdoorMinutes == 1
+                        ? '하루 1~3시간'
+                        : '하루 1시간 미만',
                 value: w2,
                 maxValue: 0.2,
                 isPositive: true,
@@ -943,7 +948,11 @@ class _WeightExplanationSheet extends StatelessWidget {
               _WeightRow(
                 icon: Icons.tune,
                 label: '신체 반응도',
-                sublabel: profile.sensitivity.label,
+                sublabel: profile.sensitivityLevel == 2
+                    ? '매우 예민'
+                    : profile.sensitivityLevel == 1
+                        ? '보통'
+                        : '무던함',
                 value: w3,
                 maxValue: 0.2,
                 isPositive: true,
@@ -965,11 +974,11 @@ class _WeightExplanationSheet extends StatelessWidget {
               _WeightRow(
                 icon: Icons.masks_outlined,
                 label: '마스크 편의',
-                sublabel: profile.maskDiscomfort
-                    ? '답답함 있음 (기준 소폭 완화)'
+                sublabel: profile.discomfortLevel == 2
+                    ? '많이 불편 (기준 소폭 완화)'
                     : '착용 문제없음',
                 value: wPref.abs(),
-                maxValue: 0.08,
+                maxValue: 0.10,
                 isPositive: false,
               ),
 
@@ -1065,9 +1074,8 @@ class _WeightExplanationSheet extends StatelessWidget {
 
   String _specLabel(UserProfile profile) {
     final parts = <String>[];
-    if (profile.conditionType == ConditionType.pregnancy) parts.add('임신');
-    if (profile.hasSkinProcedure) parts.add('피부 시술');
-    if (profile.hasDependents) parts.add('부양가족');
+    if (profile.isPregnant) parts.add('임신');
+    if (profile.recentSkinTreatment) parts.add('피부 시술');
     return parts.isEmpty ? '해당 없음' : parts.join(' · ');
   }
 }

@@ -119,7 +119,7 @@ class HomeScreen extends ConsumerWidget {
                             result: calcResult,
                             pm25: dust.pm25Value?.toDouble(),
                             tFinal: tFinal,
-                            name: profile.name,
+                            name: profile.nickname.isNotEmpty ? profile.nickname : null,
                             onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(

@@ -43,9 +43,7 @@ class _OnboardingCompleteScreenState
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
     final setting = ref.watch(notificationSettingProvider);
-    final name = (profile.name != null && profile.name!.isNotEmpty)
-        ? '${profile.name}님'
-        : '님';
+    final name = profile.displayName;
 
     // 첫 번째로 켜진 알림 시간 표시
     String? firstAlertTime;

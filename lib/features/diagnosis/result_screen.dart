@@ -7,7 +7,7 @@ import '../../data/models/user_profile.dart';
 import '../../providers/profile_providers.dart';
 import 'diagnosis_screen.dart';
 
-/// 분석 결과 상세 화면 — Phase 2
+/// 분석 결과 상세 화면 — Phase 2 (v2)
 ///
 /// 섹션 구성:
 ///   1. 페르소나 카드 (이름 · 설명 · 키워드 태그)
@@ -21,7 +21,7 @@ class ResultScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(profileProvider);
     final persona = PersonaGenerator.generate(profile);
-    final s = SensitivityCalculator.compute(profile);
+    final s = profile.sensitivityIndex;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -115,7 +115,6 @@ class _PersonaCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 이모지 + 이름 + 서브타이틀
           Row(
             children: [
               Text(persona.emoji, style: const TextStyle(fontSize: 36)),
@@ -147,7 +146,6 @@ class _PersonaCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // 설명
           Text(
             persona.description,
             style: const TextStyle(
@@ -158,7 +156,6 @@ class _PersonaCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // 키워드 태그
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -226,9 +223,9 @@ class _SensitivityBreakdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final w1 = _w1(profile);
-    final w2 = _w2(profile);
-    final w3 = _w3(profile);
+    final w1 = SensitivityCalculator.conditionWeight(profile);
+    final w2 = SensitivityCalculator.activityWeight(profile);
+    final w3 = SensitivityCalculator.sensitivityWeightFromProfile(profile);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -240,24 +237,34 @@ class _SensitivityBreakdown extends StatelessWidget {
       child: Column(
         children: [
           _BreakdownRow(
-            label: '기저질환',
-            sublabel: profile.hasCondition
-                ? profile.conditionType.label
-                : '해당 없음',
+            label: '호흡기 상태',
+            sublabel: profile.respiratoryStatus == 0
+                ? '건강해요'
+                : profile.respiratoryStatus == 1
+                    ? '비염 있어요'
+                    : '천식 등 질환',
             weight: w1,
             maxWeight: 0.3,
           ),
           const SizedBox(height: 14),
           _BreakdownRow(
             label: '야외 활동',
-            sublabel: profile.activityLevel.description,
+            sublabel: profile.outdoorMinutes == 0
+                ? '1시간 미만'
+                : profile.outdoorMinutes == 1
+                    ? '1~3시간'
+                    : '3시간 이상',
             weight: w2,
             maxWeight: 0.2,
           ),
           const SizedBox(height: 14),
           _BreakdownRow(
             label: '체감 민감도',
-            sublabel: _sensitivityDesc(profile.sensitivity),
+            sublabel: profile.sensitivityLevel == 0
+                ? '무던해요'
+                : profile.sensitivityLevel == 1
+                    ? '보통이에요'
+                    : '매우 예민해요',
             weight: w3,
             maxWeight: 0.2,
           ),
@@ -310,31 +317,6 @@ class _SensitivityBreakdown extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _sensitivityDesc(SensitivityLevel level) {
-    switch (level) {
-      case SensitivityLevel.low:    return '잘 느끼지 못함';
-      case SensitivityLevel.normal: return '가끔 느낌';
-      case SensitivityLevel.high:   return '바로 느낌';
-    }
-  }
-
-  double _w1(UserProfile p) =>
-      p.hasCondition ? (p.severity == Severity.mild ? 0.2 : 0.3) : 0.0;
-  double _w2(UserProfile p) {
-    switch (p.activityLevel) {
-      case ActivityLevel.low:    return 0.0;
-      case ActivityLevel.normal: return 0.1;
-      case ActivityLevel.high:   return 0.2;
-    }
-  }
-  double _w3(UserProfile p) {
-    switch (p.sensitivity) {
-      case SensitivityLevel.low:    return 0.0;
-      case SensitivityLevel.normal: return 0.1;
-      case SensitivityLevel.high:   return 0.2;
-    }
   }
 
   Color _sColor(double s) {
@@ -431,7 +413,6 @@ class _ThresholdCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // 비교 행 — 일반인 vs 나
           Row(
             children: [
               Expanded(

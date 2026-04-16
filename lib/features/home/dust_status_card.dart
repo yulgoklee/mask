@@ -70,9 +70,9 @@ class DustStatusCard extends ConsumerWidget {
             const SizedBox(height: 10),
 
             // [이름]님, (있을 때만)
-            if (profile.name != null && profile.name!.isNotEmpty) ...[
+            if (profile.nickname.isNotEmpty) ...[
               Text(
-                '${profile.name}님,',
+                '${profile.nickname}님,',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 18,

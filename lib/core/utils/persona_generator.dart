@@ -71,12 +71,12 @@ class PersonaGenerator {
   // ── 타입 결정 로직 ─────────────────────────────────────
 
   static PersonaType _determineType(UserProfile profile) {
-    final w1 = _w1(profile); // 기저질환
+    final w1 = _w1(profile); // 호흡기 상태
     final w2 = _w2(profile); // 야외 활동
     final w3 = _w3(profile); // 체감 민감도
 
     // 기저질환 있음
-    if (w1 >= 0.2) {
+    if (w1 >= 0.15) {
       // 기저질환 + 활동/체감 중간 이상 → 복합 주의
       if (w2 >= 0.1 || w3 >= 0.1) return PersonaType.compound;
       return PersonaType.medicalCare;
@@ -93,8 +93,8 @@ class PersonaGenerator {
   // ── 페르소나 빌드 ──────────────────────────────────────
 
   static Persona _build(PersonaType type, UserProfile profile) {
-    final conditionLabel = profile.hasCondition
-        ? profile.conditionType.label
+    final conditionLabel = profile.respiratoryStatus >= 1
+        ? _respiratoryLabel(profile.respiratoryStatus)
         : null;
 
     switch (type) {
@@ -236,26 +236,31 @@ class PersonaGenerator {
     }
   }
 
-  // ── 내부 가중치 헬퍼 (SensitivityCalculator와 동일 기준) ─
+  // ── 내부 가중치 헬퍼 (v2 필드 기반) ─────────────────────
 
   static double _w1(UserProfile p) {
-    if (!p.hasCondition) return 0.0;
-    return p.severity == Severity.mild ? 0.2 : 0.3;
+    if (p.respiratoryStatus == 2) return 0.3;
+    if (p.respiratoryStatus == 1) return 0.15;
+    return 0.0;
   }
 
   static double _w2(UserProfile p) {
-    switch (p.activityLevel) {
-      case ActivityLevel.low:    return 0.0;
-      case ActivityLevel.normal: return 0.1;
-      case ActivityLevel.high:   return 0.2;
-    }
+    if (p.outdoorMinutes == 2) return 0.2;
+    if (p.outdoorMinutes == 1) return 0.1;
+    return 0.0;
   }
 
   static double _w3(UserProfile p) {
-    switch (p.sensitivity) {
-      case SensitivityLevel.low:    return 0.0;
-      case SensitivityLevel.normal: return 0.1;
-      case SensitivityLevel.high:   return 0.2;
+    if (p.sensitivityLevel == 2) return 0.2;
+    if (p.sensitivityLevel == 1) return 0.1;
+    return 0.0;
+  }
+
+  static String _respiratoryLabel(int status) {
+    switch (status) {
+      case 1:  return '비염';
+      case 2:  return '천식 등 호흡기 질환';
+      default: return '';
     }
   }
 }

@@ -6,14 +6,14 @@ import '../../data/models/user_profile.dart';
 import '../../providers/profile_providers.dart';
 import 'result_screen.dart';
 
-/// 민감도 진단 화면 — 3파트 step-by-step 카드
+/// 민감도 진단 화면 — 3파트 step-by-step 카드 (v2)
 ///
-/// Part 1: 기저질환 여부  (w1)
-/// Part 2: 야외 활동 시간 (w2)
-/// Part 3: 체감 민감도   (w3)
+/// Part 1: 호흡기 상태       (respiratoryStatus)
+/// Part 2: 야외 활동 시간    (outdoorMinutes)
+/// Part 3: 체감 민감도       (sensitivityLevel)
 /// 결과  : S값 + 나만의 마스크 기준 표시
 ///
-/// 완료 시 UserProfile(hasCondition, activityLevel, sensitivity) 업데이트 후 저장.
+/// 완료 시 UserProfile v2 필드 업데이트 후 저장.
 class DiagnosisScreen extends ConsumerStatefulWidget {
   const DiagnosisScreen({super.key});
 
@@ -26,9 +26,9 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
   int _currentPage = 0;
 
   // 진단 응답 — 기존 프로필 값으로 초기화
-  late bool _hasCondition;
-  late ActivityLevel _activityLevel;
-  late SensitivityLevel _sensitivity;
+  late int _respiratoryStatus;
+  late int _outdoorMinutes;
+  late int _sensitivityLevel;
 
   // 결과 페이지용 계산된 S값
   double _s = 0.0;
@@ -36,11 +36,10 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
   @override
   void initState() {
     super.initState();
-    // ConsumerState에서는 initState에서 ref.read 사용 가능
     final profile = ref.read(profileProvider);
-    _hasCondition = profile.hasCondition;
-    _activityLevel = profile.activityLevel;
-    _sensitivity = profile.sensitivity;
+    _respiratoryStatus = profile.respiratoryStatus;
+    _outdoorMinutes    = profile.outdoorMinutes;
+    _sensitivityLevel  = profile.sensitivityLevel;
   }
 
   @override
@@ -71,10 +70,9 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
   Future<void> _goToResult() async {
     final profile = ref.read(profileProvider);
     final updated = profile.copyWith(
-      hasCondition: _hasCondition,
-      conditionType: _hasCondition ? profile.conditionType : ConditionType.none,
-      activityLevel: _activityLevel,
-      sensitivity: _sensitivity,
+      respiratoryStatus: _respiratoryStatus,
+      outdoorMinutes:    _outdoorMinutes,
+      sensitivityLevel:  _sensitivityLevel,
     );
 
     final s = SensitivityCalculator.compute(updated);
@@ -90,8 +88,8 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
-    final nameOf = profile.name?.isNotEmpty == true
-        ? '${profile.name}님의'
+    final nameOf = profile.nickname.isNotEmpty
+        ? '${profile.nickname}님의'
         : '나의';
 
     return Scaffold(
@@ -112,16 +110,16 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
                   _Part1(
-                    hasCondition: _hasCondition,
-                    onChanged: (v) => setState(() => _hasCondition = v),
+                    respiratoryStatus: _respiratoryStatus,
+                    onChanged: (v) => setState(() => _respiratoryStatus = v),
                   ),
                   _Part2(
-                    activityLevel: _activityLevel,
-                    onChanged: (v) => setState(() => _activityLevel = v),
+                    outdoorMinutes: _outdoorMinutes,
+                    onChanged: (v) => setState(() => _outdoorMinutes = v),
                   ),
                   _Part3(
-                    sensitivity: _sensitivity,
-                    onChanged: (v) => setState(() => _sensitivity = v),
+                    sensitivityLevel: _sensitivityLevel,
+                    onChanged: (v) => setState(() => _sensitivityLevel = v),
                   ),
                   _ResultPage(s: _s, profile: profile),
                 ],
@@ -140,14 +138,20 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
 }
 
 // ─────────────────────────────────────────────────────────
-// Part 1 — 기저질환
+// Part 1 — 호흡기 상태
 // ─────────────────────────────────────────────────────────
 
 class _Part1 extends StatelessWidget {
-  final bool hasCondition;
-  final ValueChanged<bool> onChanged;
+  final int respiratoryStatus;
+  final ValueChanged<int> onChanged;
 
-  const _Part1({required this.hasCondition, required this.onChanged});
+  const _Part1({required this.respiratoryStatus, required this.onChanged});
+
+  static const _items = [
+    (0, Icons.sentiment_satisfied_outlined, '건강해요',    '호흡기 관련 증상 없음',     0.00),
+    (1, Icons.medical_services_outlined,    '비염 있어요',  '비염·콧물·코막힘',         0.15),
+    (2, Icons.monitor_heart_outlined,       '천식 등 질환', '천식·심혈관·호흡기 질환', 0.30),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -157,10 +161,10 @@ class _Part1 extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 32),
-          const _PartLabel('Part 1 · 건강 상태'),
+          const _PartLabel('Part 1 · 호흡기 상태'),
           const SizedBox(height: 14),
           const Text(
-            '비염, 천식, 호흡기 질환이\n있으신가요?',
+            '현재 호흡기 상태가\n어떻게 되시나요?',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -173,30 +177,20 @@ class _Part1 extends StatelessWidget {
             '기저질환이 있으면 일반 기준보다 일찍 마스크가 필요해요.',
             style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
-          const SizedBox(height: 36),
-          Row(
-            children: [
-              Expanded(
-                child: _SquareChoice(
-                  icon: Icons.sentiment_satisfied_outlined,
-                  label: '없어요',
-                  sublabel: '해당 없음',
-                  selected: !hasCondition,
-                  onTap: () => onChanged(false),
-                ),
+          const SizedBox(height: 32),
+          ..._items.map((item) {
+            final (value, icon, label, sublabel, _) = item;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _CardChoice(
+                icon: icon,
+                label: label,
+                sublabel: sublabel,
+                selected: respiratoryStatus == value,
+                onTap: () => onChanged(value),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: _SquareChoice(
-                  icon: Icons.medical_services_outlined,
-                  label: '있어요',
-                  sublabel: '비염·천식·기타',
-                  selected: hasCondition,
-                  onTap: () => onChanged(true),
-                ),
-              ),
-            ],
-          ),
+            );
+          }),
           const Spacer(),
         ],
       ),
@@ -209,15 +203,15 @@ class _Part1 extends StatelessWidget {
 // ─────────────────────────────────────────────────────────
 
 class _Part2 extends StatelessWidget {
-  final ActivityLevel activityLevel;
-  final ValueChanged<ActivityLevel> onChanged;
+  final int outdoorMinutes;
+  final ValueChanged<int> onChanged;
 
-  const _Part2({required this.activityLevel, required this.onChanged});
+  const _Part2({required this.outdoorMinutes, required this.onChanged});
 
   static const _items = [
-    (ActivityLevel.low, Icons.home_outlined, '1시간 미만', '주로 실내에 있어요', 0.0),
-    (ActivityLevel.normal, Icons.directions_walk, '1~3시간', '매일 외출은 해요', 0.1),
-    (ActivityLevel.high, Icons.directions_run, '3시간 이상', '야외 활동이 많아요', 0.2),
+    (0, Icons.home_outlined,   '1시간 미만', '주로 실내에 있어요', 0.0),
+    (1, Icons.directions_walk, '1~3시간',   '매일 외출은 해요',   0.1),
+    (2, Icons.directions_run,  '3시간 이상', '야외 활동이 많아요', 0.2),
   ];
 
   @override
@@ -246,15 +240,15 @@ class _Part2 extends StatelessWidget {
           ),
           const SizedBox(height: 32),
           ..._items.map((item) {
-            final (level, icon, label, sublabel, _) = item;
+            final (value, icon, label, sublabel, _) = item;
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: _CardChoice(
                 icon: icon,
                 label: label,
                 sublabel: sublabel,
-                selected: activityLevel == level,
-                onTap: () => onChanged(level),
+                selected: outdoorMinutes == value,
+                onTap: () => onChanged(value),
               ),
             );
           }),
@@ -270,15 +264,15 @@ class _Part2 extends StatelessWidget {
 // ─────────────────────────────────────────────────────────
 
 class _Part3 extends StatelessWidget {
-  final SensitivityLevel sensitivity;
-  final ValueChanged<SensitivityLevel> onChanged;
+  final int sensitivityLevel;
+  final ValueChanged<int> onChanged;
 
-  const _Part3({required this.sensitivity, required this.onChanged});
+  const _Part3({required this.sensitivityLevel, required this.onChanged});
 
   static const _items = [
-    (SensitivityLevel.low, Icons.sentiment_neutral_outlined, '잘 모르겠어요', '느끼지 못하는 편이에요'),
-    (SensitivityLevel.normal, Icons.sentiment_satisfied_outlined, '가끔 느껴요', '심할 때만 불편해요'),
-    (SensitivityLevel.high, Icons.sentiment_dissatisfied_outlined, '바로 느껴요', '조금만 탁해도 달라요'),
+    (0, Icons.sentiment_neutral_outlined,     '잘 모르겠어요', '느끼지 못하는 편이에요'),
+    (1, Icons.sentiment_satisfied_outlined,   '가끔 느껴요',   '심할 때만 불편해요'),
+    (2, Icons.sentiment_dissatisfied_outlined,'바로 느껴요',   '조금만 탁해도 달라요'),
   ];
 
   @override
@@ -307,15 +301,15 @@ class _Part3 extends StatelessWidget {
           ),
           const SizedBox(height: 32),
           ..._items.map((item) {
-            final (level, icon, label, sublabel) = item;
+            final (value, icon, label, sublabel) = item;
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: _CardChoice(
                 icon: icon,
                 label: label,
                 sublabel: sublabel,
-                selected: sensitivity == level,
-                onTap: () => onChanged(level),
+                selected: sensitivityLevel == value,
+                onTap: () => onChanged(value),
               ),
             );
           }),
@@ -341,15 +335,14 @@ class _ResultPage extends StatelessWidget {
     final levelLabel = SensitivityCalculator.label(s);
     final levelColor = _levelColor(s);
 
-    // S ≥ sThreshold 이면 T_final 적용, 아니면 일반 기준(36) 표시
     final bool usesFinal = s >= SensitivityCalculator.sThreshold;
     final double tFinal = usesFinal ? SensitivityCalculator.threshold(s) : 36.0;
     final String compareText = usesFinal
         ? '일반 기준(36 μg/m³)보다 ${(36 - tFinal).toStringAsFixed(0)} 낮아요'
         : '일반 기준과 동일해요';
 
-    final name = profile.name?.isNotEmpty == true
-        ? '${profile.name}님은'
+    final name = profile.nickname.isNotEmpty
+        ? '${profile.nickname}님은'
         : '분석 완료!';
 
     return Padding(
@@ -358,7 +351,6 @@ class _ResultPage extends StatelessWidget {
         children: [
           const SizedBox(height: 40),
 
-          // 아이콘
           Container(
             width: 84,
             height: 84,
@@ -370,7 +362,6 @@ class _ResultPage extends StatelessWidget {
           ),
           const SizedBox(height: 22),
 
-          // 이름 + 레이블
           Text(
             name,
             style: const TextStyle(
@@ -400,7 +391,6 @@ class _ResultPage extends StatelessWidget {
 
           const SizedBox(height: 36),
 
-          // 결과 카드
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(24),
@@ -450,12 +440,11 @@ class _ResultPage extends StatelessWidget {
 
           const Spacer(),
 
-          // 상세 리포트 버튼
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
-                Navigator.pop(context); // 진단 화면 닫기
+                Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const ResultScreen()),
@@ -477,7 +466,6 @@ class _ResultPage extends StatelessWidget {
           ),
           const SizedBox(height: 10),
 
-          // 닫기 (리포트 없이 종료)
           SizedBox(
             width: double.infinity,
             child: TextButton(
@@ -630,70 +618,7 @@ class _BottomButton extends StatelessWidget {
 // 선택 UI 컴포넌트
 // ─────────────────────────────────────────────────────────
 
-/// 정방형 선택 버튼 (Part 1 — 예/아니오)
-class _SquareChoice extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String sublabel;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _SquareChoice({
-    required this.icon,
-    required this.label,
-    required this.sublabel,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primaryLight : AppColors.surface,
-          border: Border.all(
-            color: selected ? AppColors.primary : AppColors.divider,
-            width: selected ? 2 : 1,
-          ),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              size: 36,
-              color: selected ? AppColors.primary : AppColors.textSecondary,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: selected ? AppColors.primary : AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              sublabel,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// 가로형 카드 선택 버튼 (Part 2, 3 — 3지 선택)
+/// 가로형 카드 선택 버튼
 class _CardChoice extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -726,7 +651,6 @@ class _CardChoice extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // 아이콘 박스
             AnimatedContainer(
               duration: const Duration(milliseconds: 160),
               width: 50,
@@ -742,7 +666,6 @@ class _CardChoice extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 16),
-            // 텍스트
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -766,7 +689,6 @@ class _CardChoice extends StatelessWidget {
                 ],
               ),
             ),
-            // 체크 아이콘
             AnimatedOpacity(
               duration: const Duration(milliseconds: 160),
               opacity: selected ? 1.0 : 0.0,
