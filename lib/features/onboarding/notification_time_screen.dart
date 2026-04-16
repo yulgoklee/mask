@@ -5,7 +5,7 @@ import '../../core/services/notification_service.dart';
 import '../../data/models/notification_setting.dart';
 import '../../providers/providers.dart';
 
-/// 위치 설정 이후 — 알림 시간 + 톤 설정 화면
+/// 위치 설정 이후 — 알림 시간 + 톤 설정 화면 (리디자인 v2)
 class NotificationTimeScreen extends ConsumerWidget {
   const NotificationTimeScreen({super.key});
 
@@ -19,141 +19,173 @@ class NotificationTimeScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 40),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                '언제 알림을 드릴까요?',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                '원하는 알림만 켜두세요. 나중에 언제든 변경할 수 있어요.',
-                style: TextStyle(fontSize: 15, color: AppColors.textSecondary),
-              ),
-            ),
-            const SizedBox(height: 32),
-
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+            // ── 헤더 ──────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 36, 24, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _NotifTile(
-                    icon: Icons.wb_sunny_outlined,
-                    title: '외출 전 알림',
-                    subtitle: '매일 아침 마스크 필요 여부 안내',
-                    enabled: setting.morningAlertEnabled,
-                    hour: setting.morningAlertHour,
-                    minute: setting.morningAlertMinute,
-                    onToggle: (v) => ref
-                        .read(notificationSettingProvider.notifier)
-                        .update(setting.copyWith(morningAlertEnabled: v)),
-                    onTimeTap: () async {
-                      final picked = await showTimePicker(
-                        context: context,
-                        initialTime: TimeOfDay(
-                          hour: setting.morningAlertHour,
-                          minute: setting.morningAlertMinute,
-                        ),
-                      );
-                      if (picked != null) {
-                        ref.read(notificationSettingProvider.notifier).update(
-                              setting.copyWith(
-                                morningAlertHour: picked.hour,
-                                morningAlertMinute: picked.minute,
-                              ),
-                            );
-                      }
-                    },
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Center(
+                      child: Text('🔔', style: TextStyle(fontSize: 26)),
+                    ),
                   ),
-                  const SizedBox(height: 12),
-                  _NotifTile(
-                    icon: Icons.nights_stay_outlined,
-                    title: '전날 예보 알림',
-                    subtitle: '내일 미세먼지 예보 미리 안내',
-                    enabled: setting.eveningForecastEnabled,
-                    hour: setting.eveningForecastHour,
-                    minute: setting.eveningForecastMinute,
-                    onToggle: (v) => ref
-                        .read(notificationSettingProvider.notifier)
-                        .update(setting.copyWith(eveningForecastEnabled: v)),
-                    onTimeTap: () async {
-                      final picked = await showTimePicker(
-                        context: context,
-                        initialTime: TimeOfDay(
-                          hour: setting.eveningForecastHour,
-                          minute: setting.eveningForecastMinute,
-                        ),
-                      );
-                      if (picked != null) {
-                        ref.read(notificationSettingProvider.notifier).update(
-                              setting.copyWith(
-                                eveningForecastHour: picked.hour,
-                                eveningForecastMinute: picked.minute,
-                              ),
-                            );
-                      }
-                    },
+                  const SizedBox(height: 20),
+                  const Text(
+                    '알림을 설정해드릴게요',
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                      height: 1.2,
+                    ),
                   ),
-                  const SizedBox(height: 12),
-                  _NotifTile(
-                    icon: Icons.home_outlined,
-                    title: '귀가 후 알림',
-                    subtitle: '퇴근 시간대 미세먼지 확인 안내',
-                    enabled: setting.eveningReturnEnabled,
-                    hour: setting.eveningReturnHour,
-                    minute: setting.eveningReturnMinute,
-                    onToggle: (v) => ref
-                        .read(notificationSettingProvider.notifier)
-                        .update(setting.copyWith(eveningReturnEnabled: v)),
-                    onTimeTap: () async {
-                      final picked = await showTimePicker(
-                        context: context,
-                        initialTime: TimeOfDay(
-                          hour: setting.eveningReturnHour,
-                          minute: setting.eveningReturnMinute,
-                        ),
-                      );
-                      if (picked != null) {
-                        ref.read(notificationSettingProvider.notifier).update(
-                              setting.copyWith(
-                                eveningReturnHour: picked.hour,
-                                eveningReturnMinute: picked.minute,
-                              ),
-                            );
-                      }
-                    },
+                  const SizedBox(height: 8),
+                  const Text(
+                    '원하는 알림만 켜두세요. 언제든 변경할 수 있어요.',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: AppColors.textSecondary,
+                      height: 1.4,
+                    ),
                   ),
                 ],
               ),
             ),
 
-            // 알림 톤 선택
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: _VoiceCard(setting: setting, ref: ref),
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 28),
 
-            // 시뮬레이션 + 다음 버튼
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+            // ── 알림 카드 목록 ─────────────────────────────────
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    _NotifCard(
+                      emoji: '🌅',
+                      title: '외출 전 알림',
+                      subtitle: '아침에 마스크 필요 여부를 알려드려요',
+                      accentColor: const Color(0xFFF59E0B),
+                      enabled: setting.morningAlertEnabled,
+                      hour: setting.morningAlertHour,
+                      minute: setting.morningAlertMinute,
+                      onToggle: (v) => ref
+                          .read(notificationSettingProvider.notifier)
+                          .update(setting.copyWith(morningAlertEnabled: v)),
+                      onTimeTap: () async {
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay(
+                            hour: setting.morningAlertHour,
+                            minute: setting.morningAlertMinute,
+                          ),
+                        );
+                        if (picked != null) {
+                          ref
+                              .read(notificationSettingProvider.notifier)
+                              .update(setting.copyWith(
+                                morningAlertHour: picked.hour,
+                                morningAlertMinute: picked.minute,
+                              ));
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _NotifCard(
+                      emoji: '🌙',
+                      title: '전날 예보 알림',
+                      subtitle: '내일 미세먼지를 미리 알려드려요',
+                      accentColor: const Color(0xFF8B5CF6),
+                      enabled: setting.eveningForecastEnabled,
+                      hour: setting.eveningForecastHour,
+                      minute: setting.eveningForecastMinute,
+                      onToggle: (v) => ref
+                          .read(notificationSettingProvider.notifier)
+                          .update(setting.copyWith(eveningForecastEnabled: v)),
+                      onTimeTap: () async {
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay(
+                            hour: setting.eveningForecastHour,
+                            minute: setting.eveningForecastMinute,
+                          ),
+                        );
+                        if (picked != null) {
+                          ref
+                              .read(notificationSettingProvider.notifier)
+                              .update(setting.copyWith(
+                                eveningForecastHour: picked.hour,
+                                eveningForecastMinute: picked.minute,
+                              ));
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _NotifCard(
+                      emoji: '🏠',
+                      title: '귀가 후 알림',
+                      subtitle: '퇴근 시간대 미세먼지를 확인해드려요',
+                      accentColor: const Color(0xFF10B981),
+                      enabled: setting.eveningReturnEnabled,
+                      hour: setting.eveningReturnHour,
+                      minute: setting.eveningReturnMinute,
+                      onToggle: (v) => ref
+                          .read(notificationSettingProvider.notifier)
+                          .update(setting.copyWith(eveningReturnEnabled: v)),
+                      onTimeTap: () async {
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay(
+                            hour: setting.eveningReturnHour,
+                            minute: setting.eveningReturnMinute,
+                          ),
+                        );
+                        if (picked != null) {
+                          ref
+                              .read(notificationSettingProvider.notifier)
+                              .update(setting.copyWith(
+                                eveningReturnHour: picked.hour,
+                                eveningReturnMinute: picked.minute,
+                              ));
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 20),
+
+                    // ── 알림 톤 ───────────────────────────────
+                    _VoiceSection(setting: setting, ref: ref),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            ),
+
+            // ── 하단 버튼 영역 ─────────────────────────────────
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                border: Border(
+                  top: BorderSide(
+                    color: AppColors.divider.withValues(alpha: 0.6),
+                  ),
+                ),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
               child: Column(
                 children: [
                   _SimulationButton(setting: setting),
                   const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
+                    height: 54,
                     child: ElevatedButton(
                       onPressed: () async {
-                        // 시뮬레이션을 건너뛴 경우에도 여기서 onboarding 완료 처리
                         try {
                           await ref
                               .read(profileRepositoryProvider)
@@ -167,16 +199,17 @@ class NotificationTimeScreen extends ConsumerWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
                         elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                       ),
                       child: const Text(
-                        '다음',
-                        style:
-                            TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        '설정 완료  →',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
@@ -190,20 +223,26 @@ class NotificationTimeScreen extends ConsumerWidget {
   }
 }
 
-class _NotifTile extends StatelessWidget {
-  final IconData icon;
+// ══════════════════════════════════════════════════════════════
+//  알림 카드 (토글 + 시간 표시 확장)
+// ══════════════════════════════════════════════════════════════
+
+class _NotifCard extends StatelessWidget {
+  final String emoji;
   final String title;
   final String subtitle;
+  final Color accentColor;
   final bool enabled;
   final int hour;
   final int minute;
   final ValueChanged<bool> onToggle;
   final VoidCallback onTimeTap;
 
-  const _NotifTile({
-    required this.icon,
+  const _NotifCard({
+    required this.emoji,
     required this.title,
     required this.subtitle,
+    required this.accentColor,
     required this.enabled,
     required this.hour,
     required this.minute,
@@ -211,109 +250,214 @@ class _NotifTile extends StatelessWidget {
     required this.onTimeTap,
   });
 
+  String get _timeStr =>
+      '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+
+  String get _periodStr => hour < 12 ? '오전' : '오후';
+
+  int get _displayHour {
+    if (hour == 0) return 12;
+    if (hour > 12) return hour - 12;
+    return hour;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border.all(color: AppColors.divider),
-        borderRadius: BorderRadius.circular(14),
+        color: enabled
+            ? accentColor.withValues(alpha: 0.06)
+            : AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: enabled ? accentColor.withValues(alpha: 0.4) : AppColors.divider,
+          width: enabled ? 1.5 : 1,
+        ),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Icon(icon, color: AppColors.primary, size: 28),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          // ── 상단: 아이콘 + 텍스트 + 토글 ────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 12, 16),
+            child: Row(
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                // 아이콘
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: enabled
+                        ? accentColor.withValues(alpha: 0.12)
+                        : AppColors.surfaceVariant,
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                      fontSize: 13, color: AppColors.textSecondary),
-                ),
-                if (enabled) ...[
-                  const SizedBox(height: 6),
-                  GestureDetector(
-                    onTap: onTimeTap,
+                  child: Center(
                     child: Text(
-                      '${hour.toString().padLeft(2, '0')}:'
-                      '${minute.toString().padLeft(2, '0')}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                        decoration: TextDecoration.underline,
-                      ),
+                      emoji,
+                      style: const TextStyle(fontSize: 22),
                     ),
                   ),
-                ],
+                ),
+                const SizedBox(width: 14),
+                // 제목 + 부제목
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: enabled
+                              ? AppColors.textPrimary
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // 토글
+                Transform.scale(
+                  scale: 0.85,
+                  child: Switch(
+                    value: enabled,
+                    onChanged: onToggle,
+                    activeColor: accentColor,
+                  ),
+                ),
               ],
             ),
           ),
-          Switch(
-            value: enabled,
-            onChanged: onToggle,
-            activeThumbColor: AppColors.primary,
-          ),
+
+          // ── 시간 선택 영역 (활성 시만) ───────────────────────
+          if (enabled) ...[
+            Divider(
+              height: 1,
+              color: accentColor.withValues(alpha: 0.2),
+              indent: 16,
+              endIndent: 16,
+            ),
+            GestureDetector(
+              onTap: onTimeTap,
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.schedule_rounded,
+                      size: 16,
+                      color: accentColor.withValues(alpha: 0.8),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '알림 시각',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: accentColor.withValues(alpha: 0.9),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const Spacer(),
+                    // 시간 표시 배지
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: accentColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '$_periodStr ',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: accentColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            '${_displayHour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              color: accentColor,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 18,
+                      color: accentColor.withValues(alpha: 0.6),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
-// ── 알림 톤 선택 카드 ─────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+//  알림 톤 섹션
+// ══════════════════════════════════════════════════════════════
 
-class _VoiceCard extends StatelessWidget {
+class _VoiceSection extends StatelessWidget {
   final NotificationSetting setting;
   final WidgetRef ref;
-  const _VoiceCard({required this.setting, required this.ref});
+
+  const _VoiceSection({required this.setting, required this.ref});
 
   @override
   Widget build(BuildContext context) {
-    final voices = [
+    const voices = [
       NotificationVoice.friendlyVoice,
       NotificationVoice.analyticalVoice,
     ];
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border.all(color: AppColors.divider),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '알림 톤 선택',
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 12),
+          child: Text(
+            '알림 문체',
             style: TextStyle(
               fontSize: 15,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 4),
-          const Text(
-            '마음에 드는 알림 문체를 골라보세요',
-            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: voices.map((v) {
-              final selected = setting.notificationVoice == v;
-              return Expanded(
+        ),
+        Row(
+          children: voices.map((v) {
+            final selected = setting.notificationVoice == v;
+            return Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  right: v == NotificationVoice.friendlyVoice ? 6 : 0,
+                  left: v == NotificationVoice.analyticalVoice ? 6 : 0,
+                ),
                 child: GestureDetector(
                   onTap: () {
                     ref
@@ -322,68 +466,96 @@ class _VoiceCard extends StatelessWidget {
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    margin: EdgeInsets.only(
-                      right: v == NotificationVoice.friendlyVoice ? 6 : 0,
-                      left: v == NotificationVoice.analyticalVoice ? 6 : 0,
-                    ),
                     padding: const EdgeInsets.symmetric(
-                        vertical: 12, horizontal: 10),
+                        vertical: 18, horizontal: 12),
                     decoration: BoxDecoration(
                       color: selected
-                          ? AppColors.primary.withValues(alpha: 0.08)
-                          : AppColors.surfaceVariant,
+                          ? AppColors.primary.withValues(alpha: 0.07)
+                          : AppColors.surface,
                       border: Border.all(
                         color: selected
                             ? AppColors.primary
                             : AppColors.divider,
-                        width: selected ? 1.5 : 1.0,
+                        width: selected ? 1.5 : 1,
                       ),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: Column(
                       children: [
-                        Text(v.emoji,
-                            style: const TextStyle(fontSize: 22)),
-                        const SizedBox(height: 4),
+                        Text(
+                          v.emoji,
+                          style: const TextStyle(fontSize: 28),
+                        ),
+                        const SizedBox(height: 8),
                         Text(
                           v.label,
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 14,
                             fontWeight: selected
                                 ? FontWeight.w700
-                                : FontWeight.normal,
+                                : FontWeight.w500,
                             color: selected
                                 ? AppColors.primary
-                                : AppColors.textSecondary,
+                                : AppColors.textPrimary,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 4),
                         Text(
                           v.description,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
-                            color: AppColors.textHint,
-                            height: 1.3,
+                            color: selected
+                                ? AppColors.primary.withValues(alpha: 0.7)
+                                : AppColors.textHint,
+                            height: 1.4,
                           ),
+                        ),
+                        const SizedBox(height: 8),
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? AppColors.primary
+                                : Colors.transparent,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: selected
+                                  ? AppColors.primary
+                                  : AppColors.divider,
+                              width: 2,
+                            ),
+                          ),
+                          child: selected
+                              ? const Icon(
+                                  Icons.check,
+                                  size: 14,
+                                  color: Colors.white,
+                                )
+                              : null,
                         ),
                       ],
                     ),
                   ),
                 ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 }
 
-// ── 알림 시뮬레이션 버튼 ──────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+//  알림 시뮬레이션 버튼
+// ══════════════════════════════════════════════════════════════
 
 class _SimulationButton extends ConsumerStatefulWidget {
   final NotificationSetting setting;
+
   const _SimulationButton({required this.setting});
 
   @override
@@ -398,38 +570,50 @@ class _SimulationButtonState extends ConsumerState<_SimulationButton> {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      child: OutlinedButton.icon(
+      height: 50,
+      child: OutlinedButton(
         onPressed: (_loading || _sent) ? null : _simulate,
-        icon: _loading
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: AppColors.primary),
-              )
-            : Icon(
-                _sent ? Icons.check_circle_outline : Icons.notifications_outlined,
-                size: 18,
-              ),
-        label: Text(
-          _sent
-              ? '알림을 보냈어요!'
-              : _loading
-                  ? '전송 중...'
-                  : '알림 미리 받아보기',
-        ),
         style: OutlinedButton.styleFrom(
-          foregroundColor:
-              _sent ? AppColors.success : AppColors.primary,
+          foregroundColor: _sent ? AppColors.success : AppColors.primary,
           side: BorderSide(
             color: _sent
                 ? AppColors.success
                 : AppColors.primary.withValues(alpha: 0.5),
           ),
-          padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
           ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (_loading)
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: AppColors.primary),
+              )
+            else
+              Icon(
+                _sent
+                    ? Icons.check_circle_outline
+                    : Icons.notifications_active_outlined,
+                size: 18,
+              ),
+            const SizedBox(width: 8),
+            Text(
+              _sent
+                  ? '알림을 보냈어요!'
+                  : _loading
+                      ? '전송 중...'
+                      : '알림 미리 받아보기',
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -445,6 +629,11 @@ class _SimulationButtonState extends ConsumerState<_SimulationButton> {
       // 시뮬레이션 완료 = 온보딩 설정 최종 확정 시점
       await ref.read(profileRepositoryProvider).completeOnboarding();
     } catch (_) {}
-    if (mounted) setState(() { _loading = false; _sent = true; });
+    if (mounted) {
+      setState(() {
+        _loading = false;
+        _sent = true;
+      });
+    }
   }
 }
