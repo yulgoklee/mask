@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/services/notification_service.dart';
+import '../../data/models/notification_setting.dart';
 import '../../providers/providers.dart';
 
-/// 위치 설정 이후 — 알림 시간 설정 화면
+/// 위치 설정 이후 — 알림 시간 + 톤 설정 화면
 class NotificationTimeScreen extends ConsumerWidget {
   const NotificationTimeScreen({super.key});
 
@@ -133,29 +135,42 @@ class NotificationTimeScreen extends ConsumerWidget {
               ),
             ),
 
-            // 다음 버튼
+            // 알림 톤 선택
             Padding(
-              padding: const EdgeInsets.all(24),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () =>
-                      Navigator.of(context).pushReplacementNamed('/permission'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: _VoiceCard(setting: setting, ref: ref),
+            ),
+            const SizedBox(height: 12),
+
+            // 시뮬레이션 + 다음 버튼
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: Column(
+                children: [
+                  _SimulationButton(setting: setting),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context)
+                          .pushReplacementNamed('/permission'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        '다음',
+                        style:
+                            TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
                     ),
-                    elevation: 0,
                   ),
-                  child: const Text(
-                    '다음',
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                ),
+                ],
               ),
             ),
           ],
@@ -239,10 +254,185 @@ class _NotifTile extends StatelessWidget {
           Switch(
             value: enabled,
             onChanged: onToggle,
-            activeColor: AppColors.primary,
+            activeThumbColor: AppColors.primary,
           ),
         ],
       ),
     );
+  }
+}
+
+// ── 알림 톤 선택 카드 ─────────────────────────────────────
+
+class _VoiceCard extends StatelessWidget {
+  final NotificationSetting setting;
+  final WidgetRef ref;
+  const _VoiceCard({required this.setting, required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    final voices = [
+      NotificationVoice.friendlyVoice,
+      NotificationVoice.analyticalVoice,
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.divider),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '알림 톤 선택',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            '마음에 드는 알림 문체를 골라보세요',
+            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: voices.map((v) {
+              final selected = setting.notificationVoice == v;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    ref
+                        .read(notificationSettingProvider.notifier)
+                        .update(setting.copyWith(notificationVoice: v));
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    margin: EdgeInsets.only(
+                      right: v == NotificationVoice.friendlyVoice ? 6 : 0,
+                      left: v == NotificationVoice.analyticalVoice ? 6 : 0,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? AppColors.primary.withValues(alpha: 0.08)
+                          : AppColors.surfaceVariant,
+                      border: Border.all(
+                        color: selected
+                            ? AppColors.primary
+                            : AppColors.divider,
+                        width: selected ? 1.5 : 1.0,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(v.emoji,
+                            style: const TextStyle(fontSize: 22)),
+                        const SizedBox(height: 4),
+                        Text(
+                          v.label,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: selected
+                                ? FontWeight.w700
+                                : FontWeight.normal,
+                            color: selected
+                                ? AppColors.primary
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          v.description,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textHint,
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── 알림 시뮬레이션 버튼 ──────────────────────────────────
+
+class _SimulationButton extends ConsumerStatefulWidget {
+  final NotificationSetting setting;
+  const _SimulationButton({required this.setting});
+
+  @override
+  ConsumerState<_SimulationButton> createState() => _SimulationButtonState();
+}
+
+class _SimulationButtonState extends ConsumerState<_SimulationButton> {
+  bool _loading = false;
+  bool _sent = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: (_loading || _sent) ? null : _simulate,
+        icon: _loading
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: AppColors.primary),
+              )
+            : Icon(
+                _sent ? Icons.check_circle_outline : Icons.notifications_outlined,
+                size: 18,
+              ),
+        label: Text(
+          _sent
+              ? '알림을 보냈어요!'
+              : _loading
+                  ? '전송 중...'
+                  : '알림 미리 받아보기',
+        ),
+        style: OutlinedButton.styleFrom(
+          foregroundColor:
+              _sent ? AppColors.success : AppColors.primary,
+          side: BorderSide(
+            color: _sent
+                ? AppColors.success
+                : AppColors.primary.withValues(alpha: 0.5),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _simulate() async {
+    setState(() => _loading = true);
+    await Future.delayed(const Duration(seconds: 2));
+    try {
+      await NotificationService().showSimulationNotification(
+        voice: widget.setting.notificationVoice.value,
+      );
+    } catch (_) {}
+    if (mounted) setState(() { _loading = false; _sent = true; });
   }
 }

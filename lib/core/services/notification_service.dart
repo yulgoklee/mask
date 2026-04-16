@@ -285,6 +285,26 @@ class NotificationService {
   Future<void> cancel(int id) => _plugin.cancel(id);
   Future<void> cancelAll() => _plugin.cancelAll();
 
+  /// 온보딩 알림 시뮬레이션 — 설정 완료 전 미리 받아보기
+  static const int simulationAlertId = 99;
+
+  Future<void> showSimulationNotification({String voice = 'friendly'}) async {
+    final isAnalytical = voice == 'analytical';
+    final title = isAnalytical
+        ? '📊 PM2.5 32μg/m³ — KF80 권장'
+        : '😷 오늘 마스크 챙겨가세요!';
+    final body = isAnalytical
+        ? '현재 농도가 개인 임계치(T_final)의 91%입니다. KF80 이상 착용을 권장합니다.'
+        : '오늘 미세먼지가 조금 있어요. 가볍게 KF80 마스크 하나 챙겨가면 안심이 될 거예요 :)';
+    await showImmediateNotification(
+      id: simulationAlertId,
+      title: title,
+      body: body,
+      gradeColor: _gradeColors['나쁨'],
+      smallIcon: _iconMask,
+    );
+  }
+
   // ── 알림 콘텐츠 생성 — 다정한 조언자 원칙 ──────────────────────
   //
   // 원칙:

@@ -69,10 +69,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final onboardingDone = await repo.isOnboardingCompleted();
     if (!mounted) return;
 
-    if (!tutorialSeen) {
+    if (!onboardingDone) {
+      // 온보딩 미완료 → 로드맵 소개 화면부터 시작
+      Navigator.of(context).pushReplacementNamed('/roadmap');
+    } else if (!tutorialSeen) {
+      // 기존 유저 온보딩 완료 but 튜토리얼 미확인 → 튜토리얼
       Navigator.of(context).pushReplacementNamed('/tutorial');
-    } else if (!onboardingDone) {
-      Navigator.of(context).pushReplacementNamed('/onboarding');
     } else {
       Navigator.of(context).pushReplacementNamed('/home');
     }
