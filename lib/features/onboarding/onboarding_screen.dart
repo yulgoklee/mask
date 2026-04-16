@@ -62,9 +62,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   //  Q6는 female 또는 성별 미선택 시만 포함
   //  → _pages 는 getter로 매번 재계산 (상태 변경 시 반영)
 
-  bool get _showPregnancyQ => _genderStr == null || _genderStr == 'female';
-
-  /// 실제 렌더할 페이지 위젯 목록 (Q6 조건부 포함)
+  /// 실제 렌더할 페이지 위젯 목록 (Q6 내부에서 gender 분기)
   List<Widget> get _pages => [
         DiagQ1Nickname(
           initialValue: _nickname,
@@ -78,8 +76,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           value: _genderStr,
           onChanged: (v) => setState(() {
             _genderStr = v;
-            // 여성 아닌 경우 임신 해제
-            if (v != null && v != 'female') _isPregnant = false;
+            // 남성 선택 시 임신 해제
+            if (v == 'male') _isPregnant = false;
           }),
         ),
         DiagQ4Respiratory(
@@ -159,8 +157,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final profile = _buildProfile();
 
     try {
+      // 프로필만 저장 — completeOnboarding()은 notification_time_screen에서 호출
       await ref.read(profileProvider.notifier).saveProfile(profile);
-      await ref.read(profileRepositoryProvider).completeOnboarding();
     } catch (_) {
       // 저장 실패해도 다음 화면으로 진행
     }

@@ -60,7 +60,7 @@ class _AnalysisLoadingScreenState
     await Future.delayed(const Duration(milliseconds: 600));
     if (!mounted) return;
 
-    Navigator.of(context).pushReplacementNamed('/onboarding_result');
+    Navigator.of(context).pushReplacementNamed('/dashboard');
   }
 
   @override

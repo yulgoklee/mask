@@ -152,8 +152,18 @@ class NotificationTimeScreen extends ConsumerWidget {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () => Navigator.of(context)
-                          .pushReplacementNamed('/permission'),
+                      onPressed: () async {
+                        // 시뮬레이션을 건너뛴 경우에도 여기서 onboarding 완료 처리
+                        try {
+                          await ref
+                              .read(profileRepositoryProvider)
+                              .completeOnboarding();
+                        } catch (_) {}
+                        if (context.mounted) {
+                          Navigator.of(context)
+                              .pushReplacementNamed('/permission');
+                        }
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
@@ -432,6 +442,8 @@ class _SimulationButtonState extends ConsumerState<_SimulationButton> {
       await NotificationService().showSimulationNotification(
         voice: widget.setting.notificationVoice.value,
       );
+      // 시뮬레이션 완료 = 온보딩 설정 최종 확정 시점
+      await ref.read(profileRepositoryProvider).completeOnboarding();
     } catch (_) {}
     if (mounted) setState(() { _loading = false; _sent = true; });
   }
