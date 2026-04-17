@@ -13,7 +13,9 @@ class PermissionScreen extends ConsumerWidget {
     final profile = ref.watch(profileProvider);
     final name = profile.displayName;
 
-    return Scaffold(
+    return PopScope(
+      canPop: false, // 권한 화면에서 뒤로가기로 notification_time 스택 없어 앱 종료 방지
+      child: Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
@@ -177,7 +179,8 @@ class PermissionScreen extends ConsumerWidget {
           ),
         ),
       ),
-    );
+    ), // Scaffold
+    ); // PopScope
   }
 }
 

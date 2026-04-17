@@ -179,6 +179,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Future<void> _skipOnboarding() async {
     await _analytics.logEvent(name: 'onboarding_skipped');
     try {
+      // 지금까지 입력한 데이터를 기본값으로 채워 저장
+      // (스킵해도 Q1~현재까지 입력한 값은 보존)
+      await ref.read(profileProvider.notifier).saveProfile(_buildProfile());
       await ref.read(profileRepositoryProvider).completeOnboarding();
     } catch (_) {}
     if (mounted) {
