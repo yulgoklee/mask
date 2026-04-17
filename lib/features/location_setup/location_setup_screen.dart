@@ -178,12 +178,15 @@ class _LocationSetupScreenState extends ConsumerState<LocationSetupScreen> {
   void _goHome() {
     ref.invalidate(dustDataProvider);
     ref.invalidate(tomorrowForecastProvider);
-    if (Navigator.of(context).canPop()) {
-      // 설정 화면에서 진입한 경우 → 뒤로
-      Navigator.of(context).pop();
-    } else {
-      // 온보딩 플로우에서 진입한 경우 → 알림 시간 설정으로
+    // route arguments로 진입 맥락 판단
+    //  true  → 온보딩 플로우 (dashboard → location_setup)
+    //  false → 설정 화면 진입 (home → location_setup)
+    final fromOnboarding =
+        ModalRoute.of(context)?.settings.arguments as bool? ?? false;
+    if (fromOnboarding) {
       Navigator.of(context).pushReplacementNamed('/notification_time');
+    } else {
+      Navigator.of(context).pop();
     }
   }
 

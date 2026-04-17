@@ -47,9 +47,9 @@ class _AnalysisLoadingScreenState
   }
 
   Future<void> _runAnalysis() async {
-    // 메시지 단계 애니메이션 (0.55초 간격으로 3회 전환)
+    // 메시지 단계 애니메이션 (0.9초 간격으로 3회 전환 — 사용자가 읽을 수 있도록)
     for (int i = 1; i < _messages.length; i++) {
-      await Future.delayed(const Duration(milliseconds: 550));
+      await Future.delayed(const Duration(milliseconds: 900));
       if (!mounted) return;
       await _fadeCtrl.reverse();
       setState(() => _messageIndex = i);
@@ -57,7 +57,7 @@ class _AnalysisLoadingScreenState
     }
 
     // 마지막 메시지 유지 후 이동
-    await Future.delayed(const Duration(milliseconds: 600));
+    await Future.delayed(const Duration(milliseconds: 900));
     if (!mounted) return;
 
     Navigator.of(context).pushReplacementNamed('/dashboard');
