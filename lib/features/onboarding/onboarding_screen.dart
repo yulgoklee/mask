@@ -10,7 +10,7 @@ final _analytics = FirebaseAnalytics.instance;
 
 /// Phase 2 온보딩 — Q1~Q10 카드 PageView
 ///
-///  Q1  닉네임          Q6  임신 여부 (female/미선택만)
+///  Q1  닉네임          Q6  임신 여부 (female/미선택만, male 완전 제외)
 ///  Q2  출생연도         Q7  피부 시술
 ///  Q3  성별             Q8  야외 활동량
 ///  Q4  호흡기 상태      Q9  활동 태그
@@ -35,7 +35,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   int? _birthYear;
 
   // ── Q3: 성별 ─────────────────────────────────────────────────
-  String? _genderStr; // 'male'|'female'|'other'|null
+  String? _genderStr; // 'male'|'female'|null
 
   // ── Q4: 호흡기 ───────────────────────────────────────────────
   int _respiratoryStatus = 0;
@@ -43,7 +43,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   // ── Q5: 민감도 ───────────────────────────────────────────────
   int _sensitivityLevel = 1;
 
-  // ── Q6: 임신 (female/미선택만 유효) ──────────────────────────
+  // ── Q6: 임신 (female/미선택만 유효, male이면 페이지 자체 제외) ──
   bool _isPregnant = false;
 
   // ── Q7: 피부 시술 ────────────────────────────────────────────
@@ -60,9 +60,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // ── 동적 페이지 목록 ─────────────────────────────────────────
   //  Q6는 female 또는 성별 미선택 시만 포함
-  //  → _pages 는 getter로 매번 재계산 (상태 변경 시 반영)
+  //  male 선택 시 Q6 완전 제거 → 9페이지
+  //  gender 변경 시 _currentPage <= 2 이므로 인덱스 안전
 
-  /// 실제 렌더할 페이지 위젯 목록 (Q6 내부에서 gender 분기)
+  /// Q6 포함 여부 — male이면 완전 제외
+  bool get _includeQ6 => _genderStr != 'male';
+
+  /// 실제 렌더할 페이지 위젯 목록
   List<Widget> get _pages => [
         DiagQ1Nickname(
           initialValue: _nickname,
@@ -76,7 +80,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           value: _genderStr,
           onChanged: (v) => setState(() {
             _genderStr = v;
-            // 남성 선택 시 임신 해제
+            // 남성 선택 시 임신 상태 해제
             if (v == 'male') _isPregnant = false;
           }),
         ),
@@ -88,12 +92,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           value: _sensitivityLevel,
           onChanged: (v) => setState(() => _sensitivityLevel = v),
         ),
-        // Q6: 항상 포함하되 gender에 따라 내부 표시 분기
-        DiagQ6Pregnancy(
-          value: _isPregnant,
-          genderStr: _genderStr,
-          onChanged: (v) => setState(() => _isPregnant = v),
-        ),
+        // Q6: male이 아닐 때만 포함 (남성 선택 시 페이지 자체가 사라짐)
+        if (_includeQ6)
+          DiagQ6Pregnancy(
+            value: _isPregnant,
+            genderStr: _genderStr,
+            onChanged: (v) => setState(() => _isPregnant = v),
+          ),
         DiagQ7SkinTreatment(
           value: _recentSkinTreatment,
           onChanged: (v) => setState(() => _recentSkinTreatment = v),
@@ -112,7 +117,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ),
       ];
 
-  int get _totalPages => _pages.length; // 항상 10
+  /// 전체 페이지 수 (male: 9, 그 외: 10)
+  int get _totalPages => _pages.length;
 
   // ── 라이프사이클 ─────────────────────────────────────────────
 

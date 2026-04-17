@@ -1,5 +1,7 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/notification_service.dart';
 import '../../data/models/notification_setting.dart';
@@ -79,12 +81,11 @@ class NotificationTimeScreen extends ConsumerWidget {
                           .read(notificationSettingProvider.notifier)
                           .update(setting.copyWith(morningAlertEnabled: v)),
                       onTimeTap: () async {
-                        final picked = await showTimePicker(
-                          context: context,
-                          initialTime: TimeOfDay(
-                            hour: setting.morningAlertHour,
-                            minute: setting.morningAlertMinute,
-                          ),
+                        final picked = await _showCupertinoTimePicker(
+                          context,
+                          hour: setting.morningAlertHour,
+                          minute: setting.morningAlertMinute,
+                          accentColor: const Color(0xFFF59E0B),
                         );
                         if (picked != null) {
                           ref
@@ -109,12 +110,11 @@ class NotificationTimeScreen extends ConsumerWidget {
                           .read(notificationSettingProvider.notifier)
                           .update(setting.copyWith(eveningForecastEnabled: v)),
                       onTimeTap: () async {
-                        final picked = await showTimePicker(
-                          context: context,
-                          initialTime: TimeOfDay(
-                            hour: setting.eveningForecastHour,
-                            minute: setting.eveningForecastMinute,
-                          ),
+                        final picked = await _showCupertinoTimePicker(
+                          context,
+                          hour: setting.eveningForecastHour,
+                          minute: setting.eveningForecastMinute,
+                          accentColor: const Color(0xFF8B5CF6),
                         );
                         if (picked != null) {
                           ref
@@ -139,12 +139,11 @@ class NotificationTimeScreen extends ConsumerWidget {
                           .read(notificationSettingProvider.notifier)
                           .update(setting.copyWith(eveningReturnEnabled: v)),
                       onTimeTap: () async {
-                        final picked = await showTimePicker(
-                          context: context,
-                          initialTime: TimeOfDay(
-                            hour: setting.eveningReturnHour,
-                            minute: setting.eveningReturnMinute,
-                          ),
+                        final picked = await _showCupertinoTimePicker(
+                          context,
+                          hour: setting.eveningReturnHour,
+                          minute: setting.eveningReturnMinute,
+                          accentColor: const Color(0xFF10B981),
                         );
                         if (picked != null) {
                           ref
@@ -217,6 +216,298 @@ class NotificationTimeScreen extends ConsumerWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  Cupertino 드럼롤 시간 선택 바텀 시트
+// ══════════════════════════════════════════════════════════════
+
+/// 앱 톤앤매너에 맞는 Cupertino 드럼롤 시간 선택기를 보여주고
+/// 선택된 [TimeOfDay]를 반환. 취소 시 null 반환.
+Future<TimeOfDay?> _showCupertinoTimePicker(
+  BuildContext context, {
+  required int hour,
+  required int minute,
+  required Color accentColor,
+}) async {
+  // 초기 상태
+  int selectedPeriod = hour < 12 ? 0 : 1; // 0=오전, 1=오후
+  int selectedHour = hour % 12 == 0 ? 12 : hour % 12; // 1~12
+  int selectedMinute = minute; // 0~59
+
+  final result = await showModalBottomSheet<TimeOfDay>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (context) {
+      return _CupertinoTimePickerSheet(
+        initialPeriod: selectedPeriod,
+        initialHour: selectedHour,
+        initialMinute: selectedMinute,
+        accentColor: accentColor,
+      );
+    },
+  );
+
+  return result;
+}
+
+// ──────────────────────────────────────────────────────────────
+//  드럼롤 시트 위젯
+// ──────────────────────────────────────────────────────────────
+
+class _CupertinoTimePickerSheet extends StatefulWidget {
+  final int initialPeriod;
+  final int initialHour;
+  final int initialMinute;
+  final Color accentColor;
+
+  const _CupertinoTimePickerSheet({
+    required this.initialPeriod,
+    required this.initialHour,
+    required this.initialMinute,
+    required this.accentColor,
+  });
+
+  @override
+  State<_CupertinoTimePickerSheet> createState() =>
+      _CupertinoTimePickerSheetState();
+}
+
+class _CupertinoTimePickerSheetState
+    extends State<_CupertinoTimePickerSheet> {
+  late int _period;
+  late int _hour;   // 1~12
+  late int _minute; // 0~59
+
+  late final FixedExtentScrollController _periodCtrl;
+  late final FixedExtentScrollController _hourCtrl;
+  late final FixedExtentScrollController _minuteCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _period = widget.initialPeriod;
+    _hour   = widget.initialHour;   // 1~12
+    _minute = widget.initialMinute;
+
+    _periodCtrl = FixedExtentScrollController(initialItem: _period);
+    _hourCtrl   = FixedExtentScrollController(initialItem: _hour - 1); // 0-based
+    _minuteCtrl = FixedExtentScrollController(initialItem: _minute);
+  }
+
+  @override
+  void dispose() {
+    _periodCtrl.dispose();
+    _hourCtrl.dispose();
+    _minuteCtrl.dispose();
+    super.dispose();
+  }
+
+  TimeOfDay get _result {
+    // 12시간 → 24시간 변환
+    int h = _hour % 12; // 12시 → 0
+    if (_period == 1) h += 12; // 오후
+    return TimeOfDay(hour: h, minute: _minute);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = widget.accentColor;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFFF8F8F8),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // ── 핸들 ─────────────────────────────────────────
+          const SizedBox(height: 12),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.black12,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // ── 헤더 ─────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Text(
+                    '취소',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey.shade500,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                const Text(
+                  '알림 시각',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1A1A1A),
+                  ),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(_result),
+                  child: Text(
+                    '완료',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: accent,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // ── 드럼롤 ────────────────────────────────────────
+          SizedBox(
+            height: 220,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // 선택 영역 하이라이트
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: accent.withValues(alpha: 0.18),
+                      width: 1,
+                    ),
+                  ),
+                ),
+                // 세 개의 피커 열
+                Row(
+                  children: [
+                    // 오전/오후
+                    Expanded(
+                      flex: 3,
+                      child: CupertinoPicker(
+                        scrollController: _periodCtrl,
+                        itemExtent: 44,
+                        onSelectedItemChanged: (i) =>
+                            setState(() => _period = i),
+                        selectionOverlay: const SizedBox.shrink(),
+                        children: ['오전', '오후']
+                            .map((s) => _PickerItem(s, accent))
+                            .toList(),
+                      ),
+                    ),
+                    // 시
+                    Expanded(
+                      flex: 3,
+                      child: CupertinoPicker(
+                        scrollController: _hourCtrl,
+                        itemExtent: 44,
+                        onSelectedItemChanged: (i) =>
+                            setState(() => _hour = i + 1),
+                        selectionOverlay: const SizedBox.shrink(),
+                        children: List.generate(
+                          12,
+                          (i) => _PickerItem('${i + 1}시', accent),
+                        ),
+                      ),
+                    ),
+                    // 분
+                    Expanded(
+                      flex: 3,
+                      child: CupertinoPicker(
+                        scrollController: _minuteCtrl,
+                        itemExtent: 44,
+                        onSelectedItemChanged: (i) =>
+                            setState(() => _minute = i),
+                        selectionOverlay: const SizedBox.shrink(),
+                        children: List.generate(
+                          60,
+                          (i) => _PickerItem(
+                              '${i.toString().padLeft(2, '0')}분', accent),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // ── 현재 선택값 미리보기 ──────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  _period == 0 ? '오전' : '오후',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: accent.withValues(alpha: 0.7),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '$_hour시 ${_minute.toString().padLeft(2, '0')}분',
+                  style: TextStyle(
+                    fontSize: 22,
+                    color: accent,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ── 하단 안전 영역 ────────────────────────────────
+          SizedBox(
+              height: 16 + MediaQuery.of(context).padding.bottom),
+        ],
+      ),
+    );
+  }
+}
+
+/// 드럼롤 각 항목 위젯
+class _PickerItem extends StatelessWidget {
+  final String text;
+  final Color accentColor;
+
+  const _PickerItem(this.text, this.accentColor);
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF1A1A1A),
         ),
       ),
     );
@@ -330,7 +621,8 @@ class _NotifCard extends StatelessWidget {
                   child: Switch(
                     value: enabled,
                     onChanged: onToggle,
-                    activeColor: accentColor,
+                    activeThumbColor: accentColor,
+                    activeTrackColor: accentColor.withValues(alpha: 0.35),
                   ),
                 ),
               ],
@@ -618,14 +910,19 @@ class _SimulationButtonState extends ConsumerState<_SimulationButton> {
 
   Future<void> _simulate() async {
     setState(() => _loading = true);
-    await Future.delayed(const Duration(seconds: 2));
+
+    // 알림 권한 요청 (온보딩 중에는 아직 권한이 없을 수 있음)
+    await Permission.notification.request();
+
+    await Future.delayed(const Duration(seconds: 1));
     try {
-      await NotificationService().showSimulationNotification(
+      final service = NotificationService();
+      await service.initialize();
+      await service.showSimulationNotification(
         voice: widget.setting.notificationVoice.value,
       );
-      // 시뮬레이션 완료 = 온보딩 설정 최종 확정 시점
-      await ref.read(profileRepositoryProvider).completeOnboarding();
     } catch (_) {}
+
     if (mounted) {
       setState(() {
         _loading = false;
