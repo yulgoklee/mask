@@ -86,13 +86,13 @@ class SensitivityCalculator {
     return w.clamp(0.0, 0.10);
   }
 
-  /// 야외 활동량 가중치 (Q8 시간 + Q9 활동태그 합산, 최대 0.30)
+  /// 야외 활동량 가중치 (Q8 시간 + Q9 활동태그 합산, 최대 0.20)
   static double activityWeight(UserProfile p) {
     double w = 0.0;
-    if (p.outdoorMinutes == 2)      w += 0.20;
-    else if (p.outdoorMinutes == 1) w += 0.10;
+    if (p.outdoorMinutes == 2)      w += 0.10;
+    else if (p.outdoorMinutes == 1) w += 0.05;
     w += activityTagWeight(p);
-    return w.clamp(0.0, 0.30);
+    return w.clamp(0.0, 0.20);
   }
 
   /// 주관적 민감도 가중치

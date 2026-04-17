@@ -722,7 +722,7 @@ class _ContributionList extends StatelessWidget {
         icon: Icons.tune,
         label: '체감 민감도',
         value: w3,
-        maxValue: 0.20, // sensitivityWeightFromProfile 최대값 0.20에 맞춤
+        maxValue: 0.10, // sensitivityWeightFromProfile 최대값 (level 2 = +0.10)
         isPositive: true,
         detail: profile.sensitivityLevel == 2
             ? '매우 예민'
@@ -734,7 +734,7 @@ class _ContributionList extends StatelessWidget {
         icon: Icons.directions_walk,
         label: '야외 활동량',
         value: w2,
-        maxValue: 0.30, // Q8(0.20) + Q9 태그(0.10) 최대
+        maxValue: 0.20, // Q8(0.10) + Q9 태그(0.10) 최대
         isPositive: true,
         detail: _activityDetail(profile),
       ),
@@ -1150,7 +1150,7 @@ class _WeightSheet extends StatelessWidget {
                       : '$base · 태그 ${profile.activityTags.length}개';
                 }(),
                 value: w2,
-                maxValue: 0.30,
+                maxValue: 0.20,
                 isPositive: true,
               ),
               const SizedBox(height: 10),
@@ -1163,7 +1163,7 @@ class _WeightSheet extends StatelessWidget {
                         ? '보통'
                         : '무던함',
                 value: w3,
-                maxValue: 0.2,
+                maxValue: 0.10,
                 isPositive: true,
               ),
               const SizedBox(height: 10),

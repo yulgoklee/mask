@@ -180,11 +180,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final profile = _buildProfile();
 
     try {
-      // 프로필만 저장 — completeOnboarding()은 notification_time_screen에서 호출
       await ref.read(profileProvider.notifier).saveProfile(profile);
-    } catch (_) {
-      // 저장 실패해도 다음 화면으로 진행
-    }
+      // Q1-Q10 완료 시점에 온보딩 완료 표시 — 중간 종료 후 재시작 시 처음부터 시작하는 문제 방지
+      await ref.read(profileRepositoryProvider).completeOnboarding();
+    } catch (_) {}
 
     await _analytics.logEvent(name: 'onboarding_completed');
 
@@ -217,7 +216,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         sensitivityLevel:    _sensitivityLevel,
         isPregnant:          _isPregnant,
         recentSkinTreatment: _recentSkinTreatment,
-        skinTreatmentDate:   _skinTreatmentDate,
+        skinTreatmentDate:   _recentSkinTreatment
+                         ? (_skinTreatmentDate ?? DateTime.now())
+                         : null,
         outdoorMinutes:      _outdoorMinutes,
         activityTags:        _activityTags,
         discomfortLevel:     _discomfortLevel,

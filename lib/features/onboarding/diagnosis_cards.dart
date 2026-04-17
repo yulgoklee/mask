@@ -313,14 +313,12 @@ class DiagQ3Gender extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 36),
                       decoration: BoxDecoration(
                         color: selected
-                            ? AppColors.primary
+                            ? AppColors.primary.withValues(alpha: 0.08)
                             : AppColors.surfaceVariant,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: selected
-                              ? AppColors.primary
-                              : AppColors.divider,
-                          width: selected ? 2.5 : 1,
+                          color: selected ? AppColors.primary : AppColors.divider,
+                          width: selected ? 2 : 1,
                         ),
                       ),
                       child: Column(
@@ -330,7 +328,7 @@ class DiagQ3Gender extends StatelessWidget {
                           Text(
                             label,
                             style: TextStyle(
-                              color: selected ? Colors.white : AppColors.textPrimary,
+                              color: selected ? AppColors.primary : AppColors.textPrimary,
                               fontWeight: FontWeight.w700,
                               fontSize: 17,
                             ),
@@ -605,8 +603,12 @@ class DiagQ5Sensitivity extends StatelessWidget {
                       duration: const Duration(milliseconds: 180),
                       padding: const EdgeInsets.fromLTRB(8, 16, 8, 14),
                       decoration: BoxDecoration(
-                        color: sel ? AppColors.primary : AppColors.surfaceVariant,
+                        color: sel ? badgeColor.withValues(alpha: 0.08) : AppColors.surfaceVariant,
                         borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: sel ? badgeColor : AppColors.divider,
+                          width: sel ? 2 : 1,
+                        ),
                       ),
                       child: Column(
                         children: [
@@ -617,7 +619,7 @@ class DiagQ5Sensitivity extends StatelessWidget {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
-                              color: sel ? Colors.white : AppColors.textPrimary,
+                              color: sel ? badgeColor : AppColors.textPrimary,
                               fontSize: 13,
                             ),
                           ),
@@ -627,32 +629,15 @@ class DiagQ5Sensitivity extends StatelessWidget {
                             child: Text(
                               hint,
                               textAlign: TextAlign.center,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 10,
-                                color: sel ? Colors.white70 : AppColors.textSecondary,
+                                color: AppColors.textSecondary,
                                 height: 1.4,
                               ),
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: sel
-                                  ? Colors.white.withValues(alpha: 0.25)
-                                  : badgeColor.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              badge,
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: sel ? Colors.white : badgeColor,
-                              ),
-                            ),
-                          ),
+                          _badgeChip(badge, sel),
                         ],
                       ),
                     ),
@@ -964,8 +949,8 @@ class DiagQ8Outdoor extends StatelessWidget {
 
   static const _options = [
     (0, Icons.home_outlined,   '1시간 미만', '주로 실내에 있어요',  '+0%'),
-    (1, Icons.directions_walk, '1~3시간',    '매일 외출은 해요',    '+10%'),
-    (2, Icons.directions_run,  '3시간 이상', '야외 활동이 많아요', '+20%'),
+    (1, Icons.directions_walk, '1~3시간',    '매일 외출은 해요',    '+5%'),
+    (2, Icons.directions_run,  '3시간 이상', '야외 활동이 많아요', '+10%'),
   ];
 
   @override
@@ -985,6 +970,7 @@ class DiagQ8Outdoor extends StatelessWidget {
           ..._options.map((opt) {
             final (val, icon, label, sublabel, badge) = opt;
             final sel = value == val;
+            final badgeColor = _badgeColor(badge);
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: GestureDetector(
@@ -995,10 +981,10 @@ class DiagQ8Outdoor extends StatelessWidget {
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
                     color: sel
-                        ? AppColors.primary.withValues(alpha: 0.08)
+                        ? badgeColor.withValues(alpha: 0.07)
                         : AppColors.surface,
                     border: Border.all(
-                      color: sel ? AppColors.primary : AppColors.divider,
+                      color: sel ? badgeColor : AppColors.divider,
                       width: sel ? 2 : 1,
                     ),
                     borderRadius: BorderRadius.circular(16),
@@ -1010,12 +996,12 @@ class DiagQ8Outdoor extends StatelessWidget {
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: sel ? AppColors.primary : AppColors.surfaceVariant,
+                          color: sel ? badgeColor.withValues(alpha: 0.15) : AppColors.surfaceVariant,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
                           icon,
-                          color: sel ? Colors.white : AppColors.textSecondary,
+                          color: sel ? badgeColor : AppColors.textSecondary,
                           size: 24,
                         ),
                       ),
@@ -1029,7 +1015,7 @@ class DiagQ8Outdoor extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
-                                color: sel ? AppColors.primary : AppColors.textPrimary,
+                                color: sel ? badgeColor : AppColors.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 3),
@@ -1250,8 +1236,12 @@ class DiagQ10Discomfort extends StatelessWidget {
                       duration: const Duration(milliseconds: 180),
                       padding: const EdgeInsets.fromLTRB(8, 16, 8, 14),
                       decoration: BoxDecoration(
-                        color: sel ? AppColors.primary : AppColors.surfaceVariant,
+                        color: sel ? badgeColor.withValues(alpha: 0.08) : AppColors.surfaceVariant,
                         borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: sel ? badgeColor : AppColors.divider,
+                          width: sel ? 2 : 1,
+                        ),
                       ),
                       child: Column(
                         children: [
@@ -1262,7 +1252,7 @@ class DiagQ10Discomfort extends StatelessWidget {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
-                              color: sel ? Colors.white : AppColors.textPrimary,
+                              color: sel ? badgeColor : AppColors.textPrimary,
                               fontSize: 12,
                             ),
                           ),
@@ -1272,34 +1262,15 @@ class DiagQ10Discomfort extends StatelessWidget {
                             child: Text(
                               hint,
                               textAlign: TextAlign.center,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 10,
-                                color: sel
-                                    ? Colors.white70
-                                    : AppColors.textSecondary,
+                                color: AppColors.textSecondary,
                                 height: 1.4,
                               ),
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: sel
-                                  ? Colors.white.withValues(alpha: 0.25)
-                                  : badgeColor.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              badge,
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: sel ? Colors.white : badgeColor,
-                              ),
-                            ),
-                          ),
+                          _badgeChip(badge, sel),
                         ],
                       ),
                     ),

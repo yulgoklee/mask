@@ -82,6 +82,7 @@ class UserProfile {
     if (sensitivityLevel == 2)                 s += 0.10; // 매우 예민
     if (gender == 'female' && isPregnant)      s += 0.30; // 임신
     if (isSkinTreatmentActive)                 s += 0.25; // 피부 시술 (2주 내)
+    if (outdoorMinutes == 1)                   s += 0.05; // 1~3h
     if (outdoorMinutes == 2)                   s += 0.10; // 3h이상
     // Q9 활동 태그 — 운동·배달 +5%, 기타 +3%, 최대 +10%
     double tagW = 0.0;
