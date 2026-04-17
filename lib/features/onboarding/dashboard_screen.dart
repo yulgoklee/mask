@@ -50,7 +50,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     final s       = SensitivityCalculator.compute(profile);
     final tFinal  = profile.tFinal;
 
-    return Scaffold(
+    return PopScope(
+      canPop: false, // 온보딩 완료 후 뒤로가기로 onboarding 화면으로 돌아가지 않도록
+      child: Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: AnimatedBuilder(
@@ -122,7 +124,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           ),
         ),
       ),
-    );
+    ), // Scaffold
+    ); // PopScope
   }
 
   void _showWeightSheet(
