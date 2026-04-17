@@ -1223,10 +1223,7 @@ class DiagQ10Discomfort extends StatelessWidget {
             children: _options.map((opt) {
               final (val, emoji, label, hint, badge) = opt;
               final sel = value == val;
-              final isNegative = badge.startsWith('−');
-              final badgeColor = isNegative
-                  ? AppColors.primary   // 완화 → 파랑
-                  : _badgeColor(badge); // 나머지 → 트래픽라이트
+              final badgeColor = _badgeColor(badge); // 트래픽라이트 (−%도 초록 처리)
               return Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(right: 8),
@@ -1389,11 +1386,15 @@ InputDecoration _inputDecoration(String hint) => InputDecoration(
     );
 
 /// 영향도 퍼센트 → 트래픽라이트 색상
+/// 규칙: 감도 ↑(+%) = 코랄(적색) ↔ 감도 ↓/0(−%/+0%) = 초록
 Color _badgeColor(String badge) {
+  if (badge.startsWith('−') || badge.startsWith('-')) {
+    return AppColors.success; // 완화(-%) → 초록 (알림 기준 낮아짐 = 안심)
+  }
   final n = int.tryParse(badge.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
   if (n == 0)   return AppColors.success;    // +0%  → 초록
-  if (n <= 15)  return AppColors.dustNormal; // +10~15% → 노랑
-  return AppColors.coral;                    // +20~30% → 빨강
+  if (n <= 15)  return AppColors.dustNormal; // +5~15% → 노랑
+  return AppColors.coral;                    // +20~30% → 코랄(적색)
 }
 
 /// 퍼센트 배지 칩 — 영향도 크기에 따라 색상 자동 적용
