@@ -33,7 +33,11 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     final repo = ref.read(profileRepositoryProvider);
     await repo.completeTutorial();
     if (!mounted) return;
-    Navigator.of(context).pushReplacementNamed('/onboarding');
+    final onboardingDone = await repo.isOnboardingCompleted();
+    if (!mounted) return;
+    Navigator.of(context).pushReplacementNamed(
+      onboardingDone ? '/home' : '/onboarding',
+    );
   }
 
   @override

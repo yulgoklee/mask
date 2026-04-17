@@ -183,6 +183,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       await ref.read(profileProvider.notifier).saveProfile(profile);
       // Q1-Q10 완료 시점에 온보딩 완료 표시 — 중간 종료 후 재시작 시 처음부터 시작하는 문제 방지
       await ref.read(profileRepositoryProvider).completeOnboarding();
+      // 튜토리얼도 완료 처리 — 재시작 시 튜토리얼 → 온보딩 루프 방지
+      await ref.read(profileRepositoryProvider).completeTutorial();
     } catch (_) {}
 
     await _analytics.logEvent(name: 'onboarding_completed');

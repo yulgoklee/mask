@@ -575,6 +575,13 @@ class DiagQ5Sensitivity extends StatelessWidget {
     (2, '😣', '매우 예민해요', '조금만 탁해도 바로 느껴요', '+10%'),
   ];
 
+  /// 옵션별 고정 색상 — 0=초록(안심), 1=노랑(보통), 2=코랄(높음)
+  static const _optionColors = [
+    AppColors.success,
+    AppColors.dustNormal,
+    AppColors.coral,
+  ];
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -593,7 +600,7 @@ class DiagQ5Sensitivity extends StatelessWidget {
             children: _options.map((opt) {
               final (val, emoji, label, hint, badge) = opt;
               final sel = value == val;
-              final badgeColor = _badgeColor(badge);
+              final optColor = _optionColors[val]; // index 기반 고정 색상
               return Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(right: 8),
@@ -603,10 +610,10 @@ class DiagQ5Sensitivity extends StatelessWidget {
                       duration: const Duration(milliseconds: 180),
                       padding: const EdgeInsets.fromLTRB(8, 16, 8, 14),
                       decoration: BoxDecoration(
-                        color: sel ? badgeColor.withValues(alpha: 0.08) : AppColors.surfaceVariant,
+                        color: sel ? optColor.withValues(alpha: 0.08) : AppColors.surfaceVariant,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: sel ? badgeColor : AppColors.divider,
+                          color: sel ? optColor : AppColors.divider,
                           width: sel ? 2 : 1,
                         ),
                       ),
@@ -619,7 +626,7 @@ class DiagQ5Sensitivity extends StatelessWidget {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
-                              color: sel ? badgeColor : AppColors.textPrimary,
+                              color: sel ? optColor : AppColors.textPrimary,
                               fontSize: 13,
                             ),
                           ),
@@ -637,7 +644,7 @@ class DiagQ5Sensitivity extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          _badgeChip(badge, sel),
+                          _badgeChip(badge, sel, color: optColor),
                         ],
                       ),
                     ),
@@ -649,7 +656,7 @@ class DiagQ5Sensitivity extends StatelessWidget {
           const SizedBox(height: 32),
           _insightBox(
             '체감 민감도는 개인 경험에 기반해 알림 기준을 조정해요. '
-            '매우 예민하다면 +20% 더 엄격하게 반응해드려요.',
+            '매우 예민하다면 +10% 더 엄격하게 반응해드려요.',
           ),
           const SizedBox(height: 32),
         ],
@@ -953,6 +960,13 @@ class DiagQ8Outdoor extends StatelessWidget {
     (2, Icons.directions_run,  '3시간 이상', '야외 활동이 많아요', '+10%'),
   ];
 
+  /// 옵션별 고정 색상 — 0=초록(안심), 1=노랑(보통), 2=코랄(높음)
+  static const _optionColors = [
+    AppColors.success,
+    AppColors.dustNormal,
+    AppColors.coral,
+  ];
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -970,7 +984,7 @@ class DiagQ8Outdoor extends StatelessWidget {
           ..._options.map((opt) {
             final (val, icon, label, sublabel, badge) = opt;
             final sel = value == val;
-            final badgeColor = _badgeColor(badge);
+            final badgeColor = _optionColors[val]; // index 기반 고정 색상
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: GestureDetector(
@@ -1029,7 +1043,7 @@ class DiagQ8Outdoor extends StatelessWidget {
                           ],
                         ),
                       ),
-                      _badgeChip(badge, sel),
+                      _badgeChip(badge, sel, color: badgeColor),
                     ],
                   ),
                 ),
@@ -1205,6 +1219,13 @@ class DiagQ10Discomfort extends StatelessWidget {
     (2, '😮', '많이 불편해요', '답답함·김 서림이 심해요',  '−10%'),
   ];
 
+  /// 옵션별 고정 색상 — 편함(초록) / 보통(파랑) / 불편(코랄)
+  static const _optionColors = [
+    AppColors.success,  // 편해요
+    AppColors.primary,  // 보통이에요
+    AppColors.coral,    // 많이 불편해요
+  ];
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -1223,7 +1244,7 @@ class DiagQ10Discomfort extends StatelessWidget {
             children: _options.map((opt) {
               final (val, emoji, label, hint, badge) = opt;
               final sel = value == val;
-              final badgeColor = _badgeColor(badge); // 트래픽라이트 (−%도 초록 처리)
+              final badgeColor = _optionColors[val]; // index 기반 고정 색상
               return Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(right: 8),
@@ -1267,7 +1288,7 @@ class DiagQ10Discomfort extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          _badgeChip(badge, sel),
+                          _badgeChip(badge, sel, color: badgeColor),
                         ],
                       ),
                     ),
@@ -1398,12 +1419,13 @@ Color _badgeColor(String badge) {
 }
 
 /// 퍼센트 배지 칩 — 영향도 크기에 따라 색상 자동 적용
-Widget _badgeChip(String badge, bool selected) {
-  final color = _badgeColor(badge);
+/// [color] 로 색상을 직접 지정하면 _badgeColor 대신 사용
+Widget _badgeChip(String badge, bool selected, {Color? color}) {
+  final c = color ?? _badgeColor(badge);
   return Container(
     padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
     decoration: BoxDecoration(
-      color: selected ? color : color.withValues(alpha: 0.12),
+      color: selected ? c : c.withValues(alpha: 0.12),
       borderRadius: BorderRadius.circular(8),
     ),
     child: Text(
@@ -1411,7 +1433,7 @@ Widget _badgeChip(String badge, bool selected) {
       style: TextStyle(
         fontSize: 11,
         fontWeight: FontWeight.bold,
-        color: selected ? Colors.white : color,
+        color: selected ? Colors.white : c,
       ),
     ),
   );
