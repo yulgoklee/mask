@@ -157,9 +157,12 @@ class _DashboardHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final persona = profile.personaLabel;
+    // s=0.10 클램프 최솟값에서는 "1.1배" 표시가 어색 — 의미 있는 수준(s>0.15)부터만 표시
     final multiplier = (1.0 - s) > 0 ? (1.0 / (1.0 - s)) : double.infinity;
     final multiplierText =
         multiplier.isInfinite ? '∞배' : '${multiplier.toStringAsFixed(1)}배';
+    // 실질적으로 민감도가 올라간 경우만 배율 문구 표시
+    final showMultiplier = s > 0.15;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,23 +204,32 @@ class _DashboardHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        RichText(
-          text: TextSpan(
-            style: const TextStyle(
-                fontSize: 21, color: AppColors.textPrimary),
-            children: [
-              const TextSpan(text: '일반인보다 '),
-              TextSpan(
-                text: multiplierText,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
+        if (showMultiplier)
+          RichText(
+            text: TextSpan(
+              style: const TextStyle(
+                  fontSize: 21, color: AppColors.textPrimary),
+              children: [
+                const TextSpan(text: '일반인보다 '),
+                TextSpan(
+                  text: multiplierText,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
                 ),
-              ),
-              const TextSpan(text: ' 더 민감하게\n관리해드릴게요'),
-            ],
+                const TextSpan(text: ' 더 민감하게\n관리해드릴게요'),
+              ],
+            ),
+          )
+        else
+          const Text(
+            '맞춤형 알림 기준으로\n관리해드릴게요',
+            style: TextStyle(
+              fontSize: 21,
+              color: AppColors.textPrimary,
+            ),
           ),
-        ),
         const SizedBox(height: 14),
 
         // tFinal 수치 강조 카드
@@ -710,7 +722,7 @@ class _ContributionList extends StatelessWidget {
         icon: Icons.tune,
         label: '체감 민감도',
         value: w3,
-        maxValue: 0.10,
+        maxValue: 0.20, // sensitivityWeightFromProfile 최대값 0.20에 맞춤
         isPositive: true,
         detail: profile.sensitivityLevel == 2
             ? '매우 예민'
@@ -722,7 +734,7 @@ class _ContributionList extends StatelessWidget {
         icon: Icons.directions_walk,
         label: '야외 활동량',
         value: w2,
-        maxValue: 0.10,
+        maxValue: 0.20, // activityWeight 최대값 0.20에 맞춤
         isPositive: true,
         detail: profile.outdoorMinutes == 2
             ? '하루 3시간 이상'
@@ -1014,8 +1026,8 @@ class _SimulationCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'PM2.5 ${tFinal.toStringAsFixed(0)}μg/m³ · 주의 단계\n'
-                          '내 기준(${tFinal.toStringAsFixed(1)}μg/m³)에 도달했어요.',
+                          '미세먼지가 내 기준(${tFinal.toStringAsFixed(1)}μg/m³)에\n'
+                          '도달할 것으로 예상돼요.',
                           style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.textSecondary,

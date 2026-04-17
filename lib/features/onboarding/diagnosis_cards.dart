@@ -119,139 +119,146 @@ class _DiagQ2BirthYearState extends State<DiagQ2BirthYear> {
   Widget build(BuildContext context) {
     final years = List.generate(_maxYear - _minYear + 1, (i) => _minYear + i);
 
-    // Q2는 스크롤 없이 고정 레이아웃 — CupertinoPicker와 ScrollView 경합 방지
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      physics: const NeverScrollableScrollPhysics(), // 피커 위아래로만 스크롤
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 32),
-          _qBadge('Q2 · 연령'),
-          const SizedBox(height: 14),
-          _qTitle(context, '출생연도를 알려주세요'),
-          const SizedBox(height: 8),
-          _qSubtitle(context, '연령별 기초 민감도를 자동으로 반영해요.'),
-          const SizedBox(height: 32),
+    // Q2: Column 고정 레이아웃 — 피커를 Expanded로 배치해 스크롤 경합 완전 방지
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── 상단 텍스트 ──────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _qBadge('Q2 · 연령'),
+              const SizedBox(height: 14),
+              _qTitle(context, '출생연도를 알려주세요'),
+              const SizedBox(height: 8),
+              _qSubtitle(context, '연령별 기초 민감도를 자동으로 반영해요.'),
+              const SizedBox(height: 20),
 
-          // ── 선택된 연도 + 나이 표시 ──────────────────────────
-          Center(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: Column(
-                key: ValueKey(_selectedYear),
-                children: [
-                  Text(
-                    '$_selectedYear년',
-                    style: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+              // ── 선택된 연도 + 나이 표시 ──────────────────────
+              Center(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Column(
+                    key: ValueKey(_selectedYear),
                     children: [
                       Text(
-                        '만 $_age세',
+                        '$_selectedYear년',
                         style: const TextStyle(
-                          fontSize: 16,
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 32,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primary,
                         ),
                       ),
-                      if (_isVulnerable) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: AppColors.coral.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            '취약 연령 +10%',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.coral,
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '만 $_age세',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                        ),
-                      ],
+                          if (_isVulnerable) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: AppColors.coral.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                '취약 연령 +10%',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.coral,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+
+        // ── 스크롤 피커 (남은 공간 채우기) ──────────────────
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // 선택 영역 하이라이트
+                  Center(
+                    child: Container(
+                      height: 44,
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  // 피커
+                  CupertinoPicker(
+                    scrollController: _scrollCtrl,
+                    itemExtent: 44,
+                    onSelectedItemChanged: (index) {
+                      final yr = years[index];
+                      setState(() => _selectedYear = yr);
+                      widget.onChanged(yr);
+                    },
+                    selectionOverlay: const SizedBox.shrink(),
+                    children: years.map((yr) {
+                      final isSelected = yr == _selectedYear;
+                      return Center(
+                        child: Text(
+                          '$yr년',
+                          style: TextStyle(
+                            fontSize: isSelected ? 20 : 17,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w400,
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ],
               ),
             ),
           ),
+        ),
 
-          const SizedBox(height: 24),
-
-          // ── 스크롤 피커 ────────────────────────────────────────
-          Container(
-            height: 200,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceVariant,
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // 선택 영역 하이라이트
-                Positioned(
-                  top: 78,
-                  left: 16,
-                  right: 16,
-                  child: Container(
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-                // 피커
-                CupertinoPicker(
-                  scrollController: _scrollCtrl,
-                  itemExtent: 44,
-                  onSelectedItemChanged: (index) {
-                    final yr = years[index];
-                    setState(() => _selectedYear = yr);
-                    widget.onChanged(yr);
-                  },
-                  selectionOverlay: const SizedBox.shrink(),
-                  children: years.map((yr) {
-                    final isSelected = yr == _selectedYear;
-                    return Center(
-                      child: Text(
-                        '$yr년',
-                        style: TextStyle(
-                          fontSize: isSelected ? 20 : 17,
-                          fontWeight: isSelected
-                              ? FontWeight.w700
-                              : FontWeight.w400,
-                          color: isSelected
-                              ? AppColors.primary
-                              : AppColors.textSecondary,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 28),
-          _insightBox(
+        // ── 인사이트 박스 ────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 14, 24, 16),
+          child: _insightBox(
             '취약 연령(18세 미만 · 60세 이상)은 민감도 기준값이 10% 추가 강화돼요. '
             '나이가 어릴수록, 또는 어르신일수록 미세먼지의 영향이 커집니다.',
           ),
-          const SizedBox(height: 24),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -286,12 +293,14 @@ class DiagQ3Gender extends StatelessWidget {
           _qSubtitle(context, '여성인 경우 임신 관련 항목이 추가돼요.'),
           const SizedBox(height: 40),
           Row(
-            children: _options.map((opt) {
-              final (val, emoji, label) = opt;
+            children: List.generate(_options.length, (i) {
+              final (val, emoji, label) = _options[i];
               final selected = value == val;
+              // 카드 사이 간격만 오른쪽 패딩 — 마지막 카드는 패딩 없음
+              final isLast = i == _options.length - 1;
               return Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.only(right: 12),
+                  padding: EdgeInsets.only(right: isLast ? 0 : 12),
                   child: GestureDetector(
                     // 이미 선택된 항목 재탭 시 null 토글 방지 — 항상 해당 값 설정
                     onTap: () => onChanged(val),
@@ -543,7 +552,7 @@ class DiagQ5Sensitivity extends StatelessWidget {
 
 class DiagQ6Pregnancy extends StatelessWidget {
   final bool value;
-  final String? genderStr; // 'male'|'female'|'other'|null
+  final String? genderStr; // 'male'|'female'|null
   final ValueChanged<bool> onChanged;
 
   const DiagQ6Pregnancy({

@@ -250,9 +250,6 @@ class _NotifCard extends StatelessWidget {
     required this.onTimeTap,
   });
 
-  String get _timeStr =>
-      '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
-
   String get _periodStr => hour < 12 ? '오전' : '오후';
 
   int get _displayHour {

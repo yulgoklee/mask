@@ -45,14 +45,21 @@ class _OnboardingCompleteScreenState
     final setting = ref.watch(notificationSettingProvider);
     final name = profile.displayName;
 
-    // 첫 번째로 켜진 알림 시간 표시
+    // 첫 번째로 켜진 알림 시간 표시 (우선순위: 외출 전 → 전날 예보 → 귀가 후)
     String? firstAlertTime;
+    String? firstAlertLabel;
     if (setting.morningAlertEnabled) {
       firstAlertTime =
           '${setting.morningAlertHour.toString().padLeft(2, '0')}:${setting.morningAlertMinute.toString().padLeft(2, '0')}';
+      firstAlertLabel = '외출 전';
     } else if (setting.eveningForecastEnabled) {
       firstAlertTime =
           '${setting.eveningForecastHour.toString().padLeft(2, '0')}:${setting.eveningForecastMinute.toString().padLeft(2, '0')}';
+      firstAlertLabel = '전날 예보';
+    } else if (setting.eveningReturnEnabled) {
+      firstAlertTime =
+          '${setting.eveningReturnHour.toString().padLeft(2, '0')}:${setting.eveningReturnMinute.toString().padLeft(2, '0')}';
+      firstAlertLabel = '귀가 후';
     }
 
     return Scaffold(
@@ -99,7 +106,7 @@ class _OnboardingCompleteScreenState
 
                     if (firstAlertTime != null)
                       Text(
-                        '오늘 $firstAlertTime에\n마스크가 필요한지 먼저 알려드릴게요.',
+                        '$firstAlertLabel 알림을 $firstAlertTime에\n보내드릴게요.',
                         style: const TextStyle(
                           fontSize: 17,
                           color: AppColors.textSecondary,
@@ -108,7 +115,7 @@ class _OnboardingCompleteScreenState
                       )
                     else
                       const Text(
-                        '미세먼지가 나빠지면\n바로 알려드릴게요.',
+                        '미세먼지가 내 기준을 넘으면\n바로 알려드릴게요.',
                         style: TextStyle(
                           fontSize: 17,
                           color: AppColors.textSecondary,
