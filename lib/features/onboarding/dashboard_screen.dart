@@ -97,7 +97,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                       height: 54,
                       child: ElevatedButton(
                         onPressed: () => Navigator.of(context)
-                            .pushReplacementNamed('/location_setup'),
+                            .pushReplacementNamed('/location_setup',
+                                arguments: true), // 온보딩 플로우
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
@@ -255,7 +256,7 @@ class _DashboardHeader extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    '내 알림 기준 (T_final)',
+                    '나에게 맞는 알림 기준',
                     style: TextStyle(
                         fontSize: 12, color: AppColors.textSecondary),
                   ),
@@ -976,13 +977,13 @@ class _SimulationCard extends StatelessWidget {
                     size: 15, color: AppColors.textSecondary),
                 const SizedBox(width: 6),
                 const Text(
-                  '이런 알림이 울릴 예정이에요',
+                  '이런 알림이 울려요',
                   style: TextStyle(
                       fontSize: 12, color: AppColors.textSecondary),
                 ),
                 const Spacer(),
                 const Text(
-                  '계산 방법 보기',
+                  '기준이 궁금해요',
                   style:
                       TextStyle(fontSize: 11, color: AppColors.primary),
                 ),

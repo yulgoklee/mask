@@ -28,6 +28,11 @@ class AppColors {
   static const Color error = Color(0xFFEF4444);
   static const Color success = Color(0xFF10B981);
 
+  // 알림 타입별 accent 색상 (NotificationTimeScreen / CompleteScreen 공용)
+  static const Color notifMorning = Color(0xFFF59E0B);  // 외출 전   — amber
+  static const Color notifEvening = Color(0xFF8B5CF6);   // 전날 예보 — purple
+  static const Color notifReturn  = Color(0xFF10B981);   // 귀가 후   — green
+
   static Color dustGradeColor(String grade) {
     switch (grade) {
       case '좋음':    return dustGood;

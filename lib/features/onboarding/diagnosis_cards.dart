@@ -100,10 +100,8 @@ class _DiagQ2BirthYearState extends State<DiagQ2BirthYear> {
     _selectedYear = widget.initialValue ?? _defaultYear;
     final initialIndex = _selectedYear - _minYear;
     _scrollCtrl = FixedExtentScrollController(initialItem: initialIndex);
-    // 초기값 즉시 반영
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      widget.onChanged(_selectedYear);
-    });
+    // 초기값은 OnboardingScreen._buildProfile()에서 ?? 1990으로 처리되므로
+    // postFrameCallback 불필요 — 제거
   }
 
   @override

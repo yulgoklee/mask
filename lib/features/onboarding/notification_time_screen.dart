@@ -72,7 +72,7 @@ class NotificationTimeScreen extends ConsumerWidget {
                       emoji: '🌅',
                       title: '외출 전 알림',
                       subtitle: '아침에 마스크 필요 여부를 알려드려요',
-                      accentColor: const Color(0xFFF59E0B),
+                      accentColor: AppColors.notifMorning,
                       enabled: setting.morningAlertEnabled,
                       hour: setting.morningAlertHour,
                       minute: setting.morningAlertMinute,
@@ -84,7 +84,7 @@ class NotificationTimeScreen extends ConsumerWidget {
                           context,
                           hour: setting.morningAlertHour,
                           minute: setting.morningAlertMinute,
-                          accentColor: const Color(0xFFF59E0B),
+                          accentColor: AppColors.notifMorning,
                         );
                         if (picked != null) {
                           ref
@@ -101,7 +101,7 @@ class NotificationTimeScreen extends ConsumerWidget {
                       emoji: '🌙',
                       title: '전날 예보 알림',
                       subtitle: '내일 미세먼지를 미리 알려드려요',
-                      accentColor: const Color(0xFF8B5CF6),
+                      accentColor: AppColors.notifEvening,
                       enabled: setting.eveningForecastEnabled,
                       hour: setting.eveningForecastHour,
                       minute: setting.eveningForecastMinute,
@@ -113,7 +113,7 @@ class NotificationTimeScreen extends ConsumerWidget {
                           context,
                           hour: setting.eveningForecastHour,
                           minute: setting.eveningForecastMinute,
-                          accentColor: const Color(0xFF8B5CF6),
+                          accentColor: AppColors.notifEvening,
                         );
                         if (picked != null) {
                           ref
@@ -130,7 +130,7 @@ class NotificationTimeScreen extends ConsumerWidget {
                       emoji: '🏠',
                       title: '귀가 후 알림',
                       subtitle: '퇴근 시간대 미세먼지를 확인해드려요',
-                      accentColor: const Color(0xFF10B981),
+                      accentColor: AppColors.notifReturn,
                       enabled: setting.eveningReturnEnabled,
                       hour: setting.eveningReturnHour,
                       minute: setting.eveningReturnMinute,
@@ -142,7 +142,7 @@ class NotificationTimeScreen extends ConsumerWidget {
                           context,
                           hour: setting.eveningReturnHour,
                           minute: setting.eveningReturnMinute,
-                          accentColor: const Color(0xFF10B981),
+                          accentColor: AppColors.notifReturn,
                         );
                         if (picked != null) {
                           ref
@@ -320,7 +320,7 @@ class _CupertinoTimePickerSheetState
 
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFFF8F8F8),
+        color: AppColors.background,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(

@@ -115,7 +115,7 @@ class _OnboardingCompleteScreenState
                       )
                     else
                       const Text(
-                        '미세먼지가 내 기준을 넘으면\n바로 알려드릴게요.',
+                        '알림을 모두 끄셨어요.\n앱을 열면 언제든 오늘의\n미세먼지를 확인할 수 있어요.',
                         style: TextStyle(
                           fontSize: 17,
                           color: AppColors.textSecondary,

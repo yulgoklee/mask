@@ -182,7 +182,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       await ref.read(profileRepositoryProvider).completeOnboarding();
     } catch (_) {}
     if (mounted) {
-      Navigator.of(context).pushReplacementNamed('/location_setup');
+      Navigator.of(context).pushReplacementNamed('/location_setup',
+          arguments: true); // 온보딩 스킵 → 플로우 유지
     }
   }
 
