@@ -36,7 +36,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     final onboardingDone = await repo.isOnboardingCompleted();
     if (!mounted) return;
     Navigator.of(context).pushReplacementNamed(
-      onboardingDone ? '/home' : '/onboarding',
+      onboardingDone ? '/home' : '/roadmap', // 신규 유저 → 로드맵 → 온보딩
     );
   }
 

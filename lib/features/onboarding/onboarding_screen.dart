@@ -201,6 +201,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       // (스킵해도 Q1~현재까지 입력한 값은 보존)
       await ref.read(profileProvider.notifier).saveProfile(_buildProfile());
       await ref.read(profileRepositoryProvider).completeOnboarding();
+      // 스킵 시에도 튜토리얼 완료 처리 — 재시작 시 앱 소개 루프 방지
+      await ref.read(profileRepositoryProvider).completeTutorial();
     } catch (_) {}
     if (mounted) {
       Navigator.of(context).pushReplacementNamed('/location_setup',

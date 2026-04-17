@@ -13,6 +13,8 @@ class NotificationTimeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final setting = ref.watch(notificationSettingProvider);
+    // 홈 화면 로딩 단축: 알림 설정 중 백그라운드에서 미세먼지 데이터 선제 패치
+    ref.watch(dustDataProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
