@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/services/notification_service.dart';
 import '../../data/models/notification_setting.dart';
 import '../../providers/providers.dart';
 
@@ -495,9 +494,8 @@ class _CupertinoTimePickerSheetState
 /// 드럼롤 각 항목 위젯
 class _PickerItem extends StatelessWidget {
   final String text;
-  final Color accentColor;
 
-  const _PickerItem(this.text, this.accentColor);
+  const _PickerItem(this.text, [Color? accentColor]);
 
   @override
   Widget build(BuildContext context) {
@@ -911,12 +909,35 @@ class _SimulationButtonState extends ConsumerState<_SimulationButton> {
   Future<void> _simulate() async {
     setState(() => _loading = true);
 
-    // 알림 권한 요청 (온보딩 중에는 아직 권한이 없을 수 있음)
-    await Permission.notification.request();
+    // 알림 권한 요청 (온보딩 중 신규 사용자는 아직 권한이 없음)
+    final permStatus = await Permission.notification.request();
 
-    await Future.delayed(const Duration(seconds: 1));
+    if (!mounted) return;
+
+    // 권한 거부 시 — 안내 스낵바 표시 후 종료
+    if (permStatus.isDenied || permStatus.isPermanentlyDenied) {
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('알림 권한이 필요해요. 설정 앱에서 허용해주세요.'),
+          action: permStatus.isPermanentlyDenied
+              ? const SnackBarAction(
+                  label: '설정 열기',
+                  onPressed: openAppSettings,
+                )
+              : null,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+      return;
+    }
+
+    await Future.delayed(const Duration(milliseconds: 800));
     try {
-      final service = NotificationService();
+      final service = ref.read(notificationServiceProvider);
       await service.initialize();
       await service.showSimulationNotification(
         voice: widget.setting.notificationVoice.value,

@@ -8,7 +8,6 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/datasources/feedback_repository.dart';
 import '../../data/models/forecast_models.dart';
-import '../../data/models/notification_feedback.dart';
 import '../../data/models/user_profile.dart';
 import '../../data/models/notification_setting.dart';
 import '../../data/models/temporary_state.dart';
