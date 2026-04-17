@@ -215,7 +215,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   UserProfile _buildProfile() => UserProfile(
         nickname:            _nickname ?? '',
         birthYear:           _birthYear ?? 1990,
-        gender:              _genderStr ?? 'male',
+        gender:              _genderStr ?? '', // 미선택 시 빈 문자열 (male 오분류 방지)
         respiratoryStatus:   _respiratoryStatus,
         sensitivityLevel:    _sensitivityLevel,
         isPregnant:          _isPregnant,

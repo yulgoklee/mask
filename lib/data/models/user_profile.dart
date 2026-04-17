@@ -80,7 +80,7 @@ class UserProfile {
     if (respiratoryStatus & 2 != 0)            s += 0.30; // 천식 (bit 1)
     if (sensitivityLevel == 1)                 s += 0.05; // 보통
     if (sensitivityLevel == 2)                 s += 0.10; // 매우 예민
-    if (gender == 'female' && isPregnant)      s += 0.30; // 임신
+    if ((gender == 'female' || gender.isEmpty) && isPregnant) s += 0.30; // 임신 (성별 미선택 포함)
     if (isSkinTreatmentActive)                 s += 0.25; // 피부 시술 (2주 내)
     if (outdoorMinutes == 1)                   s += 0.05; // 1~3h
     if (outdoorMinutes == 2)                   s += 0.10; // 3h이상
@@ -115,7 +115,7 @@ class UserProfile {
   factory UserProfile.defaultProfile() => const UserProfile(
         nickname: '',
         birthYear: 1990,
-        gender: 'male',
+        gender: '', // 기본값: 미선택 상태
         respiratoryStatus: 0,
         sensitivityLevel: 1,
         isPregnant: false,

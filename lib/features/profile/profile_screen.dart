@@ -473,9 +473,12 @@ class _TemporaryStatesSection extends ConsumerWidget {
     final orderedInactive = TemporaryStateType.values
         .where((t) => !activeTypes.contains(t))
         .where((t) =>
-            t != TemporaryStateType.pregnancy || profile.gender == 'female')
+            t != TemporaryStateType.pregnancy ||
+            profile.gender == 'female' ||
+            profile.gender.isEmpty) // 성별 미선택도 임신 항목 표시
         .toList();
-    if (profile.gender == 'female') {
+    // 여성 또는 성별 미선택 → 임신 항목 맨 위 정렬
+    if (profile.gender == 'female' || profile.gender.isEmpty) {
       orderedInactive.sort((a, b) {
         if (a == TemporaryStateType.pregnancy) return -1;
         if (b == TemporaryStateType.pregnancy) return 1;
@@ -499,10 +502,10 @@ class _TemporaryStatesSection extends ConsumerWidget {
               },
             )),
 
-        // 추가 가능한 상태 (여성은 임신이 맨 위)
+        // 추가 가능한 상태 (여성/미선택은 임신이 맨 위)
         ...orderedInactive.map((type) => _InactiveStateTile(
               type: type,
-              highlight: profile.gender == 'female' &&
+              highlight: (profile.gender == 'female' || profile.gender.isEmpty) &&
                   type == TemporaryStateType.pregnancy,
               onAdd: () => _showAddSheet(context, type),
             )),
