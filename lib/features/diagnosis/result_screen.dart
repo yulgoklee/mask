@@ -238,11 +238,9 @@ class _SensitivityBreakdown extends StatelessWidget {
         children: [
           _BreakdownRow(
             label: '호흡기 상태',
-            sublabel: profile.respiratoryStatus == 0
+            sublabel: profile.respiratoryLabel == '건강함'
                 ? '건강해요'
-                : profile.respiratoryStatus == 1
-                    ? '비염 있어요'
-                    : '천식 등 질환',
+                : profile.respiratoryLabel,
             weight: w1,
             maxWeight: 0.3,
           ),

@@ -93,7 +93,7 @@ class PersonaGenerator {
   // ── 페르소나 빌드 ──────────────────────────────────────
 
   static Persona _build(PersonaType type, UserProfile profile) {
-    final conditionLabel = profile.respiratoryStatus >= 1
+    final conditionLabel = profile.respiratoryStatus > 0
         ? _respiratoryLabel(profile.respiratoryStatus)
         : null;
 
@@ -239,9 +239,10 @@ class PersonaGenerator {
   // ── 내부 가중치 헬퍼 (v2 필드 기반) ─────────────────────
 
   static double _w1(UserProfile p) {
-    if (p.respiratoryStatus == 2) return 0.3;
-    if (p.respiratoryStatus == 1) return 0.15;
-    return 0.0;
+    double w = 0.0;
+    if (p.respiratoryStatus & 2 != 0) w += 0.30;
+    if (p.respiratoryStatus & 1 != 0) w += 0.15;
+    return w;
   }
 
   static double _w2(UserProfile p) {
@@ -257,10 +258,11 @@ class PersonaGenerator {
   }
 
   static String _respiratoryLabel(int status) {
-    switch (status) {
-      case 1:  return '비염';
-      case 2:  return '천식 등 호흡기 질환';
-      default: return '';
-    }
+    final hasRhinitis = status & 1 != 0;
+    final hasAsthma   = status & 2 != 0;
+    if (hasRhinitis && hasAsthma) return '비염·천식';
+    if (hasAsthma)                return '천식 등 호흡기 질환';
+    if (hasRhinitis)              return '비염';
+    return '';
   }
 }

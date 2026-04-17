@@ -315,7 +315,7 @@ class _DashboardHeader extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      'S = ${s.toStringAsFixed(2)}',
+                      '민감도 ${SensitivityCalculator.label(s)}',
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -704,13 +704,9 @@ class _ContributionList extends StatelessWidget {
         icon: Icons.favorite_outline,
         label: '호흡기 상태',
         value: w1,
-        maxValue: 0.30,
+        maxValue: 0.45, // 비염(+15%) + 천식(+30%) 중복 최대
         isPositive: true,
-        detail: profile.respiratoryStatus == 2
-            ? '천식 등 질환'
-            : profile.respiratoryStatus == 1
-                ? '비염 있음'
-                : '건강함',
+        detail: profile.respiratoryLabel,
       ),
       _ContribItem(
         icon: Icons.person_outline,
@@ -738,13 +734,9 @@ class _ContributionList extends StatelessWidget {
         icon: Icons.directions_walk,
         label: '야외 활동량',
         value: w2,
-        maxValue: 0.20, // activityWeight 최대값 0.20에 맞춤
+        maxValue: 0.30, // Q8(0.20) + Q9 태그(0.10) 최대
         isPositive: true,
-        detail: profile.outdoorMinutes == 2
-            ? '하루 3시간 이상'
-            : profile.outdoorMinutes == 1
-                ? '하루 1~3시간'
-                : '하루 1시간 미만',
+        detail: _activityDetail(profile),
       ),
       _ContribItem(
         icon: Icons.health_and_safety_outlined,
@@ -795,7 +787,7 @@ class _ContributionList extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  'S = ${s.toStringAsFixed(2)}',
+                  '종합 ${(s * 100).round()}% 강화',
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -818,8 +810,18 @@ class _ContributionList extends StatelessWidget {
   String _specDetail(UserProfile p) {
     final parts = <String>[];
     if (p.isPregnant) parts.add('임신');
-    if (p.recentSkinTreatment) parts.add('피부 시술');
+    if (p.isSkinTreatmentActive) parts.add('피부 시술');
     return parts.isEmpty ? '해당 없음' : parts.join(' · ');
+  }
+
+  String _activityDetail(UserProfile p) {
+    final base = p.outdoorMinutes == 2
+        ? '하루 3시간 이상'
+        : p.outdoorMinutes == 1
+            ? '하루 1~3시간'
+            : '하루 1시간 미만';
+    if (p.activityTags.isEmpty) return base;
+    return '$base · 태그 ${p.activityTags.length}개';
   }
 }
 
@@ -929,9 +931,11 @@ class _ContribRow extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         Text(
-          item.isPositive
-              ? '+${item.value.toStringAsFixed(2)}'
-              : '−${item.value.toStringAsFixed(2)}',
+          hasWeight
+              ? (item.isPositive
+                  ? '+${(item.value * 100).round()}%'
+                  : '−${(item.value * 100).round()}%')
+              : '+0%',
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.bold,
@@ -1114,35 +1118,39 @@ class _WeightSheet extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               const Text(
-                'T_final = 35 × (1 − S), S = 다섯 항목의 가중치 합',
+                '건강 상태·활동량·민감도를 합산해 일반 기준 35μg/m³에서\n'
+                '개인 기준을 낮춰드려요. 항목이 많을수록 더 일찍 알려드려요.',
                 style: TextStyle(
-                    fontSize: 12, color: AppColors.textSecondary),
+                    fontSize: 12, color: AppColors.textSecondary, height: 1.5),
               ),
               const SizedBox(height: 20),
 
               _SheetWeightRow(
                 icon: Icons.favorite_outline,
                 label: '호흡기 상태',
-                sublabel: profile.respiratoryStatus == 2
-                    ? '천식 등 질환'
-                    : profile.respiratoryStatus == 1
-                        ? '비염 있음'
-                        : '해당 없음',
+                sublabel: profile.respiratoryLabel == '건강함'
+                    ? '해당 없음'
+                    : profile.respiratoryLabel,
                 value: w1,
-                maxValue: 0.3,
+                maxValue: 0.45,
                 isPositive: true,
               ),
               const SizedBox(height: 10),
               _SheetWeightRow(
                 icon: Icons.directions_walk,
                 label: '야외 활동량',
-                sublabel: profile.outdoorMinutes == 2
-                    ? '3시간 이상'
-                    : profile.outdoorMinutes == 1
-                        ? '1~3시간'
-                        : '1시간 미만',
+                sublabel: () {
+                  final base = profile.outdoorMinutes == 2
+                      ? '3시간 이상'
+                      : profile.outdoorMinutes == 1
+                          ? '1~3시간'
+                          : '1시간 미만';
+                  return profile.activityTags.isEmpty
+                      ? base
+                      : '$base · 태그 ${profile.activityTags.length}개';
+                }(),
                 value: w2,
-                maxValue: 0.2,
+                maxValue: 0.30,
                 isPositive: true,
               ),
               const SizedBox(height: 10),
@@ -1189,17 +1197,18 @@ class _WeightSheet extends StatelessWidget {
                   style: const TextStyle(
                       fontSize: 13, color: AppColors.textPrimary),
                   children: [
-                    const TextSpan(text: 'S = '),
+                    const TextSpan(text: '항목 합계 '),
                     TextSpan(
-                      text:
-                          '${w1.toStringAsFixed(2)} + ${w2.toStringAsFixed(2)} + '
-                          '${w3.toStringAsFixed(2)} + ${wSpec.toStringAsFixed(2)} '
-                          '${wPref < 0 ? '− ${wPref.abs().toStringAsFixed(2)}' : ''}',
+                      text: '+${(w1 * 100).round()}% + '
+                          '+${(w2 * 100).round()}% + '
+                          '+${(w3 * 100).round()}% + '
+                          '+${(wSpec * 100).round()}%'
+                          '${wPref < 0 ? ' − ${(wPref.abs() * 100).round()}%' : ''}',
                       style: const TextStyle(color: AppColors.textSecondary),
                     ),
                     const TextSpan(text: ' = '),
                     TextSpan(
-                      text: s.toStringAsFixed(2),
+                      text: '${(s * 100).round()}%',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: AppColors.coral,
@@ -1207,7 +1216,7 @@ class _WeightSheet extends StatelessWidget {
                     ),
                     if (isClamped)
                       const TextSpan(
-                        text: '  (상한 0.6 적용)',
+                        text: '  (최대 60% 적용)',
                         style: TextStyle(
                             fontSize: 11, color: AppColors.textHint),
                       ),
@@ -1220,9 +1229,9 @@ class _WeightSheet extends StatelessWidget {
                   style: const TextStyle(
                       fontSize: 13, color: AppColors.textPrimary),
                   children: [
-                    const TextSpan(text: 'T_final = 35 × (1 − '),
+                    const TextSpan(text: '35μg/m³ × (1 − '),
                     TextSpan(
-                      text: s.toStringAsFixed(2),
+                      text: '${(s * 100).round()}%',
                       style: const TextStyle(color: AppColors.coral),
                     ),
                     const TextSpan(text: ') = '),
@@ -1367,9 +1376,11 @@ class _SheetWeightRow extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Text(
-          isPositive
-              ? '+${value.toStringAsFixed(2)}'
-              : '−${value.toStringAsFixed(2)}',
+          hasWeight
+              ? (isPositive
+                  ? '+${(value * 100).round()}%'
+                  : '−${(value * 100).round()}%')
+              : '+0%',
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.bold,

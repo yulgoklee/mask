@@ -189,10 +189,16 @@ class NotificationTimeScreen extends ConsumerWidget {
                               .read(profileRepositoryProvider)
                               .completeOnboarding();
                         } catch (_) {}
-                        if (context.mounted) {
-                          Navigator.of(context)
-                              .pushReplacementNamed('/permission');
-                        }
+                        if (!context.mounted) return;
+                        // 이미 권한이 있으면 권한 화면 건너뛰기
+                        final permStatus =
+                            await Permission.notification.status;
+                        if (!context.mounted) return;
+                        Navigator.of(context).pushReplacementNamed(
+                          permStatus.isGranted
+                              ? '/onboarding_complete'
+                              : '/permission',
+                        );
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
@@ -852,6 +858,15 @@ class _SimulationButton extends ConsumerStatefulWidget {
 class _SimulationButtonState extends ConsumerState<_SimulationButton> {
   bool _loading = false;
   bool _sent = false;
+
+  @override
+  void didUpdateWidget(_SimulationButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 알림 톤이 바뀌면 미리보기 재시도 허용
+    if (oldWidget.setting.notificationVoice != widget.setting.notificationVoice) {
+      setState(() => _sent = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

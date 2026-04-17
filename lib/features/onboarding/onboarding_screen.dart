@@ -48,6 +48,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // ── Q7: 피부 시술 ────────────────────────────────────────────
   bool _recentSkinTreatment = false;
+  DateTime? _skinTreatmentDate;
 
   // ── Q8: 야외 활동량 ──────────────────────────────────────────
   int _outdoorMinutes = 1;
@@ -69,14 +70,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   /// 실제 렌더할 페이지 위젯 목록
   List<Widget> get _pages => [
         DiagQ1Nickname(
+          questionNumber: 1,
           initialValue: _nickname,
           onChanged: (v) => setState(() => _nickname = v),
         ),
         DiagQ2BirthYear(
+          questionNumber: 2,
           initialValue: _birthYear,
           onChanged: (v) => setState(() => _birthYear = v),
         ),
         DiagQ3Gender(
+          questionNumber: 3,
           value: _genderStr,
           onChanged: (v) => setState(() {
             _genderStr = v;
@@ -85,33 +89,46 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           }),
         ),
         DiagQ4Respiratory(
+          questionNumber: 4,
           value: _respiratoryStatus,
           onChanged: (v) => setState(() => _respiratoryStatus = v),
         ),
         DiagQ5Sensitivity(
+          questionNumber: 5,
           value: _sensitivityLevel,
           onChanged: (v) => setState(() => _sensitivityLevel = v),
         ),
         // Q6: male이 아닐 때만 포함 (남성 선택 시 페이지 자체가 사라짐)
         if (_includeQ6)
           DiagQ6Pregnancy(
+            questionNumber: 6,
             value: _isPregnant,
             genderStr: _genderStr,
             onChanged: (v) => setState(() => _isPregnant = v),
           ),
         DiagQ7SkinTreatment(
+          questionNumber: _includeQ6 ? 7 : 6,
           value: _recentSkinTreatment,
-          onChanged: (v) => setState(() => _recentSkinTreatment = v),
+          onChanged: (v) => setState(() {
+            _recentSkinTreatment = v;
+            if (!v) _skinTreatmentDate = null;
+          }),
+          treatmentDate: _skinTreatmentDate,
+          onTreatmentDateChanged: (d) =>
+              setState(() => _skinTreatmentDate = d),
         ),
         DiagQ8Outdoor(
+          questionNumber: _includeQ6 ? 8 : 7,
           value: _outdoorMinutes,
           onChanged: (v) => setState(() => _outdoorMinutes = v),
         ),
         DiagQ9ActivityTags(
+          questionNumber: _includeQ6 ? 9 : 8,
           value: _activityTags,
           onChanged: (v) => setState(() => _activityTags = v),
         ),
         DiagQ10Discomfort(
+          questionNumber: _includeQ6 ? 10 : 9,
           value: _discomfortLevel,
           onChanged: (v) => setState(() => _discomfortLevel = v),
         ),
@@ -200,6 +217,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         sensitivityLevel:    _sensitivityLevel,
         isPregnant:          _isPregnant,
         recentSkinTreatment: _recentSkinTreatment,
+        skinTreatmentDate:   _skinTreatmentDate,
         outdoorMinutes:      _outdoorMinutes,
         activityTags:        _activityTags,
         discomfortLevel:     _discomfortLevel,

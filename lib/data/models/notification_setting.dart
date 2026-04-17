@@ -15,7 +15,7 @@ class NotificationVoice {
   };
 
   String get description => switch (value) {
-    analytical => '수치 중심의 명확한 정보 전달',
+    analytical => '군더더기 없는 직구형 알림',
     _           => '따뜻한 말투로 챙겨주는 느낌',
   };
 

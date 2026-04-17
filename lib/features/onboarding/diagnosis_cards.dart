@@ -10,11 +10,13 @@ import '../../data/models/user_profile.dart';
 class DiagQ1Nickname extends StatefulWidget {
   final String? initialValue;
   final ValueChanged<String?> onChanged;
+  final int questionNumber;
 
   const DiagQ1Nickname({
     super.key,
     this.initialValue,
     required this.onChanged,
+    this.questionNumber = 1,
   });
 
   @override
@@ -44,7 +46,7 @@ class _DiagQ1NicknameState extends State<DiagQ1Nickname> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 32),
-          _qBadge('Q1 · 이름'),
+          _qBadge('Q${widget.questionNumber} · 이름'),
           const SizedBox(height: 14),
           _qTitle(context, '어떻게 불러드릴까요?'),
           const SizedBox(height: 8),
@@ -75,11 +77,13 @@ class _DiagQ1NicknameState extends State<DiagQ1Nickname> {
 class DiagQ2BirthYear extends StatefulWidget {
   final int? initialValue;
   final ValueChanged<int?> onChanged;
+  final int questionNumber;
 
   const DiagQ2BirthYear({
     super.key,
     this.initialValue,
     required this.onChanged,
+    this.questionNumber = 2,
   });
 
   @override
@@ -127,7 +131,7 @@ class _DiagQ2BirthYearState extends State<DiagQ2BirthYear> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _qBadge('Q2 · 연령'),
+              _qBadge('Q${widget.questionNumber} · 연령'),
               const SizedBox(height: 14),
               _qTitle(context, '출생연도를 알려주세요'),
               const SizedBox(height: 8),
@@ -268,8 +272,9 @@ class _DiagQ2BirthYearState extends State<DiagQ2BirthYear> {
 class DiagQ3Gender extends StatelessWidget {
   final String? value; // 'male'|'female'|null
   final ValueChanged<String?> onChanged;
+  final int questionNumber;
 
-  const DiagQ3Gender({super.key, this.value, required this.onChanged});
+  const DiagQ3Gender({super.key, this.value, required this.onChanged, this.questionNumber = 3});
 
   static const _options = [
     ('male',   '👨', '남성'),
@@ -284,7 +289,7 @@ class DiagQ3Gender extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 32),
-          _qBadge('Q3 · 성별'),
+          _qBadge('Q$questionNumber · 성별'),
           const SizedBox(height: 14),
           _qTitle(context, '성별을 알려주세요'),
           const SizedBox(height: 8),
@@ -352,53 +357,123 @@ class DiagQ3Gender extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════
 
 class DiagQ4Respiratory extends StatelessWidget {
-  final int value; // 0=건강 1=비염 2=천식등
+  /// 비트플래그: 0=건강, 1=비염(bit0), 2=천식(bit1), 3=둘다
+  final int value;
   final ValueChanged<int> onChanged;
+  final int questionNumber;
 
   const DiagQ4Respiratory({
     super.key,
     required this.value,
     required this.onChanged,
+    this.questionNumber = 4,
   });
 
-  static const _options = [
-    (0, '😊', '건강해요',      '호흡기 관련 증상이 없어요',         '+0%'),
+  // 체크박스형 조건 옵션 (bit, emoji, label, hint, badge)
+  static const _conditions = [
     (1, '👃', '비염 있어요',   '코막힘·재채기가 자주 발생해요',     '+15%'),
-    (2, '🫁', '천식 등 질환',  '천식·심혈관·호흡기 질환이 있어요', '+30%'),
+    (2, '🫁', '천식 등 질환',  '호흡기·심혈관 질환을 진단받았어요', '+30%'),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final hasRhinitis = value & 1 != 0;
+    final hasAsthma   = value & 2 != 0;
+    final isHealthy   = value == 0;
+
+    // 총 영향도
+    int totalPct = 0;
+    if (hasRhinitis) totalPct += 15;
+    if (hasAsthma)   totalPct += 30;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 32),
-          _qBadge('Q4 · 호흡기'),
+          _qBadge('Q$questionNumber · 호흡기'),
           const SizedBox(height: 14),
           _qTitle(context, '호흡기 상태를 알려주세요'),
           const SizedBox(height: 8),
-          _qSubtitle(context, '정확할수록 맞춤 알림 기준이 세밀해져요.'),
+          _qSubtitle(context, '해당되는 항목을 모두 선택해주세요.'),
           const SizedBox(height: 32),
-          ..._options.map((opt) {
-            final (val, emoji, label, hint, badge) = opt;
-            final sel = value == val;
+
+          // ── 건강해요 (해당 없음) ──────────────────────────────
+          GestureDetector(
+            onTap: () => onChanged(0),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: isHealthy
+                    ? AppColors.success.withValues(alpha: 0.08)
+                    : AppColors.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isHealthy ? AppColors.success : AppColors.divider,
+                  width: isHealthy ? 2 : 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Text('😊', style: TextStyle(fontSize: 28)),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '건강해요',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            color: isHealthy
+                                ? AppColors.success
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        const Text(
+                          '호흡기 관련 증상이 없어요',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  _badgeChip('+0%', isHealthy),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // ── 조건 체크박스 행들 ────────────────────────────────
+          ..._conditions.map((opt) {
+            final (bit, emoji, label, hint, badge) = opt;
+            final sel = value & bit != 0;
             return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.only(bottom: 10),
               child: GestureDetector(
-                onTap: () => onChanged(val),
+                onTap: () {
+                  // 해당 비트 토글
+                  final next = value ^ bit;
+                  onChanged(next);
+                },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
                   curve: Curves.easeOut,
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
                     color: sel
-                        ? AppColors.primary.withValues(alpha: 0.08)
+                        ? AppColors.coral.withValues(alpha: 0.07)
                         : AppColors.surface,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: sel ? AppColors.primary : AppColors.divider,
+                      color: sel ? AppColors.coral : AppColors.divider,
                       width: sel ? 2 : 1,
                     ),
                   ),
@@ -415,16 +490,17 @@ class DiagQ4Respiratory extends StatelessWidget {
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 15,
-                                color: sel ? AppColors.primary : AppColors.textPrimary,
+                                color: sel
+                                    ? AppColors.coral
+                                    : AppColors.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 3),
                             Text(
                               hint,
                               style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                              ),
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary),
                             ),
                           ],
                         ),
@@ -436,10 +512,41 @@ class DiagQ4Respiratory extends StatelessWidget {
               ),
             );
           }),
+
+          // ── 총 영향도 요약 (조건 선택 시) ─────────────────────
+          if (!isHealthy) ...[
+            const SizedBox(height: 4),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.coral.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                    color: AppColors.coral.withValues(alpha: 0.20)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline,
+                      size: 15, color: AppColors.coral),
+                  const SizedBox(width: 8),
+                  Text(
+                    '선택한 조건으로 알림 기준이 총 +$totalPct% 강화돼요',
+                    style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.coral,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           const SizedBox(height: 20),
           _insightBox(
-            '비염 여부를 체크하면 15% 더 정밀하게 감지합니다. '
-            '천식이 있는 분은 일반인보다 낮은 농도에서 알림이 울려요.',
+            '비염이 있으면 +15%, 천식 등 호흡기 질환이 있으면 +30% 강화돼요. '
+            '두 가지 모두 해당되면 중복 적용(+45%)되어 더 일찍 알려드려요.',
           ),
           const SizedBox(height: 32),
         ],
@@ -455,17 +562,19 @@ class DiagQ4Respiratory extends StatelessWidget {
 class DiagQ5Sensitivity extends StatelessWidget {
   final int value; // 0=무던 1=보통 2=예민
   final ValueChanged<int> onChanged;
+  final int questionNumber;
 
   const DiagQ5Sensitivity({
     super.key,
     required this.value,
     required this.onChanged,
+    this.questionNumber = 5,
   });
 
   static const _options = [
-    (0, '😶', '무던해요',      '공기 변화를 잘 못 느껴요'),
-    (1, '😌', '보통이에요',    '가끔 느끼는 편이에요'),
-    (2, '😣', '매우 예민해요', '조금만 탁해도 바로 느껴요'),
+    (0, '😶', '무던해요',      '공기 변화를 잘 못 느껴요', '+0%'),
+    (1, '😌', '보통이에요',    '가끔 느끼는 편이에요',     '+10%'),
+    (2, '😣', '매우 예민해요', '조금만 탁해도 바로 느껴요', '+20%'),
   ];
 
   @override
@@ -476,7 +585,7 @@ class DiagQ5Sensitivity extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 32),
-          _qBadge('Q5 · 민감도'),
+          _qBadge('Q$questionNumber · 민감도'),
           const SizedBox(height: 14),
           _qTitle(context, '공기 오염에 얼마나\n민감하게 느끼세요?'),
           const SizedBox(height: 8),
@@ -484,8 +593,9 @@ class DiagQ5Sensitivity extends StatelessWidget {
           const SizedBox(height: 32),
           Row(
             children: _options.map((opt) {
-              final (val, emoji, label, hint) = opt;
+              final (val, emoji, label, hint, badge) = opt;
               final sel = value == val;
+              final badgeColor = _badgeColor(badge);
               return Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(right: 8),
@@ -493,7 +603,7 @@ class DiagQ5Sensitivity extends StatelessWidget {
                     onTap: () => onChanged(val),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
-                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      padding: const EdgeInsets.fromLTRB(8, 16, 8, 14),
                       decoration: BoxDecoration(
                         color: sel ? AppColors.primary : AppColors.surfaceVariant,
                         borderRadius: BorderRadius.circular(16),
@@ -513,7 +623,7 @@ class DiagQ5Sensitivity extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
                             child: Text(
                               hint,
                               textAlign: TextAlign.center,
@@ -521,6 +631,25 @@ class DiagQ5Sensitivity extends StatelessWidget {
                                 fontSize: 10,
                                 color: sel ? Colors.white70 : AppColors.textSecondary,
                                 height: 1.4,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: sel
+                                  ? Colors.white.withValues(alpha: 0.25)
+                                  : badgeColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              badge,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: sel ? Colors.white : badgeColor,
                               ),
                             ),
                           ),
@@ -534,8 +663,8 @@ class DiagQ5Sensitivity extends StatelessWidget {
           ),
           const SizedBox(height: 32),
           _insightBox(
-            '체감 민감도는 개인 경험에 기반한 민감도 계수를 조정해요. '
-            '예민하다고 느끼시면 +10% 보정이 적용돼요.',
+            '체감 민감도는 개인 경험에 기반해 알림 기준을 조정해요. '
+            '매우 예민하다면 +20% 더 엄격하게 반응해드려요.',
           ),
           const SizedBox(height: 32),
         ],
@@ -552,12 +681,14 @@ class DiagQ6Pregnancy extends StatelessWidget {
   final bool value;
   final String? genderStr; // 'male'|'female'|null
   final ValueChanged<bool> onChanged;
+  final int questionNumber;
 
   const DiagQ6Pregnancy({
     super.key,
     required this.value,
     this.genderStr,
     required this.onChanged,
+    this.questionNumber = 6,
   });
 
   bool get _isApplicable => genderStr == null || genderStr == 'female';
@@ -572,7 +703,7 @@ class DiagQ6Pregnancy extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 32),
-            _qBadge('Q6 · 임신'),
+            _qBadge('Q$questionNumber · 임신'),
             const SizedBox(height: 14),
             _qTitle(context, '임신 여부'),
             const SizedBox(height: 8),
@@ -636,6 +767,7 @@ class DiagQ6Pregnancy extends StatelessWidget {
             onYes: () => onChanged(true),
             onNo: () => onChanged(false),
             yesColor: AppColors.coral,
+            noColor: AppColors.success,
           ),
           const SizedBox(height: 32),
           _insightBox(
@@ -656,24 +788,42 @@ class DiagQ6Pregnancy extends StatelessWidget {
 class DiagQ7SkinTreatment extends StatelessWidget {
   final bool value;
   final ValueChanged<bool> onChanged;
+  final DateTime? treatmentDate;
+  final ValueChanged<DateTime?> onTreatmentDateChanged;
+  final int questionNumber;
 
   const DiagQ7SkinTreatment({
     super.key,
     required this.value,
     required this.onChanged,
+    required this.onTreatmentDateChanged,
+    this.treatmentDate,
+    this.questionNumber = 7,
   });
+
+  String _formatDate(DateTime d) {
+    final diff = DateTime.now().difference(d).inDays;
+    if (diff == 0) return '오늘';
+    if (diff == 1) return '어제';
+    return '${diff}일 전';
+  }
 
   @override
   Widget build(BuildContext context) {
+    final daysLeft = treatmentDate != null
+        ? 14 - DateTime.now().difference(treatmentDate!).inDays
+        : null;
+    final isActive = treatmentDate != null && daysLeft != null && daysLeft > 0;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 32),
-          _qBadge('Q7 · 피부'),
+          _qBadge('Q$questionNumber · 피부'),
           const SizedBox(height: 14),
-          _qTitle(context, '최근 2주 내\n피부 시술을 받으셨나요?'),
+          _qTitle(context, '최근 피부 시술을\n받으셨나요?'),
           const SizedBox(height: 8),
           _qSubtitle(context, '시술 후 피부 장벽이 약해져 미세먼지 영향이 커요.'),
           const SizedBox(height: 36),
@@ -684,13 +834,110 @@ class DiagQ7SkinTreatment extends StatelessWidget {
             noEmoji: '😊',
             noLabel: '해당 없어요',
             onYes: () => onChanged(true),
-            onNo: () => onChanged(false),
+            onNo: () {
+              onChanged(false);
+              onTreatmentDateChanged(null);
+            },
             yesColor: AppColors.coral,
+            noColor: AppColors.success,
           ),
+          // 날짜 입력 — "받았어요" 선택 시 표시
+          if (value) ...[
+            const SizedBox(height: 20),
+            GestureDetector(
+              onTap: () async {
+                final now = DateTime.now();
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: treatmentDate ?? now,
+                  firstDate: now.subtract(const Duration(days: 60)),
+                  lastDate: now,
+                  helpText: '시술 날짜를 선택하세요',
+                  cancelText: '취소',
+                  confirmText: '확인',
+                );
+                if (picked != null) onTreatmentDateChanged(picked);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 18, vertical: 14),
+                decoration: BoxDecoration(
+                  color: isActive
+                      ? AppColors.coral.withValues(alpha: 0.07)
+                      : AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isActive
+                        ? AppColors.coral.withValues(alpha: 0.40)
+                        : AppColors.divider,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today_outlined,
+                      size: 18,
+                      color: isActive
+                          ? AppColors.coral
+                          : AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            treatmentDate != null
+                                ? '시술일: ${_formatDate(treatmentDate!)}'
+                                : '시술 날짜를 선택해주세요 (선택)',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: treatmentDate != null
+                                  ? AppColors.textPrimary
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
+                          if (isActive)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 3),
+                              child: Text(
+                                '강화 알림 ${daysLeft}일 남음',
+                                style: const TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.coral),
+                              ),
+                            )
+                          else if (treatmentDate != null && !isActive)
+                            const Padding(
+                              padding: EdgeInsets.only(top: 3),
+                              child: Text(
+                                '2주가 지나 강화 알림이 종료됐어요',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textHint),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right,
+                      size: 18,
+                      color: isActive
+                          ? AppColors.coral
+                          : AppColors.textSecondary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 32),
           _insightBox(
-            '레이저·필링·보톡스 등 피부 시술 후 2주간은 피부 장벽 기능이 저하돼요. '
-            '이 기간에는 기준값을 25% 강화해 더 빠르게 알려드려요.',
+            '레이저·필링·보톡스 등 시술 후 2주간 피부 장벽이 저하돼요. '
+            '날짜를 입력하면 2주 후 자동으로 강화 알림이 해제돼요.',
           ),
           const SizedBox(height: 32),
         ],
@@ -706,11 +953,13 @@ class DiagQ7SkinTreatment extends StatelessWidget {
 class DiagQ8Outdoor extends StatelessWidget {
   final int value; // 0=1h미만 1=1~3h 2=3h이상
   final ValueChanged<int> onChanged;
+  final int questionNumber;
 
   const DiagQ8Outdoor({
     super.key,
     required this.value,
     required this.onChanged,
+    this.questionNumber = 8,
   });
 
   static const _options = [
@@ -727,7 +976,7 @@ class DiagQ8Outdoor extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 32),
-          _qBadge('Q8 · 활동량'),
+          _qBadge('Q$questionNumber · 활동량'),
           const SizedBox(height: 14),
           _qTitle(context, '하루 평균 야외 활동 시간이\n얼마나 되나요?'),
           const SizedBox(height: 8),
@@ -820,19 +1069,22 @@ class DiagQ8Outdoor extends StatelessWidget {
 class DiagQ9ActivityTags extends StatelessWidget {
   final List<String> value;
   final ValueChanged<List<String>> onChanged;
+  final int questionNumber;
 
   const DiagQ9ActivityTags({
     super.key,
     required this.value,
     required this.onChanged,
+    this.questionNumber = 9,
   });
 
+  // (tag, emoji, label, hint, badge)
   static const _options = [
-    (ActivityTag.commute,   '🚇', '출퇴근', '대중교통·도보 이동'),
-    (ActivityTag.walk,      '🚶', '산책',   '공원·동네 가벼운 산책'),
-    (ActivityTag.exercise,  '🏃', '운동',   '조깅·자전거·야외 운동'),
-    (ActivityTag.delivery,  '🛵', '배달/외근', '야외 업무·배달'),
-    (ActivityTag.childcare, '👶', '아이 등하원', '아이와 함께 야외 활동'),
+    (ActivityTag.commute,   '🚇', '출퇴근',     '대중교통·도보 이동',     '+3%'),
+    (ActivityTag.walk,      '🚶', '산책',       '공원·동네 가벼운 산책', '+3%'),
+    (ActivityTag.exercise,  '🏃', '운동',       '조깅·자전거·야외 운동', '+5%'),
+    (ActivityTag.delivery,  '🛵', '배달/외근',  '야외 업무·배달',         '+5%'),
+    (ActivityTag.childcare, '👶', '아이 등하원', '아이와 함께 야외 활동', '+3%'),
   ];
 
   @override
@@ -843,14 +1095,14 @@ class DiagQ9ActivityTags extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 32),
-          _qBadge('Q9 · 활동 유형'),
+          _qBadge('Q$questionNumber · 활동 유형'),
           const SizedBox(height: 14),
           _qTitle(context, '주로 어떤 활동을 하시나요?'),
           const SizedBox(height: 8),
           _qSubtitle(context, '복수 선택 가능 · 없으면 건너뛰세요.'),
           const SizedBox(height: 32),
           ..._options.map((opt) {
-            final (tag, emoji, label, hint) = opt;
+            final (tag, emoji, label, hint, badge) = opt;
             final sel = value.contains(tag);
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
@@ -908,6 +1160,8 @@ class DiagQ9ActivityTags extends StatelessWidget {
                           ],
                         ),
                       ),
+                      _badgeChip(badge, sel),
+                      const SizedBox(width: 8),
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 160),
                         width: 24,
@@ -933,8 +1187,8 @@ class DiagQ9ActivityTags extends StatelessWidget {
           }),
           const SizedBox(height: 24),
           _insightBox(
-            '활동 유형별로 노출 패턴이 달라요. '
-            '배달·외근처럼 지속적 야외 노출이 있는 경우 알림 빈도가 최적화돼요.',
+            '운동·배달처럼 격한 외기 노출은 +5%, 산책·출퇴근은 +3% 기준이 강화돼요. '
+            '최대 +10% 한도 내에서 중복 적용됩니다.',
           ),
           const SizedBox(height: 32),
         ],
@@ -950,17 +1204,19 @@ class DiagQ9ActivityTags extends StatelessWidget {
 class DiagQ10Discomfort extends StatelessWidget {
   final int value; // 0=안느낌 1=보통 2=많이불편
   final ValueChanged<int> onChanged;
+  final int questionNumber;
 
   const DiagQ10Discomfort({
     super.key,
     required this.value,
     required this.onChanged,
+    this.questionNumber = 10,
   });
 
   static const _options = [
-    (0, '😌', '편해요',        '마스크 착용이 익숙해요'),
-    (1, '😐', '보통이에요',    '가끔 답답하긴 해요'),
-    (2, '😮', '많이 불편해요', '답답함·김 서림이 심해요'),
+    (0, '😌', '편해요',        '마스크 착용이 익숙해요',   '+0%'),
+    (1, '😐', '보통이에요',    '가끔 답답하긴 해요',       '+0%'),
+    (2, '😮', '많이 불편해요', '답답함·김 서림이 심해요',  '−10%'),
   ];
 
   @override
@@ -971,7 +1227,7 @@ class DiagQ10Discomfort extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 32),
-          _qBadge('Q10 · 마스크'),
+          _qBadge('Q$questionNumber · 마스크'),
           const SizedBox(height: 14),
           _qTitle(context, '마스크 착용이\n불편하신가요?'),
           const SizedBox(height: 8),
@@ -979,8 +1235,12 @@ class DiagQ10Discomfort extends StatelessWidget {
           const SizedBox(height: 32),
           Row(
             children: _options.map((opt) {
-              final (val, emoji, label, hint) = opt;
+              final (val, emoji, label, hint, badge) = opt;
               final sel = value == val;
+              final isNegative = badge.startsWith('−');
+              final badgeColor = isNegative
+                  ? AppColors.primary   // 완화 → 파랑
+                  : _badgeColor(badge); // 나머지 → 트래픽라이트
               return Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(right: 8),
@@ -988,7 +1248,7 @@ class DiagQ10Discomfort extends StatelessWidget {
                     onTap: () => onChanged(val),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
-                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      padding: const EdgeInsets.fromLTRB(8, 16, 8, 14),
                       decoration: BoxDecoration(
                         color: sel ? AppColors.primary : AppColors.surfaceVariant,
                         borderRadius: BorderRadius.circular(16),
@@ -1018,6 +1278,25 @@ class DiagQ10Discomfort extends StatelessWidget {
                                     ? Colors.white70
                                     : AppColors.textSecondary,
                                 height: 1.4,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: sel
+                                  ? Colors.white.withValues(alpha: 0.25)
+                                  : badgeColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              badge,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: sel ? Colors.white : badgeColor,
                               ),
                             ),
                           ),
@@ -1138,24 +1417,33 @@ InputDecoration _inputDecoration(String hint) => InputDecoration(
           const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
     );
 
-/// 퍼센트 배지 칩
-Widget _badgeChip(String badge, bool selected) => Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: selected
-            ? AppColors.primary
-            : AppColors.primary.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(8),
+/// 영향도 퍼센트 → 트래픽라이트 색상
+Color _badgeColor(String badge) {
+  final n = int.tryParse(badge.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+  if (n == 0)   return AppColors.success;    // +0%  → 초록
+  if (n <= 15)  return AppColors.dustNormal; // +10~15% → 노랑
+  return AppColors.coral;                    // +20~30% → 빨강
+}
+
+/// 퍼센트 배지 칩 — 영향도 크기에 따라 색상 자동 적용
+Widget _badgeChip(String badge, bool selected) {
+  final color = _badgeColor(badge);
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+    decoration: BoxDecoration(
+      color: selected ? color : color.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Text(
+      badge,
+      style: TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.bold,
+        color: selected ? Colors.white : color,
       ),
-      child: Text(
-        badge,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          color: selected ? Colors.white : AppColors.primary,
-        ),
-      ),
-    );
+    ),
+  );
+}
 
 // ══════════════════════════════════════════════════════════════
 //  Yes / No 두 버튼 Row
@@ -1170,6 +1458,8 @@ class _YesNoRow extends StatelessWidget {
   final VoidCallback onYes;
   final VoidCallback onNo;
   final Color yesColor;
+  /// 선택 시 "아니요" 버튼 색상 — 기본은 primary(파랑)
+  final Color noColor;
 
   const _YesNoRow({
     required this.selectedYes,
@@ -1180,6 +1470,7 @@ class _YesNoRow extends StatelessWidget {
     required this.onYes,
     required this.onNo,
     required this.yesColor,
+    this.noColor = AppColors.primary,
   });
 
   @override
@@ -1230,11 +1521,11 @@ class _YesNoRow extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 28),
               decoration: BoxDecoration(
                 color: !selectedYes
-                    ? AppColors.primary.withValues(alpha: 0.08)
+                    ? noColor.withValues(alpha: 0.08)
                     : AppColors.surface,
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: !selectedYes ? AppColors.primary : AppColors.divider,
+                  color: !selectedYes ? noColor : AppColors.divider,
                   width: !selectedYes ? 2.5 : 1,
                 ),
               ),
@@ -1247,9 +1538,7 @@ class _YesNoRow extends StatelessWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 15,
-                      color: !selectedYes
-                          ? AppColors.primary
-                          : AppColors.textPrimary,
+                      color: !selectedYes ? noColor : AppColors.textPrimary,
                     ),
                   ),
                 ],

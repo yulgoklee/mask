@@ -39,6 +39,13 @@ class _OnboardingCompleteScreenState
     super.dispose();
   }
 
+  /// 24h 시간 → "오전/오후 H:MM" 형식
+  static String _formatTime(int hour, int minute) {
+    final period = hour < 12 ? '오전' : '오후';
+    final h = hour == 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    return '$period $h:${minute.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
@@ -49,16 +56,13 @@ class _OnboardingCompleteScreenState
     String? firstAlertTime;
     String? firstAlertLabel;
     if (setting.morningAlertEnabled) {
-      firstAlertTime =
-          '${setting.morningAlertHour.toString().padLeft(2, '0')}:${setting.morningAlertMinute.toString().padLeft(2, '0')}';
+      firstAlertTime = _formatTime(setting.morningAlertHour, setting.morningAlertMinute);
       firstAlertLabel = '외출 전';
     } else if (setting.eveningForecastEnabled) {
-      firstAlertTime =
-          '${setting.eveningForecastHour.toString().padLeft(2, '0')}:${setting.eveningForecastMinute.toString().padLeft(2, '0')}';
+      firstAlertTime = _formatTime(setting.eveningForecastHour, setting.eveningForecastMinute);
       firstAlertLabel = '전날 예보';
     } else if (setting.eveningReturnEnabled) {
-      firstAlertTime =
-          '${setting.eveningReturnHour.toString().padLeft(2, '0')}:${setting.eveningReturnMinute.toString().padLeft(2, '0')}';
+      firstAlertTime = _formatTime(setting.eveningReturnHour, setting.eveningReturnMinute);
       firstAlertLabel = '귀가 후';
     }
 

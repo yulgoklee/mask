@@ -469,9 +469,11 @@ class _TemporaryStatesSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final activeTypes = temporaryStates.map((s) => s.type).toSet();
 
-    // 여성인 경우 임신 항목을 최상단으로
+    // 임신 항목은 여성 사용자에게만 표시
     final orderedInactive = TemporaryStateType.values
         .where((t) => !activeTypes.contains(t))
+        .where((t) =>
+            t != TemporaryStateType.pregnancy || profile.gender == 'female')
         .toList();
     if (profile.gender == 'female') {
       orderedInactive.sort((a, b) {
@@ -748,9 +750,14 @@ class _BasicInfoSection extends ConsumerWidget {
         _FieldLabel('호흡기 상태'),
         const SizedBox(height: 8),
         _ChipGroup<int>(
-          values: const [0, 1, 2],
+          values: const [0, 1, 2, 3],
           selected: profile.respiratoryStatus,
-          labelOf: (v) => v == 0 ? '건강해요' : v == 1 ? '비염 있어요' : '천식 등 질환',
+          labelOf: (v) => switch (v) {
+            1 => '비염',
+            2 => '천식 등',
+            3 => '비염+천식',
+            _ => '건강해요',
+          },
           onSelect: (v) => _save(ref, profile.copyWith(respiratoryStatus: v)),
         ),
         const SizedBox(height: 20),
