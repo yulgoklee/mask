@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/dust_data.dart';
 import '../data/models/forecast_models.dart';
+import '../data/repositories/aqi_history_repository.dart';
 import '../data/repositories/dust_repository.dart';
 import '../core/config/app_config.dart';
 import '../core/services/air_korea_service.dart';
+import '../core/services/aqi_polling_service.dart';
 import '../core/services/cloud_functions_data_source.dart';
 import '../core/services/dust_data_source.dart';
 import '../core/utils/dust_calculator.dart';
@@ -37,6 +39,35 @@ final dustRepositoryProvider = Provider<DustRepository>((ref) {
     ref.watch(locationServiceProvider),
   );
 });
+
+// ── AQI 히스토리 (차트용) ────────────────────────────────
+
+final aqiPollingServiceProvider = Provider<AqiPollingService>((ref) {
+  return AqiPollingService(
+    airKorea: ref.watch(airKoreaServiceProvider),
+    db: ref.watch(localDatabaseProvider),
+  );
+});
+
+final aqiHistoryRepositoryProvider = Provider<AqiHistoryRepository>((ref) {
+  return AqiHistoryRepository(
+    db: ref.watch(localDatabaseProvider),
+    polling: ref.watch(aqiPollingServiceProvider),
+    prefs: ref.watch(sharedPreferencesProvider),
+  );
+});
+
+/// Care 탭 차트 데이터 — forecastGrade는 현재 예보 등급 (기본 '보통')
+final aqiChartDataProvider = FutureProvider.family<AqiChartData, String>(
+  (ref, forecastGrade) async {
+    final repo = ref.watch(aqiHistoryRepositoryProvider);
+    final profile = ref.watch(profileProvider);
+    return repo.getChartData(
+      forecastGrade: forecastGrade,
+      profile: profile,
+    );
+  },
+);
 
 // ── 미세먼지 실시간 데이터 ────────────────────────────────
 

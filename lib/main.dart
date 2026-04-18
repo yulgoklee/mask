@@ -9,6 +9,9 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'app.dart';
+import 'core/database/local_database.dart';
+import 'core/services/air_korea_service.dart';
+import 'core/services/aqi_polling_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/workmanager_push_scheduler.dart';
 import 'firebase_options.dart';
@@ -71,11 +74,15 @@ void main() async {
       await pushScheduler.initialize();
       await pushScheduler.register();
     } catch (e, st) {
-      // 백그라운드 등록 실패 → Crashlytics 기록
       if (firebaseReady) {
         FirebaseCrashlytics.instance.recordError(e, st,
             fatal: false, reason: 'background_scheduler_register_failed');
       }
+    }
+
+    // Zero-day 시딩: 온보딩 완료 사용자의 첫 실행 시 과거 24h 데이터 수집
+    if (onboardingDone) {
+      _seedAqiDataIfNeeded(prefs);
     }
   }
 
@@ -87,6 +94,21 @@ void main() async {
       child: const MaskAlertApp(),
     ),
   );
+}
+
+/// Zero-day AQI 시딩 — 비동기 fire-and-forget (앱 시작 블록 없음)
+void _seedAqiDataIfNeeded(SharedPreferences prefs) {
+  Future.microtask(() async {
+    try {
+      final db = LocalDatabase();
+      final airKorea = AirKoreaService(prefs);
+      final polling = AqiPollingService(airKorea: airKorea, db: db);
+      await polling.runPollingCycle(prefs: prefs);
+      await db.close();
+    } catch (_) {
+      // 시딩 실패해도 앱 실행에 영향 없음
+    }
+  });
 }
 
 /// 익명 사용자 ID 조회 또는 생성 (앱 삭제 전까지 유지)

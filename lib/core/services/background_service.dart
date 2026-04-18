@@ -5,8 +5,10 @@ import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 import '../constants/app_constants.dart';
+import '../database/local_database.dart';
 import '../../firebase_options.dart';
 import '../services/air_korea_service.dart';
+import '../services/aqi_polling_service.dart';
 import 'notification_scheduler.dart';
 
 /// 백그라운드 GPS 갱신 간격 (밀리초)
@@ -35,14 +37,34 @@ Future<void> _runDustCheck() async {
   try {
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   } catch (_) {
-    // 이미 초기화됐거나 실패해도 알림 체크는 계속 진행
+    // 이미 초기화됐거나 실패해도 계속 진행
   }
   final prefs = await SharedPreferences.getInstance();
 
-  // GPS 측정소 자동 갱신 (6시간 이상 경과한 경우만)
+  // 1. GPS 측정소 자동 갱신 (6시간 이상 경과한 경우만)
   await _tryRefreshStation(prefs);
 
+  // 2. AQI 폴링 → SQLite 저장 (차트 과거 데이터 축적)
+  await _runAqiPolling(prefs);
+
+  // 3. 알림 체크 (T_final 초과 판단)
   await NotificationScheduler().runCheck(prefs);
+}
+
+/// AQI 폴링 + SQLite 저장
+///
+/// 백그라운드 isolate에서 SQLite를 직접 초기화하여 사용.
+/// 실패해도 알림 체크에 영향 없도록 try-catch로 격리.
+Future<void> _runAqiPolling(SharedPreferences prefs) async {
+  try {
+    final db = LocalDatabase();
+    final airKorea = AirKoreaService(prefs);
+    final polling = AqiPollingService(airKorea: airKorea, db: db);
+    await polling.runPollingCycle(prefs: prefs);
+    await db.close();
+  } catch (e) {
+    debugPrint('[BGService] AQI 폴링 실패 (무시): $e');
+  }
 }
 
 /// 백그라운드에서 GPS 기반 측정소 자동 갱신
