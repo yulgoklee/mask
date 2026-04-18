@@ -179,6 +179,56 @@ class LocalDatabase {
     );
   }
 
+  // ── Phase 5: 방어율·달력 쿼리 ────────────────────────────────
+
+  /// 기간 내 알림 액션 집계 (방어율 카드용)
+  ///
+  /// 반환: (total, defended, estimated)
+  Future<({int total, int defended, int estimated})> getNotifActionStats({
+    int days = 7,
+  }) async {
+    final db = await database;
+    final since = DateTime.now()
+        .subtract(Duration(days: days))
+        .toIso8601String();
+
+    final total = Sqflite.firstIntValue(await db.rawQuery(
+          'SELECT COUNT(*) FROM notification_logs WHERE triggered_at >= ?',
+          [since],
+        )) ??
+        0;
+    final defended = Sqflite.firstIntValue(await db.rawQuery(
+          "SELECT COUNT(*) FROM notification_logs "
+          "WHERE triggered_at >= ? AND user_action = 'maskWorn'",
+          [since],
+        )) ??
+        0;
+    final estimated = Sqflite.firstIntValue(await db.rawQuery(
+          "SELECT COUNT(*) FROM notification_logs "
+          "WHERE triggered_at >= ? AND user_action = 'appOpened'",
+          [since],
+        )) ??
+        0;
+    return (total: total, defended: defended, estimated: estimated);
+  }
+
+  /// 기간 내 알림 로그 목록 (달력 구성용)
+  Future<List<NotificationLog>> getNotificationLogsSince({
+    int days = 30,
+  }) async {
+    final db = await database;
+    final since = DateTime.now()
+        .subtract(Duration(days: days))
+        .toIso8601String();
+    final rows = await db.query(
+      'notification_logs',
+      where: 'triggered_at >= ?',
+      whereArgs: [since],
+      orderBy: 'triggered_at ASC',
+    );
+    return rows.map(NotificationLog.fromMap).toList();
+  }
+
   // ── 유틸 ─────────────────────────────────────────────────────
 
   String _dateKey(DateTime dt) =>
