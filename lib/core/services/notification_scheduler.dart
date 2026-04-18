@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/datasources/feedback_repository.dart';
 import '../../data/models/forecast_models.dart';
+import '../../data/models/notification_log.dart';
 import '../../data/models/user_profile.dart';
 import '../../data/models/notification_setting.dart';
 import '../../data/models/temporary_state.dart';
@@ -15,12 +16,14 @@ import '../../data/models/today_situation.dart';
 import '../config/app_config.dart';
 import '../constants/app_constants.dart';
 import '../constants/dust_standards.dart';
+import '../database/local_database.dart';
 import '../utils/adaptive_learner.dart';
 import '../utils/dust_calculator.dart';
 import '../utils/sensitivity_calculator.dart';
 import 'air_korea_service.dart';
 import 'cloud_functions_data_source.dart';
 import 'dust_data_source.dart';
+import 'notification_deep_link.dart';
 import 'notification_service.dart';
 
 /// 미세먼지 알림 스케줄러
@@ -208,6 +211,9 @@ class NotificationScheduler {
               ? NotificationService.iconMask
               : null,
           onSuccess: () => _markSent(prefs, 'morning'),
+          pm25: pm25,
+          tFinal: tFinalValue,
+          prefs: prefs,
         );
       }
 
@@ -255,6 +261,9 @@ class NotificationScheduler {
               ? NotificationService.iconMask
               : null,
           onSuccess: () => _markSent(prefs, 'forecast'),
+          pm25: pm25,
+          tFinal: tFinalValue,
+          prefs: prefs,
         );
       }
 
@@ -291,6 +300,9 @@ class NotificationScheduler {
               ? NotificationService.iconMask
               : null,
           onSuccess: () => _markSent(prefs, 'return'),
+          pm25: pm25,
+          tFinal: tFinalValue,
+          prefs: prefs,
         );
       }
 
@@ -315,6 +327,9 @@ class NotificationScheduler {
           iosCategory: NotificationService.categoryAlert,
           smallIcon: NotificationService.iconWarning,
           onSuccess: () => _markSentHour(prefs, 'realtime'),
+          pm25: pm25,
+          tFinal: tFinalValue,
+          prefs: prefs,
         );
       }
 
@@ -347,12 +362,15 @@ class NotificationScheduler {
   }
 }
 
-/// 알림 발송 + 성공/실패 추적
+/// 알림 발송 + 성공/실패 추적 + SQLite notification_log 기록
 ///
 /// [gradeColor]  : 등급 기반 Android 알림 액센트 색상 (선택)
 /// [actions]     : Android 알림 액션 버튼 목록 (선택)
 /// [iosCategory] : iOS 알림 카테고리 ID (선택)
 /// [smallIcon]   : Android 소형 알림 아이콘 리소스명 (선택)
+/// [pm25]        : 발송 시점 PM2.5 (SQLite 기록용)
+/// [tFinal]      : 발송 시점 개인 임계치 (SQLite 기록용)
+/// [prefs]       : SharedPreferences (log id 저장용, nullable → 내부 획득)
 Future<void> _sendNotification({
   required NotificationService notifService,
   required FirebaseAnalytics analytics,
@@ -365,6 +383,9 @@ Future<void> _sendNotification({
   String? iosCategory,
   String? smallIcon,
   required VoidCallback onSuccess,
+  int? pm25,
+  double? tFinal,
+  SharedPreferences? prefs,
 }) async {
   try {
     await notifService.showImmediateNotification(
@@ -382,6 +403,25 @@ Future<void> _sendNotification({
       parameters: {'type': type},
     );
     debugPrint('[NotificationScheduler] ✅ $type 알림 발송 성공');
+
+    // ── SQLite notification_log 기록 ──────────────────────────
+    try {
+      final db = LocalDatabase();
+      final logId = await db.insertNotificationLog(NotificationLog(
+        triggeredAt: DateTime.now(),
+        notificationType: _notifTypeFromString(type),
+        pm25Value: pm25,
+        tFinal: tFinal,
+        userAction: UserAction.none,
+      ));
+      await db.close();
+      // background handler가 UserAction 업데이트할 수 있도록 id 저장
+      final p = prefs ?? await SharedPreferences.getInstance();
+      await NotificationDeepLink.setLastLogId(p, logId);
+      debugPrint('[NotificationScheduler] 📝 SQLite log id=$logId');
+    } catch (e) {
+      debugPrint('[NotificationScheduler] SQLite log 실패 (무시): $e');
+    }
   } catch (e, st) {
     debugPrint('[NotificationScheduler] ❌ $type 알림 발송 실패: $e');
     analytics.logEvent(
@@ -582,6 +622,16 @@ String? _primaryStateNote(
   if (temporaryStates.isNotEmpty) return temporaryStates.first.label;
   if (todaySituations.isNotEmpty) return todaySituations.first.label;
   return null;
+}
+
+/// 알림 type 문자열 → NotificationType enum 변환
+NotificationType _notifTypeFromString(String type) {
+  switch (type) {
+    case 'morning': return NotificationType.morning;
+    case 'forecast':
+    case 'return':  return NotificationType.evening;
+    default:        return NotificationType.dangerEntry;
+  }
 }
 
 String _gradeLabel(DustGrade grade) {

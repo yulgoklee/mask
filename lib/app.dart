@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/constants/app_colors.dart';
+import 'core/services/notification_deep_link.dart';
 import 'features/home/home_screen.dart';
 import 'features/notification_setting/notification_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
@@ -71,7 +72,8 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> {
+class _MainShellState extends State<MainShell>
+    with WidgetsBindingObserver {
   int _selectedIndex = 0;
 
   // 탭 순서: 케어(0) / 기록(1) / 프로필(2)
@@ -81,6 +83,36 @@ class _MainShellState extends State<MainShell> {
     ReportScreen(),
     ProfileScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // 앱 시작(알림으로 열린 경우) 딥링크 처리
+    _handlePendingTab();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// 앱 재개(포그라운드 복귀) 시 알림 딥링크 체크
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _handlePendingTab();
+    }
+  }
+
+  /// SharedPreferences에 저장된 대기 탭 인덱스를 읽어 탭 전환
+  Future<void> _handlePendingTab() async {
+    final tab = await NotificationDeepLink.consumePendingTab();
+    if (tab != null && mounted) {
+      setState(() => _selectedIndex = tab);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

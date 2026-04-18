@@ -3,7 +3,9 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/engine/threshold_engine.dart';
 import '../../core/utils/sensitivity_calculator.dart';
+import '../../data/models/today_situation.dart';
 import '../../data/repositories/aqi_history_repository.dart';
 import '../../providers/providers.dart';
 
@@ -19,8 +21,28 @@ class AqiChartSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final chartAsync = ref.watch(aqiChartDataProvider(forecastGrade));
     final profile = ref.watch(profileProvider);
+    final todaySituations = ref.watch(todaySituationProvider);
+
     final s = SensitivityCalculator.compute(profile);
-    final tFinal = SensitivityCalculator.threshold(s);
+    double tFinal = SensitivityCalculator.threshold(s);
+
+    // 오늘 야외운동 토글 활성 → W_lifestyle = 3h+(0.15) 적용하여 tFinal 즉시 재계산
+    // 이미 3h+ 설정이면 변화 없음
+    final isOutdoorToday = todaySituations.any(
+      (s) =>
+          s.type == TodaySituationType.outdoorExercise && s.isActive,
+    );
+    if (isOutdoorToday) {
+      const engine = ThresholdEngine();
+      final wHealth = engine.computeWHealth(profile);
+      final currentWL = engine.computeWLifestyle(profile);
+      const maxOutdoorW = 0.15;
+      if (currentWL < maxOutdoorW) {
+        final adjusted =
+            (35.0 * (1 - wHealth - maxOutdoorW)).clamp(15.0, 35.0);
+        tFinal = min(tFinal, adjusted);
+      }
+    }
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
@@ -32,7 +54,11 @@ class AqiChartSection extends ConsumerWidget {
       child: chartAsync.when(
         loading: () => const _ChartSkeleton(),
         error: (_, __) => const _ChartError(),
-        data: (data) => _ChartContent(chartData: data, tFinal: tFinal),
+        data: (data) => _ChartContent(
+          chartData: data,
+          tFinal: tFinal,
+          nickname: profile.nickname,
+        ),
       ),
     );
   }
@@ -43,8 +69,13 @@ class AqiChartSection extends ConsumerWidget {
 class _ChartContent extends StatelessWidget {
   final AqiChartData chartData;
   final double tFinal;
+  final String nickname;
 
-  const _ChartContent({required this.chartData, required this.tFinal});
+  const _ChartContent({
+    required this.chartData,
+    required this.tFinal,
+    required this.nickname,
+  });
 
   static String _timeLabel(DateTime t) {
     final h = t.hour;
@@ -110,7 +141,7 @@ class _ChartContent extends StatelessWidget {
     };
 
     final safeResult = chartData.safeTimeResult(tFinal);
-    final guideText = safeResult.toGuideText();
+    final guideText = safeResult.toGuideText(nickname: nickname);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

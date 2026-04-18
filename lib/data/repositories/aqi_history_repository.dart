@@ -182,16 +182,30 @@ class SafeTimeResult {
   bool get isNotWithin3h => _kind == _SafeTimeKind.notWithin3h;
   bool get isNoData      => _kind == _SafeTimeKind.noData;
 
-  /// Time Guide 문구 반환
-  String toGuideText() {
+  /// Time Guide 문구 반환 — '다정한 물리학자' 톤
+  ///
+  /// [nickname] : 사용자 닉네임 (null이면 이름 없이 출력)
+  String toGuideText({String? nickname}) {
+    final name =
+        (nickname != null && nickname.isNotEmpty) ? '$nickname님' : null;
+
     if (isFound && time != null) {
       final h = time!.hour;
       final m = time!.minute.toString().padLeft(2, '0');
       final period = h < 12 ? '오전' : '오후';
       final displayH = h == 0 ? 12 : (h > 12 ? h - 12 : h);
-      return '$period $displayH:$m부터 마스크를 벗으셔도 좋습니다';
+      final timeStr = '$period $displayH:$m';
+      if (name != null) {
+        return '$name, ${timeStr}이면 공기가 기준치 아래로 내려와요 😊 그때부터 편하게 숨 쉬셔도 됩니다';
+      }
+      return '${timeStr}이면 공기가 맑아져요. 그때부터 마스크를 벗으셔도 좋습니다 😊';
     }
-    if (isNotWithin3h) return '당분간 마스크 착용을 유지해 주세요';
+    if (isNotWithin3h) {
+      if (name != null) {
+        return '$name, 지금은 아직 기준치를 넘고 있어요. 조금만 더 마스크와 함께해 주세요 💙';
+      }
+      return '아직 기준치를 넘고 있어요. 마스크를 유지해 주세요 💙';
+    }
     return ''; // noData: UI에서 숨김
   }
 }
