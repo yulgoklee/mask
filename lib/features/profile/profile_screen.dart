@@ -469,11 +469,16 @@ class _TemporaryStatesSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final activeTypes = temporaryStates.map((s) => s.type).toSet();
 
-    // 여성인 경우 임신 항목을 최상단으로
+    // 임신 항목은 여성 사용자에게만 표시
     final orderedInactive = TemporaryStateType.values
         .where((t) => !activeTypes.contains(t))
+        .where((t) =>
+            t != TemporaryStateType.pregnancy ||
+            profile.gender == 'female' ||
+            profile.gender.isEmpty) // 성별 미선택도 임신 항목 표시
         .toList();
-    if (profile.gender == 'female') {
+    // 여성 또는 성별 미선택 → 임신 항목 맨 위 정렬
+    if (profile.gender == 'female' || profile.gender.isEmpty) {
       orderedInactive.sort((a, b) {
         if (a == TemporaryStateType.pregnancy) return -1;
         if (b == TemporaryStateType.pregnancy) return 1;
@@ -497,10 +502,10 @@ class _TemporaryStatesSection extends ConsumerWidget {
               },
             )),
 
-        // 추가 가능한 상태 (여성은 임신이 맨 위)
+        // 추가 가능한 상태 (여성/미선택은 임신이 맨 위)
         ...orderedInactive.map((type) => _InactiveStateTile(
               type: type,
-              highlight: profile.gender == 'female' &&
+              highlight: (profile.gender == 'female' || profile.gender.isEmpty) &&
                   type == TemporaryStateType.pregnancy,
               onAdd: () => _showAddSheet(context, type),
             )),
@@ -748,9 +753,14 @@ class _BasicInfoSection extends ConsumerWidget {
         _FieldLabel('호흡기 상태'),
         const SizedBox(height: 8),
         _ChipGroup<int>(
-          values: const [0, 1, 2],
+          values: const [0, 1, 2, 3],
           selected: profile.respiratoryStatus,
-          labelOf: (v) => v == 0 ? '건강해요' : v == 1 ? '비염 있어요' : '천식 등 질환',
+          labelOf: (v) => switch (v) {
+            1 => '비염',
+            2 => '천식 등',
+            3 => '비염+천식',
+            _ => '건강해요',
+          },
           onSelect: (v) => _save(ref, profile.copyWith(respiratoryStatus: v)),
         ),
         const SizedBox(height: 20),

@@ -164,8 +164,8 @@ class DustCalculator {
   // ── 개인화 맥락 한 줄 ─────────────────────────────────────
 
   static String? _buildPersonalNote(UserProfile profile) {
-    if (profile.respiratoryStatus >= 2) return '호흡기 질환 보유자 기준 적용';
-    if (profile.respiratoryStatus == 1) return '비염 보유자 기준 적용';
+    if (profile.respiratoryStatus & 2 != 0) return '호흡기 질환 보유자 기준 적용';
+    if (profile.respiratoryStatus & 1 != 0) return '비염 보유자 기준 적용';
     if (profile.isVulnerableAge) {
       return '${profile.age}세 민감 연령 기준 적용';
     }

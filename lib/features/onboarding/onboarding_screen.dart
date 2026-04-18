@@ -48,6 +48,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // ── Q7: 피부 시술 ────────────────────────────────────────────
   bool _recentSkinTreatment = false;
+  DateTime? _skinTreatmentDate;
 
   // ── Q8: 야외 활동량 ──────────────────────────────────────────
   int _outdoorMinutes = 1;
@@ -69,14 +70,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   /// 실제 렌더할 페이지 위젯 목록
   List<Widget> get _pages => [
         DiagQ1Nickname(
+          questionNumber: 1,
           initialValue: _nickname,
           onChanged: (v) => setState(() => _nickname = v),
         ),
         DiagQ2BirthYear(
+          questionNumber: 2,
           initialValue: _birthYear,
           onChanged: (v) => setState(() => _birthYear = v),
         ),
         DiagQ3Gender(
+          questionNumber: 3,
           value: _genderStr,
           onChanged: (v) => setState(() {
             _genderStr = v;
@@ -85,33 +89,46 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           }),
         ),
         DiagQ4Respiratory(
+          questionNumber: 4,
           value: _respiratoryStatus,
           onChanged: (v) => setState(() => _respiratoryStatus = v),
         ),
         DiagQ5Sensitivity(
+          questionNumber: 5,
           value: _sensitivityLevel,
           onChanged: (v) => setState(() => _sensitivityLevel = v),
         ),
         // Q6: male이 아닐 때만 포함 (남성 선택 시 페이지 자체가 사라짐)
         if (_includeQ6)
           DiagQ6Pregnancy(
+            questionNumber: 6,
             value: _isPregnant,
             genderStr: _genderStr,
             onChanged: (v) => setState(() => _isPregnant = v),
           ),
         DiagQ7SkinTreatment(
+          questionNumber: _includeQ6 ? 7 : 6,
           value: _recentSkinTreatment,
-          onChanged: (v) => setState(() => _recentSkinTreatment = v),
+          onChanged: (v) => setState(() {
+            _recentSkinTreatment = v;
+            if (!v) _skinTreatmentDate = null;
+          }),
+          treatmentDate: _skinTreatmentDate,
+          onTreatmentDateChanged: (d) =>
+              setState(() => _skinTreatmentDate = d),
         ),
         DiagQ8Outdoor(
+          questionNumber: _includeQ6 ? 8 : 7,
           value: _outdoorMinutes,
           onChanged: (v) => setState(() => _outdoorMinutes = v),
         ),
         DiagQ9ActivityTags(
+          questionNumber: _includeQ6 ? 9 : 8,
           value: _activityTags,
           onChanged: (v) => setState(() => _activityTags = v),
         ),
         DiagQ10Discomfort(
+          questionNumber: _includeQ6 ? 10 : 9,
           value: _discomfortLevel,
           onChanged: (v) => setState(() => _discomfortLevel = v),
         ),
@@ -163,11 +180,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final profile = _buildProfile();
 
     try {
-      // 프로필만 저장 — completeOnboarding()은 notification_time_screen에서 호출
       await ref.read(profileProvider.notifier).saveProfile(profile);
-    } catch (_) {
-      // 저장 실패해도 다음 화면으로 진행
-    }
+      // Q1-Q10 완료 시점에 온보딩 완료 표시 — 중간 종료 후 재시작 시 처음부터 시작하는 문제 방지
+      await ref.read(profileRepositoryProvider).completeOnboarding();
+      // 튜토리얼도 완료 처리 — 재시작 시 튜토리얼 → 온보딩 루프 방지
+      await ref.read(profileRepositoryProvider).completeTutorial();
+    } catch (_) {}
 
     await _analytics.logEvent(name: 'onboarding_completed');
 
@@ -183,6 +201,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       // (스킵해도 Q1~현재까지 입력한 값은 보존)
       await ref.read(profileProvider.notifier).saveProfile(_buildProfile());
       await ref.read(profileRepositoryProvider).completeOnboarding();
+      // 스킵 시에도 튜토리얼 완료 처리 — 재시작 시 앱 소개 루프 방지
+      await ref.read(profileRepositoryProvider).completeTutorial();
     } catch (_) {}
     if (mounted) {
       Navigator.of(context).pushReplacementNamed('/location_setup',
@@ -195,11 +215,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   UserProfile _buildProfile() => UserProfile(
         nickname:            _nickname ?? '',
         birthYear:           _birthYear ?? 1990,
-        gender:              _genderStr ?? 'male',
+        gender:              _genderStr ?? '', // 미선택 시 빈 문자열 (male 오분류 방지)
         respiratoryStatus:   _respiratoryStatus,
         sensitivityLevel:    _sensitivityLevel,
         isPregnant:          _isPregnant,
         recentSkinTreatment: _recentSkinTreatment,
+        skinTreatmentDate:   _recentSkinTreatment
+                         ? (_skinTreatmentDate ?? DateTime.now())
+                         : null,
         outdoorMinutes:      _outdoorMinutes,
         activityTags:        _activityTags,
         discomfortLevel:     _discomfortLevel,

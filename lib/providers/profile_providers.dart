@@ -154,8 +154,12 @@ class NotificationSettingNotifier extends StateNotifier<NotificationSetting> {
   Future<void> update(NotificationSetting setting) async {
     await _repo.saveNotificationSetting(setting);
     state = setting;
-    unawaited(_runImmediateCheck());
-    BackgroundService.runOnce();
+    // 온보딩 완료된 사용자에게만 즉시 백그라운드 체크 실행
+    // (온보딩 중 알림 시간 저장 시 불필요한 조기 실행 방지)
+    if (await _repo.isOnboardingCompleted()) {
+      unawaited(_runImmediateCheck());
+      BackgroundService.runOnce();
+    }
   }
 
   Future<void> _runImmediateCheck() async {

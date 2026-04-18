@@ -39,26 +39,32 @@ class _OnboardingCompleteScreenState
     super.dispose();
   }
 
+  /// 24h 시간 → "오전/오후 H:MM" 형식
+  static String _formatTime(int hour, int minute) {
+    final period = hour < 12 ? '오전' : '오후';
+    final h = hour == 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    return '$period $h:${minute.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
     final setting = ref.watch(notificationSettingProvider);
+    // notification_time에서 시작된 dustData 패치를 홈 도달까지 살려둠
+    ref.watch(dustDataProvider);
     final name = profile.displayName;
 
     // 첫 번째로 켜진 알림 시간 표시 (우선순위: 외출 전 → 전날 예보 → 귀가 후)
     String? firstAlertTime;
     String? firstAlertLabel;
     if (setting.morningAlertEnabled) {
-      firstAlertTime =
-          '${setting.morningAlertHour.toString().padLeft(2, '0')}:${setting.morningAlertMinute.toString().padLeft(2, '0')}';
+      firstAlertTime = _formatTime(setting.morningAlertHour, setting.morningAlertMinute);
       firstAlertLabel = '외출 전';
     } else if (setting.eveningForecastEnabled) {
-      firstAlertTime =
-          '${setting.eveningForecastHour.toString().padLeft(2, '0')}:${setting.eveningForecastMinute.toString().padLeft(2, '0')}';
+      firstAlertTime = _formatTime(setting.eveningForecastHour, setting.eveningForecastMinute);
       firstAlertLabel = '전날 예보';
     } else if (setting.eveningReturnEnabled) {
-      firstAlertTime =
-          '${setting.eveningReturnHour.toString().padLeft(2, '0')}:${setting.eveningReturnMinute.toString().padLeft(2, '0')}';
+      firstAlertTime = _formatTime(setting.eveningReturnHour, setting.eveningReturnMinute);
       firstAlertLabel = '귀가 후';
     }
 
@@ -128,8 +134,13 @@ class _OnboardingCompleteScreenState
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () => Navigator.of(context)
-                            .pushReplacementNamed('/home'),
+                        onPressed: () {
+                          // 만약 패치가 아직 안 됐으면 강제 재시작
+                          if (ref.read(dustDataProvider).hasValue == false) {
+                            ref.invalidate(dustDataProvider);
+                          }
+                          Navigator.of(context).pushReplacementNamed('/home');
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,

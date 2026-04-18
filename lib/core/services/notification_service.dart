@@ -291,10 +291,10 @@ class NotificationService {
   Future<void> showSimulationNotification({String voice = 'friendly'}) async {
     final isAnalytical = voice == 'analytical';
     final title = isAnalytical
-        ? '📊 PM2.5 32μg/m³ — KF80 권장'
+        ? '😷 마스크 착용 — PM2.5 32μg/m³'
         : '😷 오늘 마스크 챙겨가세요!';
     final body = isAnalytical
-        ? '현재 농도가 개인 임계치(T_final)의 91%입니다. KF80 이상 착용을 권장합니다.'
+        ? 'KF80 이상. 외출 전 반드시 착용하세요.'
         : '오늘 미세먼지가 조금 있어요. 가볍게 KF80 마스크 하나 챙겨가면 안심이 될 거예요 :)';
     await showImmediateNotification(
       id: simulationAlertId,
@@ -527,8 +527,8 @@ class NotificationService {
   // ── 내부 헬퍼 ─────────────────────────────────────────────
 
   static String? _personalNote(UserProfile profile) {
-    if (profile.respiratoryStatus >= 2) return '호흡기 질환 기준으로 맞춤 관리 중이에요';
-    if (profile.respiratoryStatus == 1) return '비염 기준으로 맞춤 관리 중이에요';
+    if (profile.respiratoryStatus & 2 != 0) return '호흡기 질환 기준으로 맞춤 관리 중이에요';
+    if (profile.respiratoryStatus & 1 != 0) return '비염 기준으로 맞춤 관리 중이에요';
     if (profile.isVulnerableAge) return '${profile.age}세 민감 연령 기준으로 관리 중이에요';
     if (profile.sensitivityLevel == 2) return '고민감도 기준으로 맞춤 관리 중이에요';
     return null;

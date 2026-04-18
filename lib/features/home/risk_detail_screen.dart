@@ -376,17 +376,19 @@ class _RespiratoryTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final labels = ['건강해요', '비염 있어요', '천식 등 질환'];
+    // 비트플래그: 0=건강, 1=비염, 2=천식, 3=비염+천식
+    const rows = [(0, '건강해요'), (1, '비염 있어요'), (2, '천식 등 질환'), (3, '비염+천식')];
     return _TableCard(
       child: Column(
-        children: List.generate(labels.length, (i) {
+        children: rows.map((r) {
+          final (val, label) = r;
           return _TableRow(
-            label: labels[i],
-            level: _calcRisk(i),
-            isMe: i == myProfile.respiratoryStatus,
-            isLast: i == labels.length - 1,
+            label: label,
+            level: _calcRisk(val),
+            isMe: val == myProfile.respiratoryStatus,
+            isLast: val == rows.last.$1,
           );
-        }),
+        }).toList(),
       ),
     );
   }

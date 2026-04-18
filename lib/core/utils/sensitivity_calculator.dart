@@ -69,24 +69,36 @@ class SensitivityCalculator {
   // ── 공개 가중치 헬퍼 (v2 필드 기반) ──────────────────────
   // onboarding_result_screen, result_screen 등에서 사용
 
-  /// 호흡기 상태 가중치
+  /// 호흡기 상태 가중치 (비트플래그 — 비염+천식 중복 가능)
   static double conditionWeight(UserProfile p) {
-    if (p.respiratoryStatus == 2) return 0.3;
-    if (p.respiratoryStatus == 1) return 0.15;
-    return 0.0;
+    double w = 0.0;
+    if (p.respiratoryStatus & 2 != 0) w += 0.30; // 천식 (bit 1)
+    if (p.respiratoryStatus & 1 != 0) w += 0.15; // 비염 (bit 0)
+    return w;
   }
 
-  /// 야외 활동량 가중치
+  /// Q9 활동 태그 가중치 (최대 0.10)
+  static double activityTagWeight(UserProfile p) {
+    double w = 0.0;
+    for (final tag in p.activityTags) {
+      w += (tag == 'exercise' || tag == 'delivery') ? 0.05 : 0.03;
+    }
+    return w.clamp(0.0, 0.10);
+  }
+
+  /// 야외 활동량 가중치 (Q8 시간 + Q9 활동태그 합산, 최대 0.20)
   static double activityWeight(UserProfile p) {
-    if (p.outdoorMinutes == 2) return 0.2;
-    if (p.outdoorMinutes == 1) return 0.1;
-    return 0.0;
+    double w = 0.0;
+    if (p.outdoorMinutes == 2)      w += 0.10;
+    else if (p.outdoorMinutes == 1) w += 0.05;
+    w += activityTagWeight(p);
+    return w.clamp(0.0, 0.20);
   }
 
   /// 주관적 민감도 가중치
   static double sensitivityWeightFromProfile(UserProfile p) {
-    if (p.sensitivityLevel == 2) return 0.2;
-    if (p.sensitivityLevel == 1) return 0.1;
+    if (p.sensitivityLevel == 2) return 0.10;
+    if (p.sensitivityLevel == 1) return 0.05;
     return 0.0;
   }
 
@@ -94,7 +106,7 @@ class SensitivityCalculator {
   static double specialStateWeight(UserProfile p) {
     double w = 0.0;
     if (p.gender == 'female' && p.isPregnant) w += 0.30;
-    if (p.recentSkinTreatment)               w += 0.25;
+    if (p.isSkinTreatmentActive)              w += 0.25;
     return w;
   }
 
