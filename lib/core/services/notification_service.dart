@@ -8,7 +8,10 @@ import '../../data/datasources/defense_repository.dart';
 import '../../data/datasources/feedback_repository.dart';
 import '../../data/models/defense_record.dart';
 import '../../data/models/notification_feedback.dart';
+import '../../data/models/notification_log.dart';
 import '../../data/models/user_profile.dart';
+import '../database/local_database.dart';
+import 'notification_deep_link.dart';
 
 /// 배경 isolate: 알림 액션 버튼 탭 처리
 ///
@@ -31,7 +34,7 @@ void onNotificationActionBackground(NotificationResponse response) async {
     final pm25  = prefs.getInt(NotificationService.prefLastNotifPm25) ?? 0;
 
     if (response.actionId == NotificationService.actionAcknowledge) {
-      // ── "챙겼어요" ──────────────────────────────────────────
+      // ── "마스크 챙겼어요" ─────────────────────────────────────
       if (pm25 > 0) {
         final maskType =
             prefs.getString(NotificationService.prefLastNotifMaskType) ??
@@ -39,6 +42,16 @@ void onNotificationActionBackground(NotificationResponse response) async {
         final record = DefenseRecord.create(pm25: pm25, maskType: maskType);
         await DefenseRepository.addRecordToPrefs(prefs, record);
       }
+      // SQLite notification_log: UserAction.maskWorn 업데이트
+      try {
+        final logId = NotificationDeepLink.getLastLogId(prefs);
+        if (logId != null) {
+          final db = LocalDatabase();
+          await db.updateUserAction(logId, UserAction.maskWorn);
+          await db.close();
+        }
+      } catch (_) {}
+
       // 피드백 기록 (pm25 == 0이어도 응답 의사는 기록)
       final pending = _loadPendingNotifId(prefs);
       await FeedbackRepository.addFeedbackToPrefs(
@@ -50,6 +63,8 @@ void onNotificationActionBackground(NotificationResponse response) async {
           type: FeedbackType.acknowledged,
         ),
       );
+      // Care 탭 딥링크 예약
+      await NotificationDeepLink.setPendingCareTab();
     } else if (response.actionId == NotificationService.actionSnoozeToday) {
       // ── "오늘 끄기" ─────────────────────────────────────────
       final today = _dateKey(DateTime.now());
@@ -65,10 +80,71 @@ void onNotificationActionBackground(NotificationResponse response) async {
           type: FeedbackType.snoozed,
         ),
       );
+    } else {
+      // ── 알림 본체 탭 (actionId == null) → appOpened ─────────
+      // SQLite notification_log: UserAction.appOpened 업데이트
+      try {
+        final logId = NotificationDeepLink.getLastLogId(prefs);
+        if (logId != null) {
+          final db = LocalDatabase();
+          await db.updateUserAction(logId, UserAction.appOpened);
+          await db.close();
+        }
+      } catch (_) {}
+      // Care 탭 딥링크 예약
+      await NotificationDeepLink.setPendingCareTab();
     }
   } catch (_) {
     // 배경 핸들러 오류는 조용히 무시 (앱 충돌 방지)
   }
+}
+
+/// 포그라운드 알림 응답 핸들러 (앱 실행 중 알림 탭)
+///
+/// background 핸들러와 동일하게 딥링크를 예약한다.
+/// top-level 함수여야 flutter_local_notifications 콜백으로 등록 가능.
+@pragma('vm:entry-point')
+void onNotificationResponseForeground(NotificationResponse response) {
+  // void async 함수는 await 불가 → 비동기 fire-and-forget
+  _handleNotificationResponse(response);
+}
+
+Future<void> _handleNotificationResponse(NotificationResponse response) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final pm25 = prefs.getInt(NotificationService.prefLastNotifPm25) ?? 0;
+
+    if (response.actionId == NotificationService.actionAcknowledge) {
+      // "마스크 챙겼어요" — background 핸들러와 동일 처리
+      if (pm25 > 0) {
+        final maskType =
+            prefs.getString(NotificationService.prefLastNotifMaskType) ??
+                'KF80';
+        final record = DefenseRecord.create(pm25: pm25, maskType: maskType);
+        await DefenseRepository.addRecordToPrefs(prefs, record);
+      }
+      try {
+        final logId = NotificationDeepLink.getLastLogId(prefs);
+        if (logId != null) {
+          final db = LocalDatabase();
+          await db.updateUserAction(logId, UserAction.maskWorn);
+          await db.close();
+        }
+      } catch (_) {}
+      await NotificationDeepLink.setPendingCareTab();
+    } else {
+      // 알림 본체 탭 → appOpened + Care 탭 이동
+      try {
+        final logId = NotificationDeepLink.getLastLogId(prefs);
+        if (logId != null) {
+          final db = LocalDatabase();
+          await db.updateUserAction(logId, UserAction.appOpened);
+          await db.close();
+        }
+      } catch (_) {}
+      await NotificationDeepLink.setPendingCareTab();
+    }
+  } catch (_) {}
 }
 
 String? _loadPendingNotifId(SharedPreferences prefs) {
@@ -133,11 +209,11 @@ class NotificationService {
 
   // ── Android 액션 버튼 프리셋 ──────────────────────────────────
 
-  /// 마스크 알림용 액션: [챙겼어요] [오늘 끄기]
+  /// 마스크 알림용 액션: [마스크 챙겼어요] [오늘 끄기]
   static final List<AndroidNotificationAction> maskActions = [
     const AndroidNotificationAction(
       actionAcknowledge,
-      '챙겼어요 ✓',
+      '마스크 챙겼어요 ✓',
       showsUserInterface: false,
     ),
     const AndroidNotificationAction(
@@ -192,7 +268,7 @@ class NotificationService {
         DarwinNotificationCategory(
           _categoryMask,
           actions: [
-            DarwinNotificationAction.plain(actionAcknowledge, '챙겼어요 ✓'),
+            DarwinNotificationAction.plain(actionAcknowledge, '마스크 챙겼어요 ✓'),
             DarwinNotificationAction.plain(
               actionSnoozeToday,
               '오늘 끄기',
@@ -214,6 +290,7 @@ class NotificationService {
         android: androidSettings,
         iOS: iosSettings,
       ),
+      onDidReceiveNotificationResponse: onNotificationResponseForeground,
       onDidReceiveBackgroundNotificationResponse:
           onNotificationActionBackground,
     );
@@ -247,6 +324,7 @@ class NotificationService {
     List<AndroidNotificationAction>? actions,
     String? iosCategory,
     String? smallIcon,
+    String payload = 'care',  // 탭 시 Care 탭으로 이동
   }) async {
     await _plugin.show(
       id,
@@ -271,6 +349,7 @@ class NotificationService {
           categoryIdentifier: iosCategory,
         ),
       ),
+      payload: payload,
     );
   }
 

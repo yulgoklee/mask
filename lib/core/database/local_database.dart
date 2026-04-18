@@ -101,9 +101,10 @@ class LocalDatabase {
 
   // ── Notification Logs ────────────────────────────────────────
 
-  Future<void> insertNotificationLog(NotificationLog log) async {
+  /// 알림 로그 삽입 — 반환값: SQLite row id (background handler 연결용)
+  Future<int> insertNotificationLog(NotificationLog log) async {
     final db = await database;
-    await db.insert('notification_logs', log.toMap());
+    return db.insert('notification_logs', log.toMap());
   }
 
   /// 알림 발송 후 사용자 액션 업데이트 (마스크 챙김 / 앱 열기)
