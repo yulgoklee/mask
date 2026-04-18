@@ -31,6 +31,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   // ── Q1: 닉네임 ───────────────────────────────────────────────
   String? _nickname;
 
+  // ── QLocation: 관심 지역 ────────────────────────────────────
+  String _homeStationName = '';
+  String _officeStationName = '';
+
   // ── Q2: 출생연도 ─────────────────────────────────────────────
   int? _birthYear;
 
@@ -59,6 +63,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   // ── Q10: 마스크 불편도 ───────────────────────────────────────
   int _discomfortLevel = 1;
 
+  // ── 저장 중 상태 (중복 탭 방지) ─────────────────────────────
+  bool _saving = false;
+
   // ── 동적 페이지 목록 ─────────────────────────────────────────
   //  Q6는 female 또는 성별 미선택 시만 포함
   //  male 선택 시 Q6 완전 제거 → 9페이지
@@ -68,46 +75,54 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   bool get _includeQ6 => _genderStr != 'male';
 
   /// 실제 렌더할 페이지 위젯 목록
+  // Q6 포함 시 전체 11문항, 미포함(male) 시 10문항
+  // 번호 기준: Q1=닉네임, Q2=관심지역, Q3=출생연도, Q4=성별, Q5=호흡기,
+  //            Q6=민감도, Q7=임신(조건부), Q8=피부시술, Q9=야외, Q10=태그, Q11=불편도
   List<Widget> get _pages => [
         DiagQ1Nickname(
           questionNumber: 1,
           initialValue: _nickname,
           onChanged: (v) => setState(() => _nickname = v),
         ),
-        DiagQ2BirthYear(
+        DiagQLocation(
           questionNumber: 2,
+          homeStation: _homeStationName,
+          officeStation: _officeStationName,
+          onHomeChanged: (v) => setState(() => _homeStationName = v),
+          onOfficeChanged: (v) => setState(() => _officeStationName = v),
+        ),
+        DiagQ2BirthYear(
+          questionNumber: 3,
           initialValue: _birthYear,
           onChanged: (v) => setState(() => _birthYear = v),
         ),
         DiagQ3Gender(
-          questionNumber: 3,
+          questionNumber: 4,
           value: _genderStr,
           onChanged: (v) => setState(() {
             _genderStr = v;
-            // 남성 선택 시 임신 상태 해제
             if (v == 'male') _isPregnant = false;
           }),
         ),
         DiagQ4Respiratory(
-          questionNumber: 4,
+          questionNumber: 5,
           value: _respiratoryStatus,
           onChanged: (v) => setState(() => _respiratoryStatus = v),
         ),
         DiagQ5Sensitivity(
-          questionNumber: 5,
+          questionNumber: 6,
           value: _sensitivityLevel,
           onChanged: (v) => setState(() => _sensitivityLevel = v),
         ),
-        // Q6: male이 아닐 때만 포함 (남성 선택 시 페이지 자체가 사라짐)
         if (_includeQ6)
           DiagQ6Pregnancy(
-            questionNumber: 6,
+            questionNumber: 7,
             value: _isPregnant,
             genderStr: _genderStr,
             onChanged: (v) => setState(() => _isPregnant = v),
           ),
         DiagQ7SkinTreatment(
-          questionNumber: _includeQ6 ? 7 : 6,
+          questionNumber: _includeQ6 ? 8 : 7,
           value: _recentSkinTreatment,
           onChanged: (v) => setState(() {
             _recentSkinTreatment = v;
@@ -118,17 +133,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               setState(() => _skinTreatmentDate = d),
         ),
         DiagQ8Outdoor(
-          questionNumber: _includeQ6 ? 8 : 7,
+          questionNumber: _includeQ6 ? 9 : 8,
           value: _outdoorMinutes,
           onChanged: (v) => setState(() => _outdoorMinutes = v),
         ),
         DiagQ9ActivityTags(
-          questionNumber: _includeQ6 ? 9 : 8,
+          questionNumber: _includeQ6 ? 10 : 9,
           value: _activityTags,
           onChanged: (v) => setState(() => _activityTags = v),
         ),
         DiagQ10Discomfort(
-          questionNumber: _includeQ6 ? 10 : 9,
+          questionNumber: _includeQ6 ? 11 : 10,
           value: _discomfortLevel,
           onChanged: (v) => setState(() => _discomfortLevel = v),
         ),
@@ -177,15 +192,30 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Future<void> _completeOnboarding() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+
     final profile = _buildProfile();
+    bool saved = false;
 
     try {
       await ref.read(profileProvider.notifier).saveProfile(profile);
-      // Q1-Q10 완료 시점에 온보딩 완료 표시 — 중간 종료 후 재시작 시 처음부터 시작하는 문제 방지
       await ref.read(profileRepositoryProvider).completeOnboarding();
-      // 튜토리얼도 완료 처리 — 재시작 시 튜토리얼 → 온보딩 루프 방지
       await ref.read(profileRepositoryProvider).completeTutorial();
-    } catch (_) {}
+      saved = true;
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('저장 중 오류가 발생했어요. 다시 시도해주세요.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+
+    if (mounted) setState(() => _saving = false);
+    if (!saved) return; // 저장 실패 시 이동하지 않음
 
     await _analytics.logEvent(name: 'onboarding_completed');
 
@@ -195,18 +225,34 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Future<void> _skipOnboarding() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+
     await _analytics.logEvent(name: 'onboarding_skipped');
+    bool saved = false;
+
     try {
-      // 지금까지 입력한 데이터를 기본값으로 채워 저장
-      // (스킵해도 Q1~현재까지 입력한 값은 보존)
       await ref.read(profileProvider.notifier).saveProfile(_buildProfile());
       await ref.read(profileRepositoryProvider).completeOnboarding();
-      // 스킵 시에도 튜토리얼 완료 처리 — 재시작 시 앱 소개 루프 방지
       await ref.read(profileRepositoryProvider).completeTutorial();
-    } catch (_) {}
+      saved = true;
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('저장 중 오류가 발생했어요. 다시 시도해주세요.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+
+    if (mounted) setState(() => _saving = false);
+    if (!saved) return;
+
     if (mounted) {
       Navigator.of(context).pushReplacementNamed('/location_setup',
-          arguments: true); // 온보딩 스킵 → 플로우 유지
+          arguments: true);
     }
   }
 
@@ -215,7 +261,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   UserProfile _buildProfile() => UserProfile(
         nickname:            _nickname ?? '',
         birthYear:           _birthYear ?? 1990,
-        gender:              _genderStr ?? '', // 미선택 시 빈 문자열 (male 오분류 방지)
+        gender:              _genderStr ?? '',
         respiratoryStatus:   _respiratoryStatus,
         sensitivityLevel:    _sensitivityLevel,
         isPregnant:          _isPregnant,
@@ -226,6 +272,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         outdoorMinutes:      _outdoorMinutes,
         activityTags:        _activityTags,
         discomfortLevel:     _discomfortLevel,
+        homeStationName:     _homeStationName,
+        officeStationName:   _officeStationName,
       );
 
   // ── 빌드 ─────────────────────────────────────────────────────
@@ -234,7 +282,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget build(BuildContext context) {
     final pages = _pages; // getter 한 번만 호출
 
-    return Scaffold(
+    return PopScope(
+      canPop: false, // 항상 직접 처리 — Q1에서 뒤로가기 차단, Q2+에서는 이전 질문으로
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _currentPage > 0) _prevPage();
+      },
+      child: Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
@@ -319,7 +372,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 width: double.infinity,
                 height: 54,
                 child: ElevatedButton(
-                  onPressed: _nextPage,
+                  onPressed: _saving ? null : _nextPage,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -343,6 +396,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ],
         ),
       ),
-    );
+    ),   // Scaffold
+    );   // PopScope
   }
 }

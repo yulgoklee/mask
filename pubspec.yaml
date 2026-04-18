@@ -17,6 +17,8 @@ dependencies:
 
   # 로컬 저장
   shared_preferences: ^2.2.3
+  sqflite: ^2.3.3+1
+  path: ^1.9.0
 
   # 알림
   flutter_local_notifications: ^17.2.2

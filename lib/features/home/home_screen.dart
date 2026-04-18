@@ -16,6 +16,7 @@ import '../../widgets/dust_gauge_widget.dart';
 import '../location_setup/location_setup_screen.dart';
 import 'dust_detail_screen.dart';
 import 'dust_forecast_detail_screen.dart';
+import 'aqi_chart_section.dart';
 import 'risk_detail_screen.dart';
 
 final _analytics = FirebaseAnalytics.instance;
@@ -125,6 +126,13 @@ class HomeScreen extends ConsumerWidget {
                               MaterialPageRoute(
                                   builder: (_) => const RiskDetailScreen()),
                             ),
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          // ── PM2.5 추이 Area Chart ───────────────
+                          AqiChartSection(
+                            forecastGrade: dust.pm25Grade ?? '보통',
                           ),
 
                           const SizedBox(height: 12),

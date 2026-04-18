@@ -74,10 +74,11 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _selectedIndex = 0;
 
+  // 탭 순서: 케어(0) / 기록(1) / 프로필(2)
+  // 알림 설정은 프로필 탭 내부에서 접근
   static const _screens = [
     HomeScreen(),
     ReportScreen(),
-    NotificationScreen(),
     ProfileScreen(),
   ];
 
@@ -95,24 +96,19 @@ class _MainShellState extends State<MainShell> {
         indicatorColor: AppColors.primaryLight,
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home, color: AppColors.primary),
-            label: '홈',
+            icon: Icon(Icons.shield_moon_outlined),
+            selectedIcon: Icon(Icons.shield_moon, color: AppColors.primary),
+            label: '케어',
           ),
           NavigationDestination(
-            icon: Icon(Icons.shield_outlined),
-            selectedIcon: Icon(Icons.shield, color: AppColors.primary),
-            label: '리포트',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.notifications_outlined),
-            selectedIcon: Icon(Icons.notifications, color: AppColors.primary),
-            label: '알림 설정',
+            icon: Icon(Icons.bar_chart_outlined),
+            selectedIcon: Icon(Icons.bar_chart, color: AppColors.primary),
+            label: '기록',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),
             selectedIcon: Icon(Icons.person, color: AppColors.primary),
-            label: '내 정보',
+            label: '프로필',
           ),
         ],
       ),

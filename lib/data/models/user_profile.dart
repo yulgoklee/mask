@@ -1,3 +1,5 @@
+import '../../core/engine/threshold_engine.dart';
+
 /// 활동 태그 상수
 class ActivityTag {
   static const String commute   = 'commute';   // 출퇴근
@@ -25,6 +27,10 @@ class UserProfile {
   final List<String> activityTags;    // Q9 활동 태그 목록
   final int discomfortLevel;          // Q10 0=안느낌 1=보통 2=많이불편
 
+  // ── 관심 지역 (Stage 3 iOS Fallback용) ──────────────────────
+  final String homeStationName;       // 집 근처 측정소 이름
+  final String officeStationName;     // 회사 근처 측정소 이름
+
   const UserProfile({
     required this.nickname,
     required this.birthYear,
@@ -37,6 +43,8 @@ class UserProfile {
     required this.outdoorMinutes,
     required this.activityTags,
     required this.discomfortLevel,
+    this.homeStationName = '',
+    this.officeStationName = '',
   });
 
   // ── 계산 속성 ──────────────────────────────────────────────
@@ -96,8 +104,12 @@ class UserProfile {
     return s.clamp(0.1, 0.6);
   }
 
-  /// 최종 PM2.5 알림 임계치 (μg/m³)
-  double get tFinal => 35.0 * (1.0 - sensitivityIndex);
+  /// 최종 PM2.5 알림 임계치 (μg/m³) — ThresholdEngine v2
+  ///
+  /// 공식: T_base × (1 - W_health - W_lifestyle), 하한 15
+  /// W_health  : 건강 상태 최댓값 1개 (임신 0.35 > 시술 0.30 > 천식 0.25 > 비염 0.20)
+  /// W_lifestyle: 야외 활동 시간 (3h+ 0.15, 1~3h 0.05)
+  double get tFinal => const ThresholdEngine().computeTFinal(this);
 
   /// 페르소나 레이블
   String get personaLabel {
@@ -142,21 +154,25 @@ class UserProfile {
     int? outdoorMinutes,
     List<String>? activityTags,
     int? discomfortLevel,
+    String? homeStationName,
+    String? officeStationName,
   }) {
     return UserProfile(
-      nickname:            nickname           ?? this.nickname,
-      birthYear:           birthYear          ?? this.birthYear,
-      gender:              gender             ?? this.gender,
-      respiratoryStatus:   respiratoryStatus  ?? this.respiratoryStatus,
-      sensitivityLevel:    sensitivityLevel   ?? this.sensitivityLevel,
-      isPregnant:          isPregnant         ?? this.isPregnant,
+      nickname:            nickname            ?? this.nickname,
+      birthYear:           birthYear           ?? this.birthYear,
+      gender:              gender              ?? this.gender,
+      respiratoryStatus:   respiratoryStatus   ?? this.respiratoryStatus,
+      sensitivityLevel:    sensitivityLevel    ?? this.sensitivityLevel,
+      isPregnant:          isPregnant          ?? this.isPregnant,
       recentSkinTreatment: recentSkinTreatment ?? this.recentSkinTreatment,
       skinTreatmentDate:   clearSkinTreatmentDate
                                ? null
                                : (skinTreatmentDate ?? this.skinTreatmentDate),
-      outdoorMinutes:      outdoorMinutes     ?? this.outdoorMinutes,
-      activityTags:        activityTags       ?? this.activityTags,
-      discomfortLevel:     discomfortLevel    ?? this.discomfortLevel,
+      outdoorMinutes:      outdoorMinutes      ?? this.outdoorMinutes,
+      activityTags:        activityTags        ?? this.activityTags,
+      discomfortLevel:     discomfortLevel     ?? this.discomfortLevel,
+      homeStationName:     homeStationName     ?? this.homeStationName,
+      officeStationName:   officeStationName   ?? this.officeStationName,
     );
   }
 
@@ -174,6 +190,8 @@ class UserProfile {
         'outdoorMinutes':      outdoorMinutes,
         'activityTags':        activityTags,
         'discomfortLevel':     discomfortLevel,
+        'homeStationName':     homeStationName,
+        'officeStationName':   officeStationName,
       };
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
@@ -194,6 +212,8 @@ class UserProfile {
       activityTags:        (json['activityTags'] as List<dynamic>?)
                                ?.cast<String>()                   ?? d.activityTags,
       discomfortLevel:     json['discomfortLevel']    as int?     ?? d.discomfortLevel,
+      homeStationName:     json['homeStationName']    as String?  ?? d.homeStationName,
+      officeStationName:   json['officeStationName']  as String?  ?? d.officeStationName,
     );
   }
 }

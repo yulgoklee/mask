@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/database/local_database.dart';
+import '../core/engine/threshold_config.dart';
+import '../core/engine/threshold_engine.dart';
 import '../core/services/geolocator_gps_service.dart';
 import '../core/services/gps_service.dart';
 import '../core/services/location_service.dart';
@@ -26,4 +29,21 @@ final locationServiceProvider = Provider<LocationService>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   final gps = ref.watch(gpsServiceProvider);
   return LocationService(prefs, gps);
+});
+
+/// SQLite 로컬 DB — 앱 전역 싱글톤
+final localDatabaseProvider = Provider<LocalDatabase>((ref) {
+  final db = LocalDatabase();
+  ref.onDispose(db.close);
+  return db;
+});
+
+/// ThresholdEngine — 기본 설정으로 초기화 (향후 Remote Config 연동 시 교체)
+final thresholdConfigProvider = Provider<ThresholdConfig>(
+  (_) => ThresholdConfig.defaults,
+);
+
+final thresholdEngineProvider = Provider<ThresholdEngine>((ref) {
+  final config = ref.watch(thresholdConfigProvider);
+  return ThresholdEngine(config: config);
 });
