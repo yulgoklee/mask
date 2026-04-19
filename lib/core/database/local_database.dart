@@ -177,6 +177,22 @@ class LocalDatabase {
     return rows.map(NotificationLog.fromMap).toList();
   }
 
+  /// 가장 최근 미처리(none) 알림 조회 — 딥링크 충돌 해결용
+  ///
+  /// 여러 알림이 연속 발송됐을 때 유저 액션을 가장 최신 알림에 귀속시킨다.
+  Future<NotificationLog?> getLatestNoneLog() async {
+    final db = await database;
+    final rows = await db.query(
+      'notification_logs',
+      where: 'user_action = ?',
+      whereArgs: [UserAction.none.name],
+      orderBy: 'triggered_at DESC',
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return NotificationLog.fromMap(rows.first);
+  }
+
   /// 최근 발송된 알림 조회 (도배 방지 로직용)
   Future<NotificationLog?> getLastNotification() async {
     final db = await database;

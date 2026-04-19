@@ -12,8 +12,10 @@ import 'app.dart';
 import 'core/database/local_database.dart';
 import 'core/services/air_korea_service.dart';
 import 'core/services/aqi_polling_service.dart';
+import 'core/services/notification_deep_link.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/workmanager_push_scheduler.dart';
+import 'data/models/notification_log.dart';
 import 'firebase_options.dart';
 import 'providers/providers.dart';
 
@@ -53,6 +55,30 @@ void main() async {
     // 알림 서비스 초기화
     final notifService = NotificationService();
     await notifService.initialize();
+
+    // 킬드 상태에서 알림 탭으로 앱이 실행된 경우 딥링크 처리
+    try {
+      final launchDetails = await notifService.getAppLaunchDetails();
+      if (launchDetails?.didNotificationLaunchApp == true) {
+        final response = launchDetails!.notificationResponse;
+        if (response != null && response.actionId == null) {
+          final db = LocalDatabase();
+          final log = await db.getLatestNoneLog();
+          if (log?.id != null) {
+            await db.updateUserAction(log!.id!, UserAction.appOpened);
+            final dlType = log.notificationType == NotificationType.safeEntry
+                ? 'relief'
+                : log.notificationType == NotificationType.dangerEntry
+                    ? 'risk'
+                    : 'scheduled';
+            await NotificationDeepLink.setPendingPayload(type: dlType, logId: log.id);
+          } else {
+            await NotificationDeepLink.setPendingPayload(type: 'scheduled');
+          }
+          await db.close();
+        }
+      }
+    } catch (_) {}
 
     // 알림 권한 요청 — 온보딩 완료된 기존 사용자만
     // 신규 사용자는 permission_screen.dart에서 맥락과 함께 요청
