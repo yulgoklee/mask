@@ -18,12 +18,13 @@ import 'notification_deep_link.dart';
 /// ┌────────────────────────────────────────────────────────┐
 /// │ actionAcknowledge ("챙겼어요")                          │
 /// │  → DefenseRecord 생성 + 저장                            │
+/// │  → SQLite: updateMaskWorn (maskType 스냅샷 포함)         │
 /// │  → FeedbackType.acknowledged 기록                      │
 /// │                                                        │
-/// │ actionSnoozeToday ("오늘 끄기")                         │
-/// │  → prefSnoozedDate 에 오늘 날짜 저장                     │
+/// │ actionSnoozeToday ("나중에 ✋")                          │
+/// │  → SQLite: updateSnoozed (snooze_until = now + 6h)     │
+/// │  → 현재 표시된 알림 전체 취소                             │
 /// │  → FeedbackType.snoozed 기록                           │
-/// │  → 스케줄러가 당일 모든 예약 알림 건너뜀                   │
 /// └────────────────────────────────────────────────────────┘
 ///
 /// top-level 함수 제약: Riverpod 사용 불가 → SharedPreferences 직접 접근.
@@ -42,12 +43,15 @@ void onNotificationActionBackground(NotificationResponse response) async {
         final record = DefenseRecord.create(pm25: pm25, maskType: maskType);
         await DefenseRepository.addRecordToPrefs(prefs, record);
       }
-      // SQLite notification_log: UserAction.maskWorn 업데이트
+      // SQLite: maskWorn + 마스크 종류 스냅샷 기록
       try {
         final logId = NotificationDeepLink.getLastLogId(prefs);
         if (logId != null) {
+          final maskType =
+              prefs.getString(NotificationService.prefLastNotifMaskType) ??
+                  'KF80';
           final db = LocalDatabase();
-          await db.updateUserAction(logId, UserAction.maskWorn);
+          await db.updateMaskWorn(logId, maskType);
           await db.close();
         }
       } catch (_) {}
@@ -66,9 +70,20 @@ void onNotificationActionBackground(NotificationResponse response) async {
       // Care 탭 딥링크 예약
       await NotificationDeepLink.setPendingCareTab();
     } else if (response.actionId == NotificationService.actionSnoozeToday) {
-      // ── "오늘 끄기" ─────────────────────────────────────────
-      final today = _dateKey(DateTime.now());
-      await prefs.setString(NotificationService.prefSnoozedDate, today);
+      // ── "나중에 ✋" — 6시간 스누즈 ─────────────────────────────
+      try {
+        final logId = NotificationDeepLink.getLastLogId(prefs);
+        if (logId != null) {
+          final db = LocalDatabase();
+          await db.updateSnoozed(
+              logId, DateTime.now().add(const Duration(hours: 6)));
+          await db.close();
+        }
+        // 현재 표시된 알림 전체 취소
+        final notifService = NotificationService();
+        await notifService.initialize();
+        await notifService.cancelAll();
+      } catch (_) {}
 
       final pending = _loadPendingNotifId(prefs);
       await FeedbackRepository.addFeedbackToPrefs(
@@ -126,12 +141,29 @@ Future<void> _handleNotificationResponse(NotificationResponse response) async {
       try {
         final logId = NotificationDeepLink.getLastLogId(prefs);
         if (logId != null) {
+          final maskType =
+              prefs.getString(NotificationService.prefLastNotifMaskType) ??
+                  'KF80';
           final db = LocalDatabase();
-          await db.updateUserAction(logId, UserAction.maskWorn);
+          await db.updateMaskWorn(logId, maskType);
           await db.close();
         }
       } catch (_) {}
       await NotificationDeepLink.setPendingCareTab();
+    } else if (response.actionId == NotificationService.actionSnoozeToday) {
+      // "나중에 ✋" — 6시간 스누즈
+      try {
+        final logId = NotificationDeepLink.getLastLogId(prefs);
+        if (logId != null) {
+          final db = LocalDatabase();
+          await db.updateSnoozed(
+              logId, DateTime.now().add(const Duration(hours: 6)));
+          await db.close();
+        }
+        final notifService = NotificationService();
+        await notifService.initialize();
+        await notifService.cancelAll();
+      } catch (_) {}
     } else {
       // 알림 본체 탭 → appOpened + Care 탭 이동
       try {
@@ -154,9 +186,6 @@ String? _loadPendingNotifId(SharedPreferences prefs) {
 }
 
 String _nowId() => DateTime.now().millisecondsSinceEpoch.toString();
-String _dateKey(DateTime dt) =>
-    '${dt.year}${dt.month.toString().padLeft(2, '0')}'
-    '${dt.day.toString().padLeft(2, '0')}';
 
 /// 알림 제목 + 본문 묶음
 class NotificationContent {
@@ -183,14 +212,11 @@ class NotificationService {
   /// 가장 최근 마스크 알림 발송 시점의 마스크 종류 ('KF80' | 'KF94')
   static const String prefLastNotifMaskType = '_last_notif_mask_type';
 
-  /// "오늘 끄기" 탭 날짜 — 'yyyyMMdd' 형식, 스케줄러가 당일 알림 억제에 사용
-  static const String prefSnoozedDate = 'notif_snoozed_date';
-
   // ── Rich Notification 액션 ID ──────────────────────────────────
   /// "챙겼어요" — 마스크 착용 확인 액션
   static const String actionAcknowledge = 'action_ack';
 
-  /// "오늘 끄기" — 당일 알림 스누즈 액션
+  /// "나중에 ✋" — 6시간 스누즈 액션
   static const String actionSnoozeToday = 'action_snooze';
 
   // ── iOS 카테고리 ID ────────────────────────────────────────────
@@ -218,7 +244,7 @@ class NotificationService {
     ),
     const AndroidNotificationAction(
       actionSnoozeToday,
-      '오늘 끄기',
+      '나중에 ✋',
       showsUserInterface: false,
     ),
   ];
@@ -271,7 +297,7 @@ class NotificationService {
             DarwinNotificationAction.plain(actionAcknowledge, '마스크 챙겼어요 ✓'),
             DarwinNotificationAction.plain(
               actionSnoozeToday,
-              '오늘 끄기',
+              '나중에 ✋',
               options: {DarwinNotificationActionOption.destructive},
             ),
           ],
