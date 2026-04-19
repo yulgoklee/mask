@@ -210,6 +210,7 @@ class LocalDatabase {
   /// 기간 내 알림 액션 집계 (방어율 카드용)
   ///
   /// 반환: (total, defended, estimated)
+  /// suppressedByQuietHours 로그는 분모(total)에서 제외 — 방해 금지 억제는 기회 자체가 없었으므로 비율 왜곡 방지
   Future<({int total, int defended, int estimated})> getNotifActionStats({
     int days = 7,
   }) async {
@@ -219,7 +220,8 @@ class LocalDatabase {
         .toIso8601String();
 
     final total = Sqflite.firstIntValue(await db.rawQuery(
-          'SELECT COUNT(*) FROM notification_logs WHERE triggered_at >= ?',
+          "SELECT COUNT(*) FROM notification_logs "
+          "WHERE triggered_at >= ? AND user_action != 'suppressedByQuietHours'",
           [since],
         )) ??
         0;
@@ -236,6 +238,46 @@ class LocalDatabase {
         )) ??
         0;
     return (total: total, defended: defended, estimated: estimated);
+  }
+
+  /// defense_daily → notification_logs 마이그레이션 (구버전 데이터 변환용)
+  ///
+  /// pre-launch에서는 DROP이 기본이지만, 향후 구버전 → v2 업그레이드 사용자를
+  /// 위해 defense_daily 레코드를 notification_logs 형식으로 변환한다.
+  /// defense_daily 테이블이 없으면 조용히 종료.
+  Future<void> migrateDefenseDailyToLogs() async {
+    final db = await database;
+    try {
+      // 테이블 존재 여부 확인
+      final tables = await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='defense_daily'",
+      );
+      if (tables.isEmpty) return;
+
+      final rows = await db.rawQuery('SELECT * FROM defense_daily');
+      for (final row in rows) {
+        final dateStr = row['date'] as String?;
+        if (dateStr == null) continue;
+        final date = DateTime.tryParse(dateStr);
+        if (date == null) continue;
+
+        // defense_daily 1행 = 해당 날짜에 마스크 착용 기록
+        await db.insert(
+          'notification_logs',
+          {
+            'triggered_at': date.toIso8601String(),
+            'notification_type': 'morning',
+            'user_action': 'maskWorn',
+            'mask_type': row['mask_type'] as String? ?? 'KF80',
+          },
+          conflictAlgorithm: ConflictAlgorithm.ignore,
+        );
+      }
+      // 이전 테이블 정리
+      await db.execute('DROP TABLE IF EXISTS defense_daily');
+    } catch (_) {
+      // 마이그레이션 실패는 조용히 무시 — 신규 설치에는 defense_daily 없음
+    }
   }
 
   /// 기간 내 알림 로그 목록 (달력 구성용)

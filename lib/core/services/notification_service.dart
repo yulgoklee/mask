@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' show Color;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -95,19 +96,41 @@ void onNotificationActionBackground(NotificationResponse response) async {
       );
     } else {
       // ── 알림 본체 탭 (actionId == null) → appOpened ─────────
-      // 가장 최근 미처리 로그에 appOpened 기록 + 딥링크 타입 결정
+      // payload JSON에서 logId 우선 파싱 — getLatestNoneLog는 충돌 시 폴백
       try {
-        final db = LocalDatabase();
-        final log = await db.getLatestNoneLog();
-        if (log?.id != null) {
-          await db.updateUserAction(log!.id!, UserAction.appOpened);
-          final dlType = _deepLinkTypeForNotifType(log.notificationType);
-          await NotificationDeepLink.setPendingPayload(
-              type: dlType, logId: log.id);
-        } else {
-          await NotificationDeepLink.setPendingPayload(type: 'scheduled');
+        int? logId;
+        String? dlType;
+        if (response.payload != null) {
+          try {
+            final decoded =
+                jsonDecode(response.payload!) as Map<String, dynamic>;
+            logId = decoded['logId'] as int?;
+            dlType = decoded['type'] as String?;
+          } catch (_) {}
         }
-        await db.close();
+
+        if (logId != null) {
+          final db = LocalDatabase();
+          await db.updateUserAction(logId, UserAction.appOpened);
+          await db.close();
+          await NotificationDeepLink.setPendingPayload(
+              type: dlType ?? 'scheduled', logId: logId);
+        } else {
+          // Fallback: 가장 최근 미처리 로그 사용
+          final db = LocalDatabase();
+          final log = await db.getLatestNoneLog();
+          if (log?.id != null) {
+            await db.updateUserAction(log!.id!, UserAction.appOpened);
+            final resolvedType =
+                dlType ?? _deepLinkTypeForNotifType(log.notificationType);
+            await NotificationDeepLink.setPendingPayload(
+                type: resolvedType, logId: log.id);
+          } else {
+            await NotificationDeepLink.setPendingPayload(
+                type: dlType ?? 'scheduled');
+          }
+          await db.close();
+        }
       } catch (_) {
         await NotificationDeepLink.setPendingPayload(type: 'scheduled');
       }
@@ -166,19 +189,40 @@ Future<void> _handleNotificationResponse(NotificationResponse response) async {
         await notifService.cancelAll();
       } catch (_) {}
     } else {
-      // 알림 본체 탭 → appOpened + 타입 기반 딥링크
+      // 알림 본체 탭 → appOpened + payload logId 우선, 폴백 getLatestNoneLog
       try {
-        final db = LocalDatabase();
-        final log = await db.getLatestNoneLog();
-        if (log?.id != null) {
-          await db.updateUserAction(log!.id!, UserAction.appOpened);
-          final dlType = _deepLinkTypeForNotifType(log.notificationType);
-          await NotificationDeepLink.setPendingPayload(
-              type: dlType, logId: log.id);
-        } else {
-          await NotificationDeepLink.setPendingPayload(type: 'scheduled');
+        int? logId;
+        String? dlType;
+        if (response.payload != null) {
+          try {
+            final decoded =
+                jsonDecode(response.payload!) as Map<String, dynamic>;
+            logId = decoded['logId'] as int?;
+            dlType = decoded['type'] as String?;
+          } catch (_) {}
         }
-        await db.close();
+
+        if (logId != null) {
+          final db = LocalDatabase();
+          await db.updateUserAction(logId, UserAction.appOpened);
+          await db.close();
+          await NotificationDeepLink.setPendingPayload(
+              type: dlType ?? 'scheduled', logId: logId);
+        } else {
+          final db = LocalDatabase();
+          final log = await db.getLatestNoneLog();
+          if (log?.id != null) {
+            await db.updateUserAction(log!.id!, UserAction.appOpened);
+            final resolvedType =
+                dlType ?? _deepLinkTypeForNotifType(log.notificationType);
+            await NotificationDeepLink.setPendingPayload(
+                type: resolvedType, logId: log.id);
+          } else {
+            await NotificationDeepLink.setPendingPayload(
+                type: dlType ?? 'scheduled');
+          }
+          await db.close();
+        }
       } catch (_) {
         await NotificationDeepLink.setPendingPayload(type: 'scheduled');
       }

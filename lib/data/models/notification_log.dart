@@ -11,10 +11,11 @@ enum NotificationType {
 }
 
 enum UserAction {
-  maskWorn,    // [마스크 챙김] 버튼 클릭 — 확정 방어
-  appOpened,   // 알림 탭 → 앱 열기만 — 추정 방어
-  snoozed,     // [나중에] 버튼 클릭 — 6시간 스누즈
-  none,        // 무반응
+  maskWorn,              // [마스크 챙김] 버튼 클릭 — 확정 방어
+  appOpened,             // 알림 탭 → 앱 열기만 — 추정 방어
+  snoozed,               // [나중에] 버튼 클릭 — 6시간 스누즈
+  none,                  // 무반응
+  suppressedByQuietHours, // 방해 금지 시간 억제 — 통계 분모에서 제외
 }
 
 class NotificationLog {

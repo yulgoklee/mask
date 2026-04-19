@@ -1320,7 +1320,8 @@ class _QuietHoursSectionState extends ConsumerState<_QuietHoursSection> {
   @override
   void initState() {
     super.initState();
-    _load();
+    // ref.read는 initState 중 직접 호출 금지 — 첫 프레임 이후로 지연
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
   void _load() {

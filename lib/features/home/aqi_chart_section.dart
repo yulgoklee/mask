@@ -166,132 +166,135 @@ class _ChartContent extends StatelessWidget {
           tween: Tween<double>(end: tFinal),
           duration: const Duration(milliseconds: 500),
           curve: Curves.easeInOut,
-          builder: (_, animatedTFinal, __) {
-            final animatedStop = (1.0 - animatedTFinal / maxY).clamp(0.01, 0.99);
-            LinearGradient animGradient(double opacity) => LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              stops: [0.0, animatedStop - 0.001, animatedStop + 0.001, 1.0],
-              colors: [
-                dangerColor.withValues(alpha: 0.40 * opacity),
-                dangerColor.withValues(alpha: 0.18 * opacity),
-                safeColor.withValues(alpha: 0.18 * opacity),
-                safeColor.withValues(alpha: 0.35 * opacity),
-              ],
-            );
-        return SizedBox(
-          height: 160,
-          child: LineChart(
-            LineChartData(
-              minX: 0,
-              maxX: endX,
-              minY: 0,
-              maxY: maxY,
-              gridData: const FlGridData(show: false),
-              borderData: FlBorderData(show: false),
-              lineTouchData: const LineTouchData(enabled: false),
+          builder: (_, animTFinal, __) {
+            // tFinal 위치를 Y축 비율로 변환 — 위험/안전 경계 정지점
+            final tStop = (1.0 - animTFinal / maxY).clamp(0.01, 0.99);
 
-              // T_final 기준선 (점선 회색)
-              extraLinesData: ExtraLinesData(
-                horizontalLines: [
-                  HorizontalLine(
-                    y: tFinal,
-                    color: const Color(0xFF757575),
-                    strokeWidth: 1.5,
-                    dashArray: [6, 4],
-                    label: HorizontalLineLabel(
-                      show: true,
-                      alignment: Alignment.bottomRight,
-                      padding:
-                          const EdgeInsets.only(right: 4, bottom: 2),
-                      labelResolver: (_) =>
-                          '기준 ${tFinal.toStringAsFixed(0)}μg',
-                      style: const TextStyle(
-                        fontSize: 9,
-                        color: Color(0xFF757575),
-                        fontWeight: FontWeight.w600,
+            // 위험(빨강)↔안심(파랑) 2-tone 그라디언트 생성
+            LinearGradient areaGradient(double opacity) => LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: [0.0, tStop - 0.001, tStop + 0.001, 1.0],
+                  colors: [
+                    dangerColor.withValues(alpha: 0.40 * opacity),
+                    dangerColor.withValues(alpha: 0.18 * opacity),
+                    safeColor.withValues(alpha: 0.18 * opacity),
+                    safeColor.withValues(alpha: 0.35 * opacity),
+                  ],
+                );
+
+            return SizedBox(
+              height: 160,
+              child: LineChart(
+                LineChartData(
+                  minX: 0,
+                  maxX: endX,
+                  minY: 0,
+                  maxY: maxY,
+                  gridData: const FlGridData(show: false),
+                  borderData: FlBorderData(show: false),
+                  lineTouchData: const LineTouchData(enabled: false),
+
+                  // T_final 기준선 (점선 회색)
+                  extraLinesData: ExtraLinesData(
+                    horizontalLines: [
+                      HorizontalLine(
+                        y: tFinal,
+                        color: const Color(0xFF757575),
+                        strokeWidth: 1.5,
+                        dashArray: [6, 4],
+                        label: HorizontalLineLabel(
+                          show: true,
+                          alignment: Alignment.bottomRight,
+                          padding: const EdgeInsets.only(right: 4, bottom: 2),
+                          labelResolver: (_) =>
+                              '기준 ${tFinal.toStringAsFixed(0)}μg',
+                          style: const TextStyle(
+                            fontSize: 9,
+                            color: Color(0xFF757575),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  titlesData: FlTitlesData(
+                    leftTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false)),
+                    rightTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false)),
+                    topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false)),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 22,
+                        getTitlesWidget: (value, meta) {
+                          String? label;
+                          for (final entry in labelTimes.entries) {
+                            if ((value - entry.key).abs() < 0.25) {
+                              label = entry.value;
+                              break;
+                            }
+                          }
+                          if (label == null) return const SizedBox.shrink();
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              label,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: label == '지금' ? 11 : 10,
+                                fontWeight: label == '지금'
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                                color: label == '지금'
+                                    ? AppColors.primary
+                                    : AppColors.textHint,
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ),
-                ],
-              ),
 
-              titlesData: FlTitlesData(
-                leftTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false)),
-                rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false)),
-                topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false)),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 22,
-                    getTitlesWidget: (value, meta) {
-                      String? label;
-                      for (final entry in labelTimes.entries) {
-                        if ((value - entry.key).abs() < 0.25) {
-                          label = entry.value;
-                          break;
-                        }
-                      }
-                      if (label == null) return const SizedBox.shrink();
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          label,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: label == '지금' ? 11 : 10,
-                            fontWeight: label == '지금'
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                            color: label == '지금'
-                                ? AppColors.primary
-                                : AppColors.textHint,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-
-              lineBarsData: [
-                // 실측 (과거 6h) — 실선
-                LineChartBarData(
-                  spots: measuredSpots,
-                  isCurved: true,
-                  preventCurveOverShooting: true,
-                  color: AppColors.primary,
-                  barWidth: 2.5,
-                  dotData: const FlDotData(show: false),
-                  belowBarData: BarAreaData(
-                    show: true,
-                    gradient: animGradient(1.0),
-                  ),
-                ),
-                // 예측 (미래 3h) — 반투명 점선
-                if (forecastSpots.length > 1)
-                  LineChartBarData(
-                    spots: forecastSpots,
-                    isCurved: true,
-                    preventCurveOverShooting: true,
-                    color: AppColors.primary.withValues(alpha: 0.45),
-                    barWidth: 2,
-                    dashArray: [6, 4],
-                    dotData: const FlDotData(show: false),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      gradient: animGradient(0.45),
+                  lineBarsData: [
+                    // 실측 (과거 6h) — 실선
+                    LineChartBarData(
+                      spots: measuredSpots,
+                      isCurved: true,
+                      preventCurveOverShooting: true,
+                      color: AppColors.primary,
+                      barWidth: 2.5,
+                      dotData: const FlDotData(show: false),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        gradient: areaGradient(1.0),
+                      ),
                     ),
-                  ),
-              ],
-            ),
-          ),
-        );
-          }, // TweenAnimationBuilder builder
-        ), // TweenAnimationBuilder
+                    // 예측 (미래 3h) — 반투명 점선
+                    if (forecastSpots.length > 1)
+                      LineChartBarData(
+                        spots: forecastSpots,
+                        isCurved: true,
+                        preventCurveOverShooting: true,
+                        color: AppColors.primary.withValues(alpha: 0.45),
+                        barWidth: 2,
+                        dashArray: [6, 4],
+                        dotData: const FlDotData(show: false),
+                        belowBarData: BarAreaData(
+                          show: true,
+                          gradient: areaGradient(0.45),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
 
         // ── 마스크 해제 Time Guide ─────────────────────────────
         if (guideText.isNotEmpty) ...[

@@ -508,7 +508,7 @@ class _ShareButton extends ConsumerWidget {
 
 // ── 7일 바 차트 ─────────────────────────────────────────────────
 
-class _WeeklyBarChart extends StatelessWidget {
+class _WeeklyBarChart extends ConsumerWidget {
   final List<double> dailyTotals; // index 0 = 오늘, 6 = 6일 전
   final bool hasData;
 
@@ -525,7 +525,23 @@ class _WeeklyBarChart extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // 달력 데이터로 각 날짜의 위험 알림 유무 판별 — clean = 위험 알림 0회
+    final calendarAsync = ref.watch(defenseCalendarProvider);
+    final cleanDayIndices = <int>{};
+    if (calendarAsync.hasValue) {
+      final today = DateTime.now();
+      for (final day in calendarAsync.value!) {
+        final diff = today
+            .difference(
+                DateTime(day.date.year, day.date.month, day.date.day))
+            .inDays;
+        if (diff >= 0 && diff <= 6 && day.status == CalendarDayStatus.clean) {
+          cleanDayIndices.add(diff);
+        }
+      }
+    }
+
     final maxY = !hasData
         ? 20.0
         : (dailyTotals.reduce((a, b) => a > b ? a : b) * 1.3)
@@ -622,7 +638,8 @@ class _WeeklyBarChart extends StatelessWidget {
                     final value =
                         hasData ? dailyTotals[daysAgo] : _sampleData[i];
                     final isToday = daysAgo == 0;
-                    final isCleanAir = hasData && value == 0;
+                    // 위험 알림이 0회인 날 = 맑은 공기 (착용 횟수 기준이 아님)
+                    final isCleanAir = hasData && cleanDayIndices.contains(daysAgo);
                     return BarChartGroupData(
                       x: i,
                       barRods: [
@@ -637,9 +654,6 @@ class _WeeklyBarChart extends StatelessWidget {
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(6),
                           ),
-                          rodStackItems: isCleanAir
-                              ? []
-                              : null,
                         ),
                       ],
                     );
