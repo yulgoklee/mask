@@ -46,6 +46,8 @@ dependencies:
   firebase_core: ^4.6.0
   firebase_analytics: ^12.2.0
   firebase_crashlytics: ^5.1.0
+  firebase_remote_config: ^6.3.0
+  url_launcher: ^6.3.0
   uuid: ^4.5.3
   fl_chart: ^0.69.0
 

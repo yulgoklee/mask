@@ -1,6 +1,8 @@
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/sensitivity_calculator.dart';
 import '../../data/models/temporary_state.dart';
@@ -82,6 +84,16 @@ class ProfileScreen extends ConsumerWidget {
           const SizedBox(height: 10),
           _BasicInfoSection(profile: profile),
           const SizedBox(height: 16),
+
+          // ── 알림 방해 금지 ─────────────────────────────────
+          const _SectionHeader(
+            title: '방해 금지',
+            badge: '알림 차단',
+            tooltip: '설정한 시간대에는 미세먼지 알림을 보내지 않아요',
+          ),
+          const SizedBox(height: 10),
+          const _QuietHoursSection(),
+          const SizedBox(height: 24),
 
           const Text(
             '* 본 앱은 참고용 정보를 제공합니다. 의료적 진단이나 처방을 대체하지 않습니다.',
@@ -178,7 +190,9 @@ class _DiagnosisBanner extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      'PM2.5 ${tFinal.toStringAsFixed(0)} μg/m³ 이상 시 알림  ·  S = ${s.toStringAsFixed(2)}',
+                      tFinal <= 15.0
+                          ? '최고 수준의 민감도 적용 중  ·  S = ${s.toStringAsFixed(2)}'
+                          : 'PM2.5 ${tFinal.toStringAsFixed(0)} μg/m³ 이상 시 알림  ·  S = ${s.toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
@@ -268,6 +282,8 @@ class _DiagnosisBanner extends StatelessWidget {
               ),
             ],
           ),
+          // Evidence link (Remote Config)
+          const _EvidenceLink(),
         ],
       ),
     );
@@ -1217,6 +1233,241 @@ class _FieldLabel extends StatelessWidget {
         fontSize: 14,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
+      ),
+    );
+  }
+}
+
+// ── Evidence link — Remote Config URL ────────────────────
+class _EvidenceLink extends StatefulWidget {
+  const _EvidenceLink();
+
+  @override
+  State<_EvidenceLink> createState() => _EvidenceLinkState();
+}
+
+class _EvidenceLinkState extends State<_EvidenceLink> {
+  String? _url;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUrl();
+  }
+
+  Future<void> _fetchUrl() async {
+    try {
+      final rc = FirebaseRemoteConfig.instance;
+      await rc.setConfigSettings(RemoteConfigSettings(
+        fetchTimeout: const Duration(seconds: 5),
+        minimumFetchInterval: const Duration(hours: 12),
+      ));
+      await rc.fetchAndActivate();
+      final url = rc.getString('sensitivity_evidence_url');
+      if (url.isNotEmpty && mounted) {
+        setState(() => _url = url);
+      }
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_url == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: GestureDetector(
+        onTap: () async {
+          final uri = Uri.tryParse(_url!);
+          if (uri != null) await launchUrl(uri, mode: LaunchMode.externalApplication);
+        },
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.science_outlined, size: 13, color: AppColors.textHint),
+            const SizedBox(width: 4),
+            Text(
+              '민감도 산출 근거 보기',
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textHint,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── 방해 금지 시간 설정 ──────────────────────────────────
+class _QuietHoursSection extends ConsumerStatefulWidget {
+  const _QuietHoursSection();
+
+  @override
+  ConsumerState<_QuietHoursSection> createState() => _QuietHoursSectionState();
+}
+
+class _QuietHoursSectionState extends ConsumerState<_QuietHoursSection> {
+  static const _prefEnabled  = 'quiet_hours_enabled';
+  static const _prefStartHour = 'quiet_hours_start_hour';
+  static const _prefEndHour   = 'quiet_hours_end_hour';
+
+  bool _enabled  = false;
+  int  _startHour = 22;
+  int  _endHour   = 7;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  void _load() {
+    final prefs = ref.read(sharedPreferencesProvider);
+    setState(() {
+      _enabled    = prefs.getBool(_prefEnabled)    ?? false;
+      _startHour  = prefs.getInt(_prefStartHour)   ?? 22;
+      _endHour    = prefs.getInt(_prefEndHour)      ?? 7;
+    });
+  }
+
+  Future<void> _save() async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setBool(_prefEnabled,   _enabled);
+    await prefs.setInt(_prefStartHour,  _startHour);
+    await prefs.setInt(_prefEndHour,    _endHour);
+  }
+
+  Future<void> _pickHour(BuildContext context, bool isStart) async {
+    final initial = TimeOfDay(hour: isStart ? _startHour : _endHour, minute: 0);
+    final picked  = await showTimePicker(
+      context: context,
+      initialTime: initial,
+      helpText: isStart ? '방해 금지 시작 시간' : '방해 금지 종료 시간',
+      builder: (ctx, child) => MediaQuery(
+        data: MediaQuery.of(ctx).copyWith(alwaysUse24HourFormat: true),
+        child: child!,
+      ),
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      if (isStart) _startHour = picked.hour;
+      else         _endHour   = picked.hour;
+    });
+    await _save();
+  }
+
+  String _fmt(int hour) {
+    final suffix = hour < 12 ? '오전' : '오후';
+    final display = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    return '$suffix ${display}시';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: _enabled ? AppColors.primary.withValues(alpha: 0.07) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: _enabled
+              ? AppColors.primary.withValues(alpha: 0.25)
+              : Colors.grey.shade200,
+        ),
+      ),
+      child: Column(
+        children: [
+          ListTile(
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+            leading: const Text('🌙', style: TextStyle(fontSize: 22)),
+            title: Text(
+              '방해 금지 시간',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: _enabled ? AppColors.primary : AppColors.textPrimary,
+              ),
+            ),
+            subtitle: const Text(
+              '이 시간대에는 모든 알림을 차단해요',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
+            trailing: Switch(
+              value: _enabled,
+              onChanged: (v) async {
+                setState(() => _enabled = v);
+                await _save();
+              },
+              activeColor: AppColors.primary,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+          if (_enabled) ...[
+            const Divider(height: 1, color: AppColors.divider),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _TimeChip(
+                      label: '시작',
+                      time: _fmt(_startHour),
+                      onTap: () => _pickHour(context, true),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.arrow_forward,
+                      size: 16, color: AppColors.textHint),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _TimeChip(
+                      label: '종료',
+                      time: _fmt(_endHour),
+                      onTap: () => _pickHour(context, false),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _TimeChip extends StatelessWidget {
+  final String label;
+  final String time;
+  final VoidCallback onTap;
+
+  const _TimeChip({required this.label, required this.time, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceVariant,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          children: [
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 11, color: AppColors.textSecondary)),
+            const SizedBox(height: 2),
+            Text(time,
+                style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary)),
+          ],
+        ),
       ),
     );
   }
