@@ -401,6 +401,19 @@ class NotificationScheduler {
 /// [pm25]        : 발송 시점 PM2.5 (SQLite 기록용)
 /// [tFinal]      : 발송 시점 개인 임계치 (SQLite 기록용)
 /// [prefs]       : SharedPreferences (nullable → 내부 획득)
+/// 기기 로컬 시각 기준 방해 금지 시간 내인지 확인
+bool _isInQuietHours(SharedPreferences prefs) {
+  final enabled = prefs.getBool('quiet_hours_enabled') ?? false;
+  if (!enabled) return false;
+  final start = prefs.getInt('quiet_hours_start_hour') ?? 22;
+  final end   = prefs.getInt('quiet_hours_end_hour')   ?? 7;
+  final now   = DateTime.now().hour; // 기기 로컬 타임존
+  // 자정을 걸치는 구간(start > end): 예) 22~7
+  if (start > end) return now >= start || now < end;
+  // 당일 구간(start < end): 예) 2~6
+  return now >= start && now < end;
+}
+
 Future<void> _sendNotification({
   required NotificationService notifService,
   required FirebaseAnalytics analytics,
@@ -417,6 +430,12 @@ Future<void> _sendNotification({
   double? tFinal,
   SharedPreferences? prefs,
 }) async {
+  final p = prefs ?? await SharedPreferences.getInstance();
+  if (_isInQuietHours(p)) {
+    debugPrint('[NotificationScheduler] 🌙 방해 금지 시간 — 알림 건너뜀 ($type)');
+    return;
+  }
+
   // ── SQLite log 선삽입 → logId를 페이로드에 포함 ───────────────
   int? logId;
   try {
@@ -429,7 +448,6 @@ Future<void> _sendNotification({
       userAction: UserAction.none,
     ));
     await db.close();
-    final p = prefs ?? await SharedPreferences.getInstance();
     await NotificationDeepLink.setLastLogId(p, logId);
     debugPrint('[NotificationScheduler] 📝 SQLite log id=$logId (pre-insert)');
   } catch (e) {
