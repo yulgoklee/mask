@@ -181,7 +181,10 @@ class _DefenseRateCard extends ConsumerWidget {
                 style: TextStyle(color: AppColors.textSecondary)),
           ),
         ),
-        data: (rateStats) => Row(
+        data: (rateStats) {
+          final r = rateStats.confirmedRate;
+          final icon = r >= 0.9 ? '🌲' : (r >= 0.5 ? '🫁' : '🚬');
+          return Row(
           children: [
             // 원형 진행 바
             SizedBox(
@@ -216,7 +219,7 @@ class _DefenseRateCard extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      const Text('🛡️', style: TextStyle(fontSize: 16)),
+                      Text(icon, style: const TextStyle(fontSize: 16)),
                       const SizedBox(width: 6),
                       Text(
                         '최근 7일 방어율',
@@ -250,7 +253,7 @@ class _DefenseRateCard extends ConsumerWidget {
               ),
             ),
           ],
-        ),
+        );},
       ),
     );
   }
@@ -410,17 +413,29 @@ class _CalendarCell extends StatelessWidget {
               : null,
         ),
         alignment: Alignment.center,
-        child: Text(
-          '${day.date.day}',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight:
-                day.isToday ? FontWeight.bold : FontWeight.normal,
-            color: day.status == CalendarDayStatus.clean
-                ? AppColors.textSecondary
-                : Colors.white,
-          ),
-        ),
+        child: day.status == CalendarDayStatus.clean
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('☀️', style: TextStyle(fontSize: 10)),
+                  Text(
+                    '${day.date.day}',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: day.isToday ? FontWeight.bold : FontWeight.normal,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              )
+            : Text(
+                '${day.date.day}',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: day.isToday ? FontWeight.bold : FontWeight.normal,
+                  color: Colors.white,
+                ),
+              ),
       ),
     );
   }
@@ -607,18 +622,24 @@ class _WeeklyBarChart extends StatelessWidget {
                     final value =
                         hasData ? dailyTotals[daysAgo] : _sampleData[i];
                     final isToday = daysAgo == 0;
+                    final isCleanAir = hasData && value == 0;
                     return BarChartGroupData(
                       x: i,
                       barRods: [
                         BarChartRodData(
-                          toY: value,
-                          color: isToday
-                              ? AppColors.primary
-                              : AppColors.primaryLight,
+                          toY: isCleanAir ? maxY * 0.06 : value,
+                          color: isCleanAir
+                              ? AppColors.surfaceVariant
+                              : (isToday
+                                  ? AppColors.primary
+                                  : AppColors.primaryLight),
                           width: 20,
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(6),
                           ),
+                          rodStackItems: isCleanAir
+                              ? []
+                              : null,
                         ),
                       ],
                     );
