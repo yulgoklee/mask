@@ -431,7 +431,9 @@ Future<void> _sendNotification({
   SharedPreferences? prefs,
 }) async {
   final p = prefs ?? await SharedPreferences.getInstance();
-  if (_isInQuietHours(p)) {
+  // 실시간 경보(PM2.5 ≥75)는 방해 금지 시간을 오버라이드 — 건강 안전 우선
+  final isEmergency = type == 'realtime';
+  if (!isEmergency && _isInQuietHours(p)) {
     debugPrint('[NotificationScheduler] 🌙 방해 금지 시간 — 알림 건너뜀 ($type)');
     // 억제된 알림도 SQLite에 기록 (통계 분모에서는 제외되지만 이력 추적용)
     try {
@@ -446,6 +448,9 @@ Future<void> _sendNotification({
       await db.close();
     } catch (_) {}
     return;
+  }
+  if (isEmergency && _isInQuietHours(p)) {
+    debugPrint('[NotificationScheduler] 🚨 재난 수준 PM2.5 — 방해 금지 시간 오버라이드');
   }
 
   // ── SQLite log 선삽입 → logId를 페이로드에 포함 ───────────────
