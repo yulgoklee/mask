@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/constants/app_colors.dart';
 import 'core/services/notification_deep_link.dart';
 import 'features/home/home_screen.dart';
+import 'providers/providers.dart';
 import 'features/notification_setting/notification_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'features/profile/profile_screen.dart';
@@ -65,23 +66,18 @@ scaffoldBackgroundColor: AppColors.background,
 }
 
 /// 하단 탭 네비게이션 Shell
-class MainShell extends StatefulWidget {
+class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
 
   @override
-  State<MainShell> createState() => _MainShellState();
+  ConsumerState<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell>
+class _MainShellState extends ConsumerState<MainShell>
     with WidgetsBindingObserver {
   int _selectedIndex = 0;
 
-  /// 가장 최근 딥링크 페이로드 타입 (Phase 3 Care 탭 스크롤 제어용)
-  /// 'risk' | 'relief' | 'scheduled' | null
-  String? pendingPayloadType;
-
   // 탭 순서: 케어(0) / 기록(1) / 프로필(2)
-  // 알림 설정은 프로필 탭 내부에서 접근
   static const _screens = [
     HomeScreen(),
     ReportScreen(),
@@ -92,7 +88,6 @@ class _MainShellState extends State<MainShell>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // 앱 시작(알림으로 열린 경우) 딥링크 처리
     _handlePendingDeepLink();
   }
 
@@ -102,7 +97,6 @@ class _MainShellState extends State<MainShell>
     super.dispose();
   }
 
-  /// 앱 재개(포그라운드 복귀) 시 알림 딥링크 체크
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
@@ -110,17 +104,11 @@ class _MainShellState extends State<MainShell>
     }
   }
 
-  /// 대기 중인 딥링크 페이로드를 소비하고 Care 탭으로 이동
-  ///
-  /// [pendingPayloadType]을 state에 저장하면 Phase 3에서 HomeScreen이
-  /// 이 값을 읽어 Time Guide 섹션 자동 스크롤 등을 처리할 수 있다.
   Future<void> _handlePendingDeepLink() async {
     final payload = await NotificationDeepLink.consumePendingPayload();
     if (payload != null && mounted) {
-      setState(() {
-        _selectedIndex = NotificationDeepLink.careTabIndex;
-        pendingPayloadType = payload.type;
-      });
+      setState(() => _selectedIndex = NotificationDeepLink.careTabIndex);
+      ref.read(pendingPayloadTypeProvider.notifier).state = payload.type;
     }
   }
 

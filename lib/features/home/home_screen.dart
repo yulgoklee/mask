@@ -11,6 +11,7 @@ import '../../data/models/dust_data.dart';
 import '../../data/models/forecast_models.dart';
 import '../../data/models/today_situation.dart';
 import '../../providers/providers.dart';
+import '../../providers/core_providers.dart';
 import '../../widgets/async_state_widgets.dart';
 import '../../widgets/dust_gauge_widget.dart';
 import '../location_setup/location_setup_screen.dart';
@@ -21,18 +22,81 @@ import 'risk_detail_screen.dart';
 
 final _analytics = FirebaseAnalytics.instance;
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _timeGuideKey = GlobalKey();
+  bool _highlightHero = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _consumeDeepLink());
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _consumeDeepLink() {
+    final type = ref.read(pendingPayloadTypeProvider);
+    if (type == null) return;
+    ref.read(pendingPayloadTypeProvider.notifier).state = null;
+
+    if (type == 'relief') {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToTimeGuide());
+    } else if (type == 'risk') {
+      setState(() => _highlightHero = true);
+      Future.delayed(const Duration(seconds: 3),
+          () { if (mounted) setState(() => _highlightHero = false); });
+    }
+  }
+
+  void _scrollToTimeGuide() {
+    final ctx = _timeGuideKey.currentContext;
+    if (ctx == null) return;
+    Scrollable.ensureVisible(ctx,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+        alignment: 0.1);
+  }
+
+  Color _bgColor(RiskLevel? level) {
+    switch (level) {
+      case RiskLevel.low:      return const Color(0xFFECFDF5);
+      case RiskLevel.warning:  return const Color(0xFFFFF7ED);
+      case RiskLevel.danger:   return const Color(0xFFFEF2F2);
+      case RiskLevel.critical: return const Color(0xFFF5F3FF);
+      default:                 return AppColors.background;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen(pendingPayloadTypeProvider, (_, next) {
+      if (next != null) _consumeDeepLink();
+    });
+
     final dustAsync    = ref.watch(dustDataProvider);
     final calcResult   = ref.watch(dustCalculationProvider);
     final locationState = ref.watch(locationStateProvider);
     final profile      = ref.watch(profileProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
+    final bgColor = _bgColor(calcResult?.riskLevel);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 600),
+      color: bgColor,
+      child: Scaffold(
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: RefreshIndicator(
           color: AppColors.primary,
@@ -87,6 +151,7 @@ class HomeScreen extends ConsumerWidget {
               final tFinal = SensitivityCalculator.threshold(s);
 
               return SingleChildScrollView(
+                controller: _scrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: Column(
                   children: [
@@ -121,6 +186,7 @@ class HomeScreen extends ConsumerWidget {
                             pm25: dust.pm25Value?.toDouble(),
                             tFinal: tFinal,
                             name: profile.nickname.isNotEmpty ? profile.nickname : null,
+                            highlightOverride: _highlightHero,
                             onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -133,6 +199,7 @@ class HomeScreen extends ConsumerWidget {
                           // ── PM2.5 추이 Area Chart ───────────────
                           AqiChartSection(
                             forecastGrade: dust.pm25Grade ?? '보통',
+                            timeGuideKey: _timeGuideKey,
                           ),
 
                           const SizedBox(height: 12),
@@ -214,6 +281,7 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
       ),
+    ),
     );
   }
 
@@ -362,6 +430,7 @@ class _HeroButton extends StatefulWidget {
   final double? pm25;
   final double tFinal;
   final String? name;
+  final bool highlightOverride;
   final VoidCallback onTap;
 
   const _HeroButton({
@@ -369,6 +438,7 @@ class _HeroButton extends StatefulWidget {
     required this.pm25,
     required this.tFinal,
     required this.name,
+    required this.highlightOverride,
     required this.onTap,
   });
 
@@ -397,14 +467,16 @@ class _HeroButtonState extends State<_HeroButton>
   @override
   void didUpdateWidget(_HeroButton old) {
     super.didUpdateWidget(old);
-    if (old.result?.riskLevel != widget.result?.riskLevel) {
+    if (old.result?.riskLevel != widget.result?.riskLevel ||
+        old.highlightOverride != widget.highlightOverride) {
       _updatePulse();
     }
   }
 
   void _updatePulse() {
     final risk = widget.result?.riskLevel ?? RiskLevel.unknown;
-    final shouldPulse = risk == RiskLevel.warning ||
+    final shouldPulse = widget.highlightOverride ||
+        risk == RiskLevel.warning ||
         risk == RiskLevel.danger ||
         risk == RiskLevel.critical;
     if (shouldPulse) {
@@ -455,7 +527,8 @@ class _HeroButtonState extends State<_HeroButton>
     final result = widget.result;
     final riskLevel = result?.riskLevel ?? RiskLevel.unknown;
     final colors = _gradientColors(riskLevel);
-    final shouldPulse = riskLevel == RiskLevel.warning ||
+    final shouldPulse = widget.highlightOverride ||
+        riskLevel == RiskLevel.warning ||
         riskLevel == RiskLevel.danger ||
         riskLevel == RiskLevel.critical;
     final pm25Val = widget.pm25;
