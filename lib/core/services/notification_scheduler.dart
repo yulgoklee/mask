@@ -53,15 +53,22 @@ class NotificationScheduler {
       await feedbackRepo.resolveIgnoredIfAny();
       await AdaptiveLearner.evaluate(prefs, feedbackRepo);
 
-      // ── "오늘 끄기" 스누즈 체크 ─────────────────────────────
+      // ── 6시간 스누즈 체크 (SQLite 기반) ──────────────────────
       // 학습 처리 후에 스누즈 여부를 판단
-      if (_isSnoozedToday(prefs, now)) {
-        debugPrint('[NotificationScheduler] 오늘 끄기 활성 — 예약 알림 건너뜀');
+      // PM2.5 ≥ 75(긴급)은 실시간 경보 경로에서 스누즈 무관 발송됨
+      final snoozeDb = LocalDatabase();
+      final isSnoozeActive = await snoozeDb.isSnoozeActive();
+      await snoozeDb.close();
+
+      if (isSnoozeActive) {
+        debugPrint('[NotificationScheduler] 스누즈 활성 — 예약 알림 건너뜀');
         // 실시간·급변은 스누즈와 무관하게 계속 처리
         if (!setting.realtimeAlertEnabled) return;
       }
 
-      final needsScheduledAlert = _needsAnyScheduledAlert(prefs, setting, now);
+      // 스누즈 중이면 예약 알림은 없는 것으로 취급 (needsScheduledAlert 무효화)
+      final needsScheduledAlert =
+          !isSnoozeActive && _needsAnyScheduledAlert(prefs, setting, now);
       // 실시간·급변 알림이 꺼져 있고 예약 알림도 없으면 바로 종료
       if (!setting.realtimeAlertEnabled && !needsScheduledAlert) {
         debugPrint('[NotificationScheduler] 발송 대상 없음 — 조기 종료');
@@ -179,7 +186,8 @@ class NotificationScheduler {
       }
 
       // ── 오전 알림 ────────────────────────────────────────
-      if (setting.morningAlertEnabled &&
+      if (!isSnoozeActive &&
+          setting.morningAlertEnabled &&
           _inWindow(now, setting.morningAlertHour, setting.morningAlertMinute) &&
           !_sentToday(prefs, 'morning')) {
         final content = NotificationService.morningContent(
@@ -218,7 +226,8 @@ class NotificationScheduler {
       }
 
       // ── 전날 예보 알림 ───────────────────────────────────
-      if (setting.eveningForecastEnabled &&
+      if (!isSnoozeActive &&
+          setting.eveningForecastEnabled &&
           _inWindow(now, setting.eveningForecastHour, setting.eveningForecastMinute) &&
           !_sentToday(prefs, 'forecast')) {
         final sido = await service.getSidoForStation(stationName);
@@ -268,7 +277,8 @@ class NotificationScheduler {
       }
 
       // ── 귀가 알림 ────────────────────────────────────────
-      if (setting.eveningReturnEnabled &&
+      if (!isSnoozeActive &&
+          setting.eveningReturnEnabled &&
           _inWindow(now, setting.eveningReturnHour, setting.eveningReturnMinute) &&
           !_sentToday(prefs, 'return')) {
         final content = NotificationService.eveningReturnContent(
@@ -456,15 +466,6 @@ String _dateKey() {
   final now = DateTime.now();
   return '${now.year}${now.month.toString().padLeft(2, '0')}'
       '${now.day.toString().padLeft(2, '0')}';
-}
-
-/// "오늘 끄기"가 오늘 활성화되어 있는지 확인
-bool _isSnoozedToday(SharedPreferences prefs, DateTime now) {
-  final snoozedDate = prefs.getString(NotificationService.prefSnoozedDate);
-  if (snoozedDate == null) return false;
-  final today = '${now.year}${now.month.toString().padLeft(2, '0')}'
-      '${now.day.toString().padLeft(2, '0')}';
-  return snoozedDate == today;
 }
 
 bool _sentThisHour(SharedPreferences prefs, String type) {

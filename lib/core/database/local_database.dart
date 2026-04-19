@@ -8,10 +8,11 @@ import '../../data/models/notification_log.dart';
 /// 테이블 구성:
 /// - aqi_records      : 시간별 AQI 폴링 기록 (최근 7일만 유지)
 /// - notification_logs: 알림 발송 및 사용자 액션 기록 (최근 90일)
-/// - defense_daily    : 일별 방어율 집계 (Stage 4 리포트용)
+///                      notification_logs가 모든 통계의 단일 SoT
+///                      v2: mask_type, snooze_until 컬럼 추가 / defense_daily 제거
 class LocalDatabase {
   static const _dbName = 'mask_alert.db';
-  static const _dbVersion = 1;
+  static const _dbVersion = 2;
 
   Database? _db;
 
@@ -26,6 +27,7 @@ class LocalDatabase {
       path,
       version: _dbVersion,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -53,19 +55,22 @@ class LocalDatabase {
         notification_type TEXT NOT NULL,
         pm25_value        INTEGER,
         t_final           REAL,
-        user_action       TEXT NOT NULL DEFAULT 'none'
+        user_action       TEXT NOT NULL DEFAULT 'none',
+        mask_type         TEXT,
+        snooze_until      TEXT
       )
     ''');
+  }
 
-    await db.execute('''
-      CREATE TABLE defense_daily (
-        id                          INTEGER PRIMARY KEY AUTOINCREMENT,
-        date                        TEXT NOT NULL UNIQUE,
-        danger_minutes              INTEGER NOT NULL DEFAULT 0,
-        confirmed_defense_minutes   INTEGER NOT NULL DEFAULT 0,
-        estimated_defense_minutes   INTEGER NOT NULL DEFAULT 0
-      )
-    ''');
+  /// v1 → v2: mask_type, snooze_until 컬럼 추가 / defense_daily 제거
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute(
+          'ALTER TABLE notification_logs ADD COLUMN mask_type TEXT');
+      await db.execute(
+          'ALTER TABLE notification_logs ADD COLUMN snooze_until TEXT');
+      await db.execute('DROP TABLE IF EXISTS defense_daily');
+    }
   }
 
   // ── AQI Records ─────────────────────────────────────────────
@@ -107,7 +112,7 @@ class LocalDatabase {
     return db.insert('notification_logs', log.toMap());
   }
 
-  /// 알림 발송 후 사용자 액션 업데이트 (마스크 챙김 / 앱 열기)
+  /// 알림 발송 후 사용자 액션 업데이트 (앱 열기 등 기본 액션)
   Future<void> updateUserAction(int id, UserAction action) async {
     final db = await database;
     await db.update(
@@ -116,6 +121,46 @@ class LocalDatabase {
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+
+  /// [마스크 챙겼어요] 액션 — user_action + 마스크 종류 스냅샷 동시 기록
+  Future<void> updateMaskWorn(int id, String maskType) async {
+    final db = await database;
+    await db.update(
+      'notification_logs',
+      {
+        'user_action': UserAction.maskWorn.name,
+        'mask_type': maskType,
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  /// [나중에 ✋] 액션 — user_action + 스누즈 만료 시각 기록
+  Future<void> updateSnoozed(int id, DateTime snoozeUntil) async {
+    final db = await database;
+    await db.update(
+      'notification_logs',
+      {
+        'user_action': UserAction.snoozed.name,
+        'snooze_until': snoozeUntil.toIso8601String(),
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  /// 현재 활성 스누즈 여부 — snooze_until > now 인 로그가 존재하면 true
+  Future<bool> isSnoozeActive() async {
+    final db = await database;
+    final now = DateTime.now().toIso8601String();
+    final count = Sqflite.firstIntValue(await db.rawQuery(
+          'SELECT COUNT(*) FROM notification_logs WHERE snooze_until > ?',
+          [now],
+        )) ??
+        0;
+    return count > 0;
   }
 
   /// 특정 날짜의 알림 로그 조회 (방어율 계산용)
@@ -142,41 +187,6 @@ class LocalDatabase {
     );
     if (rows.isEmpty) return null;
     return NotificationLog.fromMap(rows.first);
-  }
-
-  // ── Defense Daily ────────────────────────────────────────────
-
-  /// 일별 방어 통계 upsert
-  Future<void> upsertDefenseDaily({
-    required DateTime date,
-    required int dangerMinutes,
-    required int confirmedDefenseMinutes,
-    required int estimatedDefenseMinutes,
-  }) async {
-    final db = await database;
-    final dateStr = _dateKey(date);
-    await db.insert(
-      'defense_daily',
-      {
-        'date': dateStr,
-        'danger_minutes': dangerMinutes,
-        'confirmed_defense_minutes': confirmedDefenseMinutes,
-        'estimated_defense_minutes': estimatedDefenseMinutes,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
-
-  /// 최근 N일 방어 통계 조회
-  Future<List<Map<String, dynamic>>> getDefenseDailySummary({int days = 30}) async {
-    final db = await database;
-    final since = _dateKey(DateTime.now().subtract(Duration(days: days)));
-    return db.query(
-      'defense_daily',
-      where: 'date >= ?',
-      whereArgs: [since],
-      orderBy: 'date ASC',
-    );
   }
 
   // ── Phase 5: 방어율·달력 쿼리 ────────────────────────────────
@@ -230,11 +240,6 @@ class LocalDatabase {
   }
 
   // ── 유틸 ─────────────────────────────────────────────────────
-
-  String _dateKey(DateTime dt) =>
-      '${dt.year.toString().padLeft(4, '0')}-'
-      '${dt.month.toString().padLeft(2, '0')}-'
-      '${dt.day.toString().padLeft(2, '0')}';
 
   Future<void> close() async => _db?.close();
 }
