@@ -1,5 +1,7 @@
 # API Keys & 서명 키 (절대 커밋 금지)
-lib/core/config/app_config.dart
+# app_config.dart 는 String.fromEnvironment 사용 버전을 커밋 허용
+# 실제 키가 포함된 버전 생성 시 아래 줄 주석 해제
+# lib/core/config/app_config.dart
 *.jks
 *.keystore
 android/key.properties
