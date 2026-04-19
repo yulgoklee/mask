@@ -180,6 +180,9 @@ class NotificationScheduler {
           NotificationService.prefLastNotifMaskType,
           maskType ?? 'KF80',
         );
+        // 안심 알림 트리거용: 마지막 마스크 필요 알림 시각 기록
+        await prefs.setString(
+            'notif_last_mask_required_at', now.toIso8601String());
         // 피드백 수집: 발송 이후 응답 대기 등록
         final notifId = DateTime.now().millisecondsSinceEpoch.toString();
         await feedbackRepo.markPending(notifId, DateTime.now(), pm25);
@@ -358,6 +361,20 @@ class NotificationScheduler {
           currentPm25: pm25,
         );
       }
+
+      // ── 안심(safeEntry) 알림 ─────────────────────────────
+      // 조건: T_final 이하로 15분 이상 유지 + 이전 마스크 필요 알림 존재
+      if (tFinalValue != null && !isSnoozeActive) {
+        await _checkSafeEntryAlert(
+          prefs: prefs,
+          now: now,
+          pm25: pm25,
+          tFinal: tFinalValue,
+          profile: profile,
+          notifService: notifService,
+          analytics: analytics,
+        );
+      }
     } catch (e, st) {
       debugPrint('[NotificationScheduler] 오류: $e\n$st');
       try {
@@ -374,13 +391,16 @@ class NotificationScheduler {
 
 /// 알림 발송 + 성공/실패 추적 + SQLite notification_log 기록
 ///
+/// 로그를 먼저 삽입 후 알림을 발송하여 logId를 페이로드에 포함시킨다.
+/// 이를 통해 킬드 상태 딥링크에서도 logId를 복원할 수 있다.
+///
 /// [gradeColor]  : 등급 기반 Android 알림 액센트 색상 (선택)
 /// [actions]     : Android 알림 액션 버튼 목록 (선택)
 /// [iosCategory] : iOS 알림 카테고리 ID (선택)
 /// [smallIcon]   : Android 소형 알림 아이콘 리소스명 (선택)
 /// [pm25]        : 발송 시점 PM2.5 (SQLite 기록용)
 /// [tFinal]      : 발송 시점 개인 임계치 (SQLite 기록용)
-/// [prefs]       : SharedPreferences (log id 저장용, nullable → 내부 획득)
+/// [prefs]       : SharedPreferences (nullable → 내부 획득)
 Future<void> _sendNotification({
   required NotificationService notifService,
   required FirebaseAnalytics analytics,
@@ -397,6 +417,28 @@ Future<void> _sendNotification({
   double? tFinal,
   SharedPreferences? prefs,
 }) async {
+  // ── SQLite log 선삽입 → logId를 페이로드에 포함 ───────────────
+  int? logId;
+  try {
+    final db = LocalDatabase();
+    logId = await db.insertNotificationLog(NotificationLog(
+      triggeredAt: DateTime.now(),
+      notificationType: _notifTypeFromString(type),
+      pm25Value: pm25,
+      tFinal: tFinal,
+      userAction: UserAction.none,
+    ));
+    await db.close();
+    final p = prefs ?? await SharedPreferences.getInstance();
+    await NotificationDeepLink.setLastLogId(p, logId);
+    debugPrint('[NotificationScheduler] 📝 SQLite log id=$logId (pre-insert)');
+  } catch (e) {
+    debugPrint('[NotificationScheduler] SQLite log 선삽입 실패 (무시): $e');
+  }
+
+  // 페이로드 타입 결정: 딥링크 라우팅용
+  final payloadType = _notifPayloadType(type);
+
   try {
     await notifService.showImmediateNotification(
       id: id,
@@ -406,32 +448,14 @@ Future<void> _sendNotification({
       actions: actions,
       iosCategory: iosCategory,
       smallIcon: smallIcon,
+      payload: '{"type":"$payloadType","logId":${logId ?? 'null'}}',
     );
     onSuccess();
     analytics.logEvent(
       name: 'notification_sent',
       parameters: {'type': type},
     );
-    debugPrint('[NotificationScheduler] ✅ $type 알림 발송 성공');
-
-    // ── SQLite notification_log 기록 ──────────────────────────
-    try {
-      final db = LocalDatabase();
-      final logId = await db.insertNotificationLog(NotificationLog(
-        triggeredAt: DateTime.now(),
-        notificationType: _notifTypeFromString(type),
-        pm25Value: pm25,
-        tFinal: tFinal,
-        userAction: UserAction.none,
-      ));
-      await db.close();
-      // background handler가 UserAction 업데이트할 수 있도록 id 저장
-      final p = prefs ?? await SharedPreferences.getInstance();
-      await NotificationDeepLink.setLastLogId(p, logId);
-      debugPrint('[NotificationScheduler] 📝 SQLite log id=$logId');
-    } catch (e) {
-      debugPrint('[NotificationScheduler] SQLite log 실패 (무시): $e');
-    }
+    debugPrint('[NotificationScheduler] ✅ $type 알림 발송 성공 (logId=$logId)');
   } catch (e, st) {
     debugPrint('[NotificationScheduler] ❌ $type 알림 발송 실패: $e');
     analytics.logEvent(
@@ -594,6 +618,80 @@ Future<void> _checkSurgeAlert({
   }
 }
 
+// ── safeEntry 안심 알림 ───────────────────────────────────────
+
+/// PM2.5가 T_final 이하로 15분 이상 유지될 때 안심 알림 발송
+///
+/// SharedPrefs 키:
+///   `notif_below_tfinal_since` - T_final 이하 진입 시각 (ISO8601)
+///   `notif_last_mask_required_at` - 마지막 마스크 필요 알림 발송 시각
+Future<void> _checkSafeEntryAlert({
+  required SharedPreferences prefs,
+  required DateTime now,
+  required int pm25,
+  required double tFinal,
+  required UserProfile profile,
+  required NotificationService notifService,
+  required FirebaseAnalytics analytics,
+}) async {
+  try {
+    if (pm25 >= tFinal) {
+      // T_final 이상 → 아래 추적 초기화
+      await prefs.remove('notif_below_tfinal_since');
+      return;
+    }
+
+    // T_final 미만 진입 시각 기록
+    final belowSinceStr = prefs.getString('notif_below_tfinal_since');
+    if (belowSinceStr == null) {
+      await prefs.setString('notif_below_tfinal_since', now.toIso8601String());
+      return;
+    }
+
+    final belowSince = DateTime.parse(belowSinceStr);
+    final minutesBelow = now.difference(belowSince).inMinutes;
+    if (minutesBelow < 15) return; // 아직 15분 미달
+
+    // 이전에 마스크 필요 알림이 발송됐는지 확인
+    final lastMaskStr = prefs.getString('notif_last_mask_required_at');
+    if (lastMaskStr == null) return; // 이전 위험 알림 없음
+
+    final lastMask = DateTime.parse(lastMaskStr);
+    // 마스크 알림이 T_final 이하 진입 전에 발송됐어야 유효
+    if (lastMask.isAfter(belowSince)) return;
+
+    // 이미 이번 사이클에 안심 알림 발송했으면 스킵
+    if (_sentThisHour(prefs, 'safeEntry')) return;
+
+    final content = NotificationService.safeEntryContent(
+      profile: profile,
+      pm25: pm25,
+      tFinal: tFinal,
+    );
+    await _sendNotification(
+      notifService: notifService,
+      analytics: analytics,
+      id: NotificationService.realtimeAlertId + 1, // ID 6
+      type: 'safeEntry',
+      title: content.title,
+      body: content.body,
+      gradeColor: NotificationService.colorForGrade('좋음'),
+      smallIcon: NotificationService.iconMask,
+      onSuccess: () {
+        _markSentHour(prefs, 'safeEntry');
+        // 이번 사이클 완료 → 추적 초기화 (다음 사이클 대비)
+        prefs.remove('notif_below_tfinal_since');
+        prefs.remove('notif_last_mask_required_at');
+      },
+      pm25: pm25,
+      tFinal: tFinal,
+      prefs: prefs,
+    );
+  } catch (e) {
+    debugPrint('[NotificationScheduler] 안심 알림 체크 오류 (무시): $e');
+  }
+}
+
 /// 지금 시각에 발송해야 할 예약 알림(아침/예보/귀가)이 하나라도 있는지 확인
 ///
 /// 실시간·급변 알림은 시간 무관 → 이 함수 대상 아님 (호출 측에서 별도 처리).
@@ -628,10 +726,21 @@ String? _primaryStateNote(
 /// 알림 type 문자열 → NotificationType enum 변환
 NotificationType _notifTypeFromString(String type) {
   switch (type) {
-    case 'morning': return NotificationType.morning;
+    case 'morning':    return NotificationType.morning;
     case 'forecast':
-    case 'return':  return NotificationType.evening;
-    default:        return NotificationType.dangerEntry;
+    case 'return':     return NotificationType.evening;
+    case 'safeEntry':  return NotificationType.safeEntry;
+    default:           return NotificationType.dangerEntry;
+  }
+}
+
+/// 알림 type → 딥링크 페이로드 타입 ('risk' | 'relief' | 'scheduled')
+String _notifPayloadType(String type) {
+  switch (type) {
+    case 'safeEntry':  return 'relief';
+    case 'realtime':
+    case 'surge':      return 'risk';
+    default:           return 'scheduled';
   }
 }
 

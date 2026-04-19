@@ -43,20 +43,20 @@ void onNotificationActionBackground(NotificationResponse response) async {
         final record = DefenseRecord.create(pm25: pm25, maskType: maskType);
         await DefenseRepository.addRecordToPrefs(prefs, record);
       }
-      // SQLite: maskWorn + 마스크 종류 스냅샷 기록
+      // SQLite: 가장 최근 미처리 로그에 maskWorn + maskType 스냅샷 기록
       try {
-        final logId = NotificationDeepLink.getLastLogId(prefs);
-        if (logId != null) {
-          final maskType =
-              prefs.getString(NotificationService.prefLastNotifMaskType) ??
-                  'KF80';
-          final db = LocalDatabase();
-          await db.updateMaskWorn(logId, maskType);
-          await db.close();
+        final maskType =
+            prefs.getString(NotificationService.prefLastNotifMaskType) ??
+                'KF80';
+        final db = LocalDatabase();
+        final log = await db.getLatestNoneLog();
+        if (log?.id != null) {
+          await db.updateMaskWorn(log!.id!, maskType);
         }
+        await db.close();
       } catch (_) {}
 
-      // 피드백 기록 (pm25 == 0이어도 응답 의사는 기록)
+      // 피드백 기록
       final pending = _loadPendingNotifId(prefs);
       await FeedbackRepository.addFeedbackToPrefs(
         prefs,
@@ -67,19 +67,17 @@ void onNotificationActionBackground(NotificationResponse response) async {
           type: FeedbackType.acknowledged,
         ),
       );
-      // Care 탭 딥링크 예약
-      await NotificationDeepLink.setPendingCareTab();
+      await NotificationDeepLink.setPendingPayload(type: 'scheduled');
     } else if (response.actionId == NotificationService.actionSnoozeToday) {
       // ── "나중에 ✋" — 6시간 스누즈 ─────────────────────────────
       try {
-        final logId = NotificationDeepLink.getLastLogId(prefs);
-        if (logId != null) {
-          final db = LocalDatabase();
+        final db = LocalDatabase();
+        final log = await db.getLatestNoneLog();
+        if (log?.id != null) {
           await db.updateSnoozed(
-              logId, DateTime.now().add(const Duration(hours: 6)));
-          await db.close();
+              log!.id!, DateTime.now().add(const Duration(hours: 6)));
         }
-        // 현재 표시된 알림 전체 취소
+        await db.close();
         final notifService = NotificationService();
         await notifService.initialize();
         await notifService.cancelAll();
@@ -97,17 +95,22 @@ void onNotificationActionBackground(NotificationResponse response) async {
       );
     } else {
       // ── 알림 본체 탭 (actionId == null) → appOpened ─────────
-      // SQLite notification_log: UserAction.appOpened 업데이트
+      // 가장 최근 미처리 로그에 appOpened 기록 + 딥링크 타입 결정
       try {
-        final logId = NotificationDeepLink.getLastLogId(prefs);
-        if (logId != null) {
-          final db = LocalDatabase();
-          await db.updateUserAction(logId, UserAction.appOpened);
-          await db.close();
+        final db = LocalDatabase();
+        final log = await db.getLatestNoneLog();
+        if (log?.id != null) {
+          await db.updateUserAction(log!.id!, UserAction.appOpened);
+          final dlType = _deepLinkTypeForNotifType(log.notificationType);
+          await NotificationDeepLink.setPendingPayload(
+              type: dlType, logId: log.id);
+        } else {
+          await NotificationDeepLink.setPendingPayload(type: 'scheduled');
         }
-      } catch (_) {}
-      // Care 탭 딥링크 예약
-      await NotificationDeepLink.setPendingCareTab();
+        await db.close();
+      } catch (_) {
+        await NotificationDeepLink.setPendingPayload(type: 'scheduled');
+      }
     }
   } catch (_) {
     // 배경 핸들러 오류는 조용히 무시 (앱 충돌 방지)
@@ -139,42 +142,46 @@ Future<void> _handleNotificationResponse(NotificationResponse response) async {
         await DefenseRepository.addRecordToPrefs(prefs, record);
       }
       try {
-        final logId = NotificationDeepLink.getLastLogId(prefs);
-        if (logId != null) {
-          final maskType =
-              prefs.getString(NotificationService.prefLastNotifMaskType) ??
-                  'KF80';
-          final db = LocalDatabase();
-          await db.updateMaskWorn(logId, maskType);
-          await db.close();
-        }
+        final maskType =
+            prefs.getString(NotificationService.prefLastNotifMaskType) ??
+                'KF80';
+        final db = LocalDatabase();
+        final log = await db.getLatestNoneLog();
+        if (log?.id != null) await db.updateMaskWorn(log!.id!, maskType);
+        await db.close();
       } catch (_) {}
-      await NotificationDeepLink.setPendingCareTab();
+      await NotificationDeepLink.setPendingPayload(type: 'scheduled');
     } else if (response.actionId == NotificationService.actionSnoozeToday) {
       // "나중에 ✋" — 6시간 스누즈
       try {
-        final logId = NotificationDeepLink.getLastLogId(prefs);
-        if (logId != null) {
-          final db = LocalDatabase();
+        final db = LocalDatabase();
+        final log = await db.getLatestNoneLog();
+        if (log?.id != null) {
           await db.updateSnoozed(
-              logId, DateTime.now().add(const Duration(hours: 6)));
-          await db.close();
+              log!.id!, DateTime.now().add(const Duration(hours: 6)));
         }
+        await db.close();
         final notifService = NotificationService();
         await notifService.initialize();
         await notifService.cancelAll();
       } catch (_) {}
     } else {
-      // 알림 본체 탭 → appOpened + Care 탭 이동
+      // 알림 본체 탭 → appOpened + 타입 기반 딥링크
       try {
-        final logId = NotificationDeepLink.getLastLogId(prefs);
-        if (logId != null) {
-          final db = LocalDatabase();
-          await db.updateUserAction(logId, UserAction.appOpened);
-          await db.close();
+        final db = LocalDatabase();
+        final log = await db.getLatestNoneLog();
+        if (log?.id != null) {
+          await db.updateUserAction(log!.id!, UserAction.appOpened);
+          final dlType = _deepLinkTypeForNotifType(log.notificationType);
+          await NotificationDeepLink.setPendingPayload(
+              type: dlType, logId: log.id);
+        } else {
+          await NotificationDeepLink.setPendingPayload(type: 'scheduled');
         }
-      } catch (_) {}
-      await NotificationDeepLink.setPendingCareTab();
+        await db.close();
+      } catch (_) {
+        await NotificationDeepLink.setPendingPayload(type: 'scheduled');
+      }
     }
   } catch (_) {}
 }
@@ -186,6 +193,15 @@ String? _loadPendingNotifId(SharedPreferences prefs) {
 }
 
 String _nowId() => DateTime.now().millisecondsSinceEpoch.toString();
+
+/// NotificationType → 딥링크 타입 문자열
+String _deepLinkTypeForNotifType(NotificationType type) {
+  switch (type) {
+    case NotificationType.safeEntry:   return 'relief';
+    case NotificationType.dangerEntry: return 'risk';
+    default:                           return 'scheduled';
+  }
+}
 
 /// 알림 제목 + 본문 묶음
 class NotificationContent {
@@ -389,6 +405,10 @@ class NotificationService {
 
   Future<void> cancel(int id) => _plugin.cancel(id);
   Future<void> cancelAll() => _plugin.cancelAll();
+
+  /// 킬드 상태에서 알림 탭으로 앱이 열렸는지 확인 (main.dart에서 초기화 후 호출)
+  Future<NotificationAppLaunchDetails?> getAppLaunchDetails() =>
+      _plugin.getNotificationAppLaunchDetails();
 
   /// 온보딩 알림 시뮬레이션 — 설정 완료 전 미리 받아보기
   static const int simulationAlertId = 99;
@@ -627,6 +647,23 @@ class NotificationService {
     ];
 
     return NotificationContent(title: title, body: lines.join('\n'));
+  }
+
+  /// 안심 알림 — PM2.5가 개인 기준(T_final) 이하로 15분 이상 유지 시 발송
+  ///
+  /// [pm25]    : 현재 PM2.5 μg/m³
+  /// [tFinal]  : 개인 임계치
+  static NotificationContent safeEntryContent({
+    required UserProfile profile,
+    required int pm25,
+    required double tFinal,
+  }) {
+    final name = profile.displayName;
+    final title = '✅ $name, 공기가 맑아졌어요!';
+    final body = 'PM2.5 ${pm25}μg/m³ — '
+        '당신의 기준(${tFinal.toStringAsFixed(1)}μg/m³) 이하예요.\n'
+        '잠시 마스크를 내려도 괜찮아요 😊';
+    return NotificationContent(title: title, body: body);
   }
 
   // ── 내부 헬퍼 ─────────────────────────────────────────────

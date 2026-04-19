@@ -76,6 +76,10 @@ class _MainShellState extends State<MainShell>
     with WidgetsBindingObserver {
   int _selectedIndex = 0;
 
+  /// 가장 최근 딥링크 페이로드 타입 (Phase 3 Care 탭 스크롤 제어용)
+  /// 'risk' | 'relief' | 'scheduled' | null
+  String? pendingPayloadType;
+
   // 탭 순서: 케어(0) / 기록(1) / 프로필(2)
   // 알림 설정은 프로필 탭 내부에서 접근
   static const _screens = [
@@ -89,7 +93,7 @@ class _MainShellState extends State<MainShell>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     // 앱 시작(알림으로 열린 경우) 딥링크 처리
-    _handlePendingTab();
+    _handlePendingDeepLink();
   }
 
   @override
@@ -102,15 +106,21 @@ class _MainShellState extends State<MainShell>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _handlePendingTab();
+      _handlePendingDeepLink();
     }
   }
 
-  /// SharedPreferences에 저장된 대기 탭 인덱스를 읽어 탭 전환
-  Future<void> _handlePendingTab() async {
-    final tab = await NotificationDeepLink.consumePendingTab();
-    if (tab != null && mounted) {
-      setState(() => _selectedIndex = tab);
+  /// 대기 중인 딥링크 페이로드를 소비하고 Care 탭으로 이동
+  ///
+  /// [pendingPayloadType]을 state에 저장하면 Phase 3에서 HomeScreen이
+  /// 이 값을 읽어 Time Guide 섹션 자동 스크롤 등을 처리할 수 있다.
+  Future<void> _handlePendingDeepLink() async {
+    final payload = await NotificationDeepLink.consumePendingPayload();
+    if (payload != null && mounted) {
+      setState(() {
+        _selectedIndex = NotificationDeepLink.careTabIndex;
+        pendingPayloadType = payload.type;
+      });
     }
   }
 
