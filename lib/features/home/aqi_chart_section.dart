@@ -12,10 +12,12 @@ import '../../providers/providers.dart';
 /// PM2.5 추이 Area Chart — 과거 6h 실측 + 미래 3h 예측
 ///
 /// [forecastGrade] : 미래 3시간 예측에 사용할 예보 등급 ('좋음'|'보통'|'나쁨'|'매우나쁨')
+/// [timeGuideKey]  : Time Guide 컨테이너에 달 GlobalKey (딥링크 스크롤용)
 class AqiChartSection extends ConsumerWidget {
   final String forecastGrade;
+  final GlobalKey? timeGuideKey;
 
-  const AqiChartSection({super.key, required this.forecastGrade});
+  const AqiChartSection({super.key, required this.forecastGrade, this.timeGuideKey});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -58,6 +60,7 @@ class AqiChartSection extends ConsumerWidget {
           chartData: data,
           tFinal: tFinal,
           nickname: profile.nickname,
+          timeGuideKey: timeGuideKey,
         ),
       ),
     );
@@ -70,11 +73,13 @@ class _ChartContent extends StatelessWidget {
   final AqiChartData chartData;
   final double tFinal;
   final String nickname;
+  final GlobalKey? timeGuideKey;
 
   const _ChartContent({
     required this.chartData,
     required this.tFinal,
     required this.nickname,
+    this.timeGuideKey,
   });
 
   static String _timeLabel(DateTime t) {
@@ -112,22 +117,8 @@ class _ChartContent extends StatelessWidget {
     final dataMax = allValues.reduce(max);
     final maxY = max(dataMax, tFinal * 1.3) + 5.0;
 
-    // T_final 기준 그라디언트 정지점 계산 (위→아래: 위험빨강→안전파랑)
-    final tStop = (1.0 - tFinal / maxY).clamp(0.01, 0.99);
     const dangerColor = Color(0xFFFF5252);
     const safeColor = Color(0xFF448AFF);
-
-    LinearGradient areaGradient(double opacity) => LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          stops: [0.0, tStop - 0.001, tStop + 0.001, 1.0],
-          colors: [
-            dangerColor.withValues(alpha: 0.40 * opacity),
-            dangerColor.withValues(alpha: 0.18 * opacity),
-            safeColor.withValues(alpha: 0.18 * opacity),
-            safeColor.withValues(alpha: 0.35 * opacity),
-          ],
-        );
 
     final nowX = toX(measured.last.time);
     final endX = forecastSpots.last.x;
@@ -170,8 +161,25 @@ class _ChartContent extends StatelessWidget {
 
         const SizedBox(height: 12),
 
-        // ── Area Chart ────────────────────────────────────────
-        SizedBox(
+        // ── Area Chart (tFinal 변경 시 그라디언트 정지점 애니메이션) ───
+        TweenAnimationBuilder<double>(
+          tween: Tween<double>(end: tFinal),
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+          builder: (_, animatedTFinal, __) {
+            final animatedStop = (1.0 - animatedTFinal / maxY).clamp(0.01, 0.99);
+            LinearGradient animGradient(double opacity) => LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              stops: [0.0, animatedStop - 0.001, animatedStop + 0.001, 1.0],
+              colors: [
+                dangerColor.withValues(alpha: 0.40 * opacity),
+                dangerColor.withValues(alpha: 0.18 * opacity),
+                safeColor.withValues(alpha: 0.18 * opacity),
+                safeColor.withValues(alpha: 0.35 * opacity),
+              ],
+            );
+        return SizedBox(
           height: 160,
           child: LineChart(
             LineChartData(
@@ -260,7 +268,7 @@ class _ChartContent extends StatelessWidget {
                   dotData: const FlDotData(show: false),
                   belowBarData: BarAreaData(
                     show: true,
-                    gradient: areaGradient(1.0),
+                    gradient: animGradient(1.0),
                   ),
                 ),
                 // 예측 (미래 3h) — 반투명 점선
@@ -275,18 +283,21 @@ class _ChartContent extends StatelessWidget {
                     dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
-                      gradient: areaGradient(0.45),
+                      gradient: animGradient(0.45),
                     ),
                   ),
               ],
             ),
           ),
-        ),
+        );
+          }, // TweenAnimationBuilder builder
+        ), // TweenAnimationBuilder
 
         // ── 마스크 해제 Time Guide ─────────────────────────────
         if (guideText.isNotEmpty) ...[
           const SizedBox(height: 10),
           Container(
+            key: timeGuideKey,
             width: double.infinity,
             padding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

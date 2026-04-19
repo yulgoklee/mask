@@ -10,6 +10,10 @@ import '../core/services/notification_service.dart';
 
 // ── 기반 Provider ─────────────────────────────────────────
 
+/// 알림 딥링크 페이로드 타입 — HomeScreen이 소비 후 null로 초기화
+/// 'risk' | 'relief' | 'scheduled' | null
+final pendingPayloadTypeProvider = StateProvider<String?>((ref) => null);
+
 /// main.dart에서 ProviderScope override로 초기화됨
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
   throw UnimplementedError('Initialize in main.dart with override');
