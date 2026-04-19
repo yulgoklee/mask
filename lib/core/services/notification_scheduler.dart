@@ -433,6 +433,18 @@ Future<void> _sendNotification({
   final p = prefs ?? await SharedPreferences.getInstance();
   if (_isInQuietHours(p)) {
     debugPrint('[NotificationScheduler] 🌙 방해 금지 시간 — 알림 건너뜀 ($type)');
+    // 억제된 알림도 SQLite에 기록 (통계 분모에서는 제외되지만 이력 추적용)
+    try {
+      final db = LocalDatabase();
+      await db.insertNotificationLog(NotificationLog(
+        triggeredAt: DateTime.now(),
+        notificationType: _notifTypeFromString(type),
+        pm25Value: pm25,
+        tFinal: tFinal,
+        userAction: UserAction.suppressedByQuietHours,
+      ));
+      await db.close();
+    } catch (_) {}
     return;
   }
 

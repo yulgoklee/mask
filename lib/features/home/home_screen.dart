@@ -33,6 +33,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _timeGuideKey = GlobalKey();
   bool _highlightHero = false;
+  bool _pendingScrollToTimeGuide = false;
 
   @override
   void initState() {
@@ -52,7 +53,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ref.read(pendingPayloadTypeProvider.notifier).state = null;
 
     if (type == 'relief') {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToTimeGuide());
+      // 스크롤 대기 플래그 설정 — 데이터 로드 완료 후 ref.listen이 실제 스크롤 수행
+      setState(() => _pendingScrollToTimeGuide = true);
+      // 데이터가 이미 로드된 경우를 위해 즉시도 시도
+      WidgetsBinding.instance.addPostFrameCallback((_) => _tryScrollToTimeGuide());
     } else if (type == 'risk') {
       setState(() => _highlightHero = true);
       Future.delayed(const Duration(seconds: 3),
@@ -60,9 +64,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
-  void _scrollToTimeGuide() {
+  void _tryScrollToTimeGuide() {
+    if (!_pendingScrollToTimeGuide) return;
     final ctx = _timeGuideKey.currentContext;
-    if (ctx == null) return;
+    if (ctx == null) return; // 아직 위젯 미빌드 — ref.listen이 데이터 로드 후 재시도
+    if (mounted) setState(() => _pendingScrollToTimeGuide = false);
     Scrollable.ensureVisible(ctx,
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
@@ -83,6 +89,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     ref.listen(pendingPayloadTypeProvider, (_, next) {
       if (next != null) _consumeDeepLink();
+    });
+
+    // dustDataProvider 로드 완료 시 대기 중인 Time Guide 스크롤 수행
+    // addPostFrameCallback으로 차트 위젯이 빌드된 후에 스크롤
+    ref.listen(dustDataProvider, (_, next) {
+      if (_pendingScrollToTimeGuide && next.hasValue) {
+        WidgetsBinding.instance
+            .addPostFrameCallback((_) => _tryScrollToTimeGuide());
+      }
     });
 
     final dustAsync    = ref.watch(dustDataProvider);
