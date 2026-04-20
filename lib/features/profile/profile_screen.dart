@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/sensitivity_calculator.dart';
+import '../../data/models/notification_setting.dart';
 import '../../data/models/temporary_state.dart';
 import '../../data/models/today_situation.dart';
 import '../../data/models/user_profile.dart';
@@ -1301,48 +1302,25 @@ class _EvidenceLinkState extends State<_EvidenceLink> {
 }
 
 // ── 방해 금지 시간 설정 ──────────────────────────────────
-class _QuietHoursSection extends ConsumerStatefulWidget {
+class _QuietHoursSection extends ConsumerWidget {
   const _QuietHoursSection();
 
-  @override
-  ConsumerState<_QuietHoursSection> createState() => _QuietHoursSectionState();
-}
-
-class _QuietHoursSectionState extends ConsumerState<_QuietHoursSection> {
-  static const _prefEnabled  = 'quiet_hours_enabled';
-  static const _prefStartHour = 'quiet_hours_start_hour';
-  static const _prefEndHour   = 'quiet_hours_end_hour';
-
-  bool _enabled  = false;
-  int  _startHour = 22;
-  int  _endHour   = 7;
-
-  @override
-  void initState() {
-    super.initState();
-    // ref.read는 initState 중 직접 호출 금지 — 첫 프레임 이후로 지연
-    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  String _fmt(int hour) {
+    final suffix = hour < 12 ? '오전' : '오후';
+    final display = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    return '$suffix ${display}시';
   }
 
-  void _load() {
-    final prefs = ref.read(sharedPreferencesProvider);
-    setState(() {
-      _enabled    = prefs.getBool(_prefEnabled)    ?? false;
-      _startHour  = prefs.getInt(_prefStartHour)   ?? 22;
-      _endHour    = prefs.getInt(_prefEndHour)      ?? 7;
-    });
-  }
-
-  Future<void> _save() async {
-    final prefs = ref.read(sharedPreferencesProvider);
-    await prefs.setBool(_prefEnabled,   _enabled);
-    await prefs.setInt(_prefStartHour,  _startHour);
-    await prefs.setInt(_prefEndHour,    _endHour);
-  }
-
-  Future<void> _pickHour(BuildContext context, bool isStart) async {
-    final initial = TimeOfDay(hour: isStart ? _startHour : _endHour, minute: 0);
-    final picked  = await showTimePicker(
+  Future<void> _pickHour(
+    BuildContext context,
+    WidgetRef ref,
+    NotificationSetting setting,
+    bool isStart,
+  ) async {
+    final initial = TimeOfDay(
+        hour: isStart ? setting.quietHoursStartHour : setting.quietHoursEndHour,
+        minute: 0);
+    final picked = await showTimePicker(
       context: context,
       initialTime: initial,
       helpText: isStart ? '방해 금지 시작 시간' : '방해 금지 종료 시간',
@@ -1351,28 +1329,24 @@ class _QuietHoursSectionState extends ConsumerState<_QuietHoursSection> {
         child: child!,
       ),
     );
-    if (picked == null || !mounted) return;
-    setState(() {
-      if (isStart) _startHour = picked.hour;
-      else         _endHour   = picked.hour;
-    });
-    await _save();
-  }
-
-  String _fmt(int hour) {
-    final suffix = hour < 12 ? '오전' : '오후';
-    final display = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
-    return '$suffix ${display}시';
+    if (picked == null) return;
+    ref.read(notificationSettingProvider.notifier).update(
+          isStart
+              ? setting.copyWith(quietHoursStartHour: picked.hour)
+              : setting.copyWith(quietHoursEndHour: picked.hour),
+        );
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final setting = ref.watch(notificationSettingProvider);
+    final enabled = setting.quietHoursEnabled;
     return Container(
       decoration: BoxDecoration(
-        color: _enabled ? AppColors.primary.withValues(alpha: 0.07) : Colors.white,
+        color: enabled ? AppColors.primary.withValues(alpha: 0.07) : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: _enabled
+          color: enabled
               ? AppColors.primary.withValues(alpha: 0.25)
               : Colors.grey.shade200,
         ),
@@ -1388,7 +1362,7 @@ class _QuietHoursSectionState extends ConsumerState<_QuietHoursSection> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: _enabled ? AppColors.primary : AppColors.textPrimary,
+                color: enabled ? AppColors.primary : AppColors.textPrimary,
               ),
             ),
             subtitle: const Text(
@@ -1396,16 +1370,15 @@ class _QuietHoursSectionState extends ConsumerState<_QuietHoursSection> {
               style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
             ),
             trailing: Switch(
-              value: _enabled,
-              onChanged: (v) async {
-                setState(() => _enabled = v);
-                await _save();
-              },
+              value: enabled,
+              onChanged: (v) => ref
+                  .read(notificationSettingProvider.notifier)
+                  .update(setting.copyWith(quietHoursEnabled: v)),
               activeColor: AppColors.primary,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ),
-          if (_enabled) ...[
+          if (enabled) ...[
             const Divider(height: 1, color: AppColors.divider),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -1414,8 +1387,8 @@ class _QuietHoursSectionState extends ConsumerState<_QuietHoursSection> {
                   Expanded(
                     child: _TimeChip(
                       label: '시작',
-                      time: _fmt(_startHour),
-                      onTap: () => _pickHour(context, true),
+                      time: _fmt(setting.quietHoursStartHour),
+                      onTap: () => _pickHour(context, ref, setting, true),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -1425,8 +1398,8 @@ class _QuietHoursSectionState extends ConsumerState<_QuietHoursSection> {
                   Expanded(
                     child: _TimeChip(
                       label: '종료',
-                      time: _fmt(_endHour),
-                      onTap: () => _pickHour(context, false),
+                      time: _fmt(setting.quietHoursEndHour),
+                      onTap: () => _pickHour(context, ref, setting, false),
                     ),
                   ),
                 ],

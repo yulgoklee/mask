@@ -15,7 +15,6 @@ import 'notification_scheduler.dart';
 
 /// 백그라운드 GPS 갱신 간격 (밀리초)
 const _kGpsRefreshIntervalMs = 6 * 60 * 60 * 1000; // 6시간
-const _kPrefLastGpsUpdate = 'bg_last_gps_update_ms';
 
 const String _taskCheckDust = 'check_dust_task';
 
@@ -80,7 +79,7 @@ Future<void> _runAqiPolling(SharedPreferences prefs) async {
 Future<void> _tryRefreshStation(SharedPreferences prefs) async {
   try {
     // 갱신 시간 체크
-    final lastMs = prefs.getInt(_kPrefLastGpsUpdate) ?? 0;
+    final lastMs = prefs.getInt(AppConstants.prefLastGpsUpdateMs) ?? 0;
     final nowMs = DateTime.now().millisecondsSinceEpoch;
     if (nowMs - lastMs < _kGpsRefreshIntervalMs) {
       debugPrint('[BGService] GPS 갱신 스킵 (${((nowMs - lastMs) / 3600000).toStringAsFixed(1)}h 경과)');
@@ -113,9 +112,9 @@ Future<void> _tryRefreshStation(SharedPreferences prefs) async {
 
     // 측정소 + 위치 + 갱신 시각 저장
     await prefs.setString(AppConstants.prefStationName, station);
-    await prefs.setDouble('saved_lat', pos.latitude);
-    await prefs.setDouble('saved_lng', pos.longitude);
-    await prefs.setInt(_kPrefLastGpsUpdate, nowMs);
+    await prefs.setDouble(AppConstants.prefSavedLat, pos.latitude);
+    await prefs.setDouble(AppConstants.prefSavedLng, pos.longitude);
+    await prefs.setInt(AppConstants.prefLastGpsUpdateMs, nowMs);
     debugPrint('[BGService] 측정소 갱신 완료: $station');
   } catch (e) {
     // 백그라운드 GPS 갱신은 best-effort — 절대 throw하지 않음

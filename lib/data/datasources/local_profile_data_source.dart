@@ -5,17 +5,18 @@ import '../models/notification_setting.dart';
 import '../models/temporary_state.dart';
 import '../models/today_situation.dart';
 import 'profile_data_source.dart';
+import '../../core/constants/app_constants.dart';
 import '../../core/utils/sensitivity_calculator.dart';
 
 /// SharedPreferences 기반 프로필 데이터 소스 (로컬 구현체)
 /// Firestore 등 서버 구현체로 교체 가능
 class LocalProfileDataSource implements ProfileDataSource {
-  static const String _profileKey       = 'user_profile';
-  static const String _notifKey         = 'notification_setting';
-  static const String _onboardedKey     = 'onboarding_completed';
-  static const String _tutorialKey      = 'tutorial_seen';
-  static const String _tempStatesKey    = 'temporary_states';
-  static const String _todaySitKey      = 'today_situation';
+  static const String _profileKey    = AppConstants.prefUserProfile;
+  static const String _notifKey      = AppConstants.prefNotificationSetting;
+  static const String _onboardedKey  = AppConstants.prefOnboardingCompleted;
+  static const String _tutorialKey   = AppConstants.prefTutorialSeen;
+  static const String _tempStatesKey = AppConstants.prefTemporaryStates;
+  static const String _todaySitKey   = AppConstants.prefTodaySituation;
 
   final SharedPreferences _prefs;
 
@@ -109,13 +110,34 @@ class LocalProfileDataSource implements ProfileDataSource {
   @override
   Future<NotificationSetting> loadNotificationSetting() async {
     final raw = _prefs.getString(_notifKey);
-    if (raw == null) return const NotificationSetting();
-    try {
-      return NotificationSetting.fromJson(
-          jsonDecode(raw) as Map<String, dynamic>);
-    } catch (_) {
-      return const NotificationSetting();
+    NotificationSetting setting;
+    if (raw == null) {
+      setting = const NotificationSetting();
+    } else {
+      try {
+        setting = NotificationSetting.fromJson(
+            jsonDecode(raw) as Map<String, dynamic>);
+      } catch (_) {
+        setting = const NotificationSetting();
+      }
     }
+
+    // 구버전 독립 키 → NotificationSetting JSON으로 1회 마이그레이션
+    final legacyEnabled = _prefs.getBool(AppConstants.prefQuietHoursEnabled);
+    if (legacyEnabled != null) {
+      final migrated = setting.copyWith(
+        quietHoursEnabled:   legacyEnabled,
+        quietHoursStartHour: _prefs.getInt(AppConstants.prefQuietHoursStartHour) ?? 22,
+        quietHoursEndHour:   _prefs.getInt(AppConstants.prefQuietHoursEndHour)   ?? 7,
+      );
+      await _prefs.remove(AppConstants.prefQuietHoursEnabled);
+      await _prefs.remove(AppConstants.prefQuietHoursStartHour);
+      await _prefs.remove(AppConstants.prefQuietHoursEndHour);
+      await saveNotificationSetting(migrated);
+      return migrated;
+    }
+
+    return setting;
   }
 
   @override

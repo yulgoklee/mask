@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'app.dart';
 import 'core/config/app_config.dart';
+import 'core/constants/app_constants.dart';
 import 'core/database/local_database.dart';
 import 'core/services/air_korea_service.dart';
 import 'core/services/aqi_polling_service.dart';
@@ -84,7 +85,7 @@ void main() async {
 
     // 알림 권한 요청 — 온보딩 완료된 기존 사용자만
     // 신규 사용자는 permission_screen.dart에서 맥락과 함께 요청
-    final onboardingDone = prefs.getBool('onboarding_completed') ?? false;
+    final onboardingDone = prefs.getBool(AppConstants.prefOnboardingCompleted) ?? false;
     if (onboardingDone) {
       final notifStatus = await Permission.notification.status;
       if (notifStatus.isDenied) {
@@ -143,7 +144,7 @@ void _seedAqiDataIfNeeded(SharedPreferences prefs) {
 
 /// 익명 사용자 ID 조회 또는 생성 (앱 삭제 전까지 유지)
 String _getOrCreateUserId(SharedPreferences prefs) {
-  const key = 'anonymous_user_id';
+  const key = AppConstants.prefAnonymousUserId;
   final existing = prefs.getString(key);
   if (existing != null) return existing;
   final newId = const Uuid().v4();

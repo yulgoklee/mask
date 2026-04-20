@@ -51,4 +51,34 @@ class AppConstants {
   /// 급변 선제 알림 발동 기준 상승 속도 (μg/m³/h)
   /// 7.0 = 1시간 후 '보통→나쁨' 경계 돌파 예상 최소 속도
   static const double surgeRateThresholdUgPerHour = 7.0;
+
+  // ── 알림 중복 방지 키 접두사 ─────────────────────────────
+  /// 형식: prefNotifSent + '{type}_{YYYYMMDD}' (일별) 또는 '{type}_{YYYYMMDDHH}' (시간별)
+  static const String prefNotifSent             = 'notif_sent_';
+
+  // ── 안심 알림 추적 ────────────────────────────────────────
+  static const String prefBelowTFinalSince      = 'notif_below_tfinal_since';
+  static const String prefLastMaskRequiredAt    = 'notif_last_mask_required_at';
+
+  // ── 방해 금지 시간 ────────────────────────────────────────
+  static const String prefQuietHoursEnabled     = 'quiet_hours_enabled';
+  static const String prefQuietHoursStartHour   = 'quiet_hours_start_hour';
+  static const String prefQuietHoursEndHour     = 'quiet_hours_end_hour';
+
+  // ── 위치 ──────────────────────────────────────────────────
+  static const String prefSavedLat              = 'saved_lat';
+  static const String prefSavedLng              = 'saved_lng';
+  static const String prefLastGpsUpdateMs       = 'bg_last_gps_update_ms';
+
+  // ── 프로필 부가 데이터 ────────────────────────────────────
+  static const String prefTemporaryStates       = 'temporary_states';
+  static const String prefTodaySituation        = 'today_situation';
+
+  // ── 학습 엔진 ─────────────────────────────────────────────
+  static const String prefAdaptiveSOffset       = 'adaptive_s_offset';
+  static const String prefAdaptiveLastEval      = 'adaptive_last_eval';
+  static const String prefAdaptiveEvalCount     = 'adaptive_eval_count';
+
+  // ── 기타 ──────────────────────────────────────────────────
+  static const String prefAnonymousUserId       = 'anonymous_user_id';
 }
