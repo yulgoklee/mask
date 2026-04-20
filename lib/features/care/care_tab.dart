@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/design_tokens.dart';
 import '../../providers/dust_providers.dart';
+import '../../widgets/async_state_widgets.dart';
 import 'widgets/status_card.dart';
 import 'widgets/protection_area_chart.dart';
 import 'widgets/pollutant_detail_card.dart';
 
-/// 케어 탭 — 현재 상황 파악 + 행동 가이드
-///
-/// 3단계 정보 레이어:
-///   1. StatusCard   — "지금 괜찮은가?" 즉시 전달
-///   2. ProtectionAreaChart — "언제까지?" 12시간 예보
-///   3. PollutantDetailCard — "무엇이?" 세부 오염물질
 class CareTab extends ConsumerWidget {
   const CareTab({super.key});
+
+  void _retry(WidgetRef ref) {
+    ref.invalidate(dustDataProvider);
+    ref.invalidate(tomorrowForecastProvider);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -22,36 +22,9 @@ class CareTab extends ConsumerWidget {
     if (dustAsync.hasError) {
       return Scaffold(
         backgroundColor: DT.background,
-        body: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.wifi_off_rounded, size: 56, color: DT.border),
-                  const SizedBox(height: 20),
-                  const Text(
-                    '미세먼지 정보를 불러올 수 없어요.',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: DT.text),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    '네트워크 연결을 확인해 주세요.',
-                    style: TextStyle(fontSize: 14, color: DT.gray),
-                  ),
-                  const SizedBox(height: 28),
-                  FilledButton.icon(
-                    onPressed: () => ref.refresh(dustDataProvider.future),
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('다시 시도'),
-                    style: FilledButton.styleFrom(backgroundColor: DT.primary),
-                  ),
-                ],
-              ),
-            ),
-          ),
+        body: ErrorStateWidget(
+          message: '미세먼지 정보를 불러올 수 없어요.\n네트워크 연결을 확인해 주세요.',
+          onRetry: () => _retry(ref),
         ),
       );
     }
