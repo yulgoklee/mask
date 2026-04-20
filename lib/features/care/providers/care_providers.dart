@@ -111,6 +111,10 @@ final pollutantCardProvider = Provider<PollutantCardData>((ref) {
         no2: dust.no2Value?.toDouble(),
         o3Grade: dust.o3Grade,
         no2Grade: dust.no2Grade,
+        co: dust.coValue,
+        so2: dust.so2Value,
+        coGrade: dust.coGrade,
+        so2Grade: dust.so2Grade,
       );
     },
     loading: () => PollutantCardData.placeholder(),

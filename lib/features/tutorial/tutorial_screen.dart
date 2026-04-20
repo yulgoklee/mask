@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/providers.dart';
 
@@ -35,9 +36,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     if (!mounted) return;
     final onboardingDone = await repo.isOnboardingCompleted();
     if (!mounted) return;
-    Navigator.of(context).pushReplacementNamed(
-      onboardingDone ? '/home' : '/roadmap', // 신규 유저 → 로드맵 → 온보딩
-    );
+    context.go(onboardingDone ? '/care' : '/roadmap');
   }
 
   @override

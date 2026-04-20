@@ -1,3 +1,4 @@
+import 'package:go_router/go_router.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -98,9 +99,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                       width: double.infinity,
                       height: 54,
                       child: ElevatedButton(
-                        onPressed: () => Navigator.of(context)
-                            .pushReplacementNamed('/location_setup',
-                                arguments: true), // 온보딩 플로우
+                        onPressed: () => context.go('/location_setup', extra: true), // 온보딩 플로우
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,

@@ -1,4 +1,5 @@
 import 'package:animated_digit/animated_digit.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -224,7 +225,7 @@ class _StatusBottomSheet extends StatelessWidget {
                     child: OutlinedButton(
                       onPressed: () {
                         Navigator.pop(context);
-                        Navigator.pushNamed(context, '/profile');
+                        context.push('/profile/edit');
                       },
                       child: const Text('프로필 수정하기 →'),
                     ),

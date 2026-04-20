@@ -17,47 +17,30 @@ final dailyBarProvider = FutureProvider.family<List<DailyBarData>, ReportPeriod>
     final db = ref.watch(localDatabaseProvider);
     final station = ref.watch(locationStateProvider).station ?? '';
 
-    final records = await db.getRecentAqiRecords(
-      stationName: station,
-      hours: period.days * 24,
-    );
-    final byDay = <String, List<double>>{};
-    final maskByDay = <String, bool>{};
+    final [dailies, grouped] = await Future.wait([
+      db.getDailyAqiAverages(stationName: station, days: period.days),
+      db.getLogsGroupedByDate(days: period.days),
+    ]);
 
-    for (final r in records) {
-      final key = _dayKey(r.dataTime);
-      byDay.putIfAbsent(key, () => []);
-      if (r.pm25Value != null) byDay[key]!.add(r.pm25Value!.toDouble());
-    }
+    final dailyRows = dailies as List<Map<String, dynamic>>;
+    final logMap    = grouped as Map<String, List<NotificationLog>>;
 
-    final logs = await Future.wait(
-      List.generate(period.days, (i) {
-        final date = DateTime.now().subtract(Duration(days: period.days - 1 - i));
-        return db.getLogsForDate(date);
-      }),
-    );
+    final byDay = {for (final r in dailyRows) r['day'] as String: r};
 
-    for (int i = 0; i < period.days; i++) {
+    return List.generate(period.days, (i) {
       final date = DateTime.now().subtract(Duration(days: period.days - 1 - i));
-      final key = _dayKey(date);
-      final dayLogs = logs[i];
-      maskByDay[key] = dayLogs.any((l) => l.userAction == UserAction.maskWorn);
-    }
+      final key  = _dayKey(date);
+      final row  = byDay[key];
+      final avg  = (row?['pm25_avg'] as num?)?.toDouble() ?? 0.0;
+      final dayLogs = logMap[key] ?? [];
 
-    final result = <DailyBarData>[];
-    for (int i = 0; i < period.days; i++) {
-      final date = DateTime.now().subtract(Duration(days: period.days - 1 - i));
-      final key = _dayKey(date);
-      final vals = byDay[key] ?? [];
-      final avg = vals.isEmpty ? 0.0 : vals.reduce((a, b) => a + b) / vals.length;
-      result.add(DailyBarData(
+      return DailyBarData(
         date: date,
         pm25Avg: avg,
         grade: gradeFromPm25(avg),
-        maskWorn: maskByDay[key] ?? false,
-      ));
-    }
-    return result;
+        maskWorn: dayLogs.any((l) => l.userAction == UserAction.maskWorn),
+      );
+    });
   },
 );
 
@@ -65,39 +48,48 @@ final dailyBarProvider = FutureProvider.family<List<DailyBarData>, ReportPeriod>
 
 final reportSummaryProvider = FutureProvider.family<ReportSummaryData, ReportPeriod>(
   (ref, period) async {
-    final db = ref.watch(localDatabaseProvider);
+    final db      = ref.watch(localDatabaseProvider);
     final station = ref.watch(locationStateProvider).station ?? '';
-    final records = await db.getRecentAqiRecords(stationName: station, hours: period.days * 24);
-    final stats = await db.getNotifActionStats(days: period.days);
 
-    final byDay = <String, String>{};
-    for (final r in records) {
-      final key = _dayKey(r.dataTime);
-      byDay[key] = r.pm25Grade ?? '좋음';
-    }
+    final [dailies, grouped, statsResult] = await Future.wait([
+      db.getDailyAqiAverages(stationName: station, days: period.days),
+      db.getLogsGroupedByDate(days: period.days),
+      db.getNotifActionStats(days: period.days),
+    ]);
 
-    int dangerDays = 0;
-    int maskWornDays = 0;
-    final grades = <String>[];
+    final dailyRows = dailies as List<Map<String, dynamic>>;
+    final logMap    = grouped as Map<String, List<NotificationLog>>;
+    final stats     = statsResult as ({int total, int defended, int estimated});
+
+    int dangerDays    = 0;
+    int maskWornDays  = 0;
+    final grades      = <String>[];
 
     for (int i = 0; i < period.days; i++) {
       final date = DateTime.now().subtract(Duration(days: period.days - 1 - i));
-      final key = _dayKey(date);
-      final grade = byDay[key] ?? '좋음';
+      final key  = _dayKey(date);
+      final row  = dailyRows.firstWhere(
+        (r) => r['day'] == key,
+        orElse: () => {},
+      );
+      final avg  = (row['pm25_avg'] as num?)?.toDouble() ?? 0.0;
+      final grade = gradeFromPm25(avg);
       grades.add(grade);
       if (grade == '나쁨' || grade == '매우나쁨') dangerDays++;
 
-      final dayLogs = await db.getLogsForDate(date);
+      final dayLogs = logMap[key] ?? [];
       if (dayLogs.any((l) => l.userAction == UserAction.maskWorn)) maskWornDays++;
     }
 
-    final total = stats.total;
+    final total    = stats.total;
     final defended = stats.defended;
-    final rate = total > 0 ? (defended / total * 100) : 0.0;
+    final rate     = total > 0 ? (defended / total * 100) : 0.0;
 
     final gradeCount = <String, int>{};
     for (final g in grades) gradeCount[g] = (gradeCount[g] ?? 0) + 1;
-    final dominant = gradeCount.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
+    final dominant = gradeCount.isEmpty
+        ? '좋음'
+        : gradeCount.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
 
     return ReportSummaryData(
       totalDays: period.days,
@@ -113,28 +105,26 @@ final reportSummaryProvider = FutureProvider.family<ReportSummaryData, ReportPer
 
 final calendarProvider = FutureProvider.family<List<CalendarDayData>, ReportPeriod>(
   (ref, period) async {
-    final db = ref.watch(localDatabaseProvider);
-    final logs = await Future.wait(
-      List.generate(7, (i) => db.getLogsForDate(
-        DateTime.now().subtract(Duration(days: 6 - i)),
-      )),
-    );
+    final db     = ref.watch(localDatabaseProvider);
+    final grouped = await db.getLogsGroupedByDate(days: 7);
+    final today  = DateTime.now();
 
     return List.generate(7, (i) {
-      final date = DateTime.now().subtract(Duration(days: 6 - i));
-      final dayLogs = logs[i];
-      final hasMaskWorn = dayLogs.any((l) => l.userAction == UserAction.maskWorn);
-      final hasAnyLog = dayLogs.isNotEmpty;
-      final today = DateTime.now();
+      final date    = today.subtract(Duration(days: 6 - i));
+      final key     = _dayKey(date);
+      final dayLogs = grouped[key] ?? [];
+      final hasMask = dayLogs.any((l) => l.userAction == UserAction.maskWorn);
 
       return CalendarDayData(
         date: date,
-        status: !hasAnyLog
+        status: dayLogs.isEmpty
             ? CalendarDayStatus.noData
-            : hasMaskWorn
+            : hasMask
                 ? CalendarDayStatus.worn
                 : CalendarDayStatus.notWorn,
-        isToday: date.year == today.year && date.month == today.month && date.day == today.day,
+        isToday: date.year == today.year &&
+            date.month == today.month &&
+            date.day == today.day,
         isInSelectedPeriod: i >= (7 - period.days),
       );
     });
@@ -145,17 +135,25 @@ final calendarProvider = FutureProvider.family<List<CalendarDayData>, ReportPeri
 
 final highlightProvider = FutureProvider.family<HighlightData, ReportPeriod>(
   (ref, period) async {
-    final db = ref.watch(localDatabaseProvider);
+    final db      = ref.watch(localDatabaseProvider);
     final station = ref.watch(locationStateProvider).station ?? '';
-    final records = await db.getRecentAqiRecords(stationName: station, hours: period.days * 24);
 
-    if (records.isEmpty) return HighlightData.empty();
+    final worst = await db.getMaxPm25Record(
+      stationName: station,
+      days: period.days,
+    );
+    if (worst == null) return HighlightData.empty();
 
-    final allSafe = records.every((r) => (r.pm25Value ?? 0) <= 15);
-    final worst = records.reduce((a, b) =>
-        (a.pm25Value ?? 0) >= (b.pm25Value ?? 0) ? a : b);
-    final dayLogs = await db.getLogsForDate(worst.dataTime);
+    final grouped = await db.getLogsGroupedByDate(days: period.days);
+    final key     = _dayKey(worst.dataTime);
+    final dayLogs = grouped[key] ?? [];
     final maskWorn = dayLogs.any((l) => l.userAction == UserAction.maskWorn);
+
+    final records = await db.getRecentAqiRecords(
+      stationName: station,
+      hours: period.days * 24,
+    );
+    final allSafe = records.every((r) => (r.pm25Value ?? 0) <= 15);
 
     return HighlightData(
       date: worst.dataTime,

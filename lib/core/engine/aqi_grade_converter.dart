@@ -1,4 +1,3 @@
-import 'dart:math';
 import '../../data/models/aqi_record.dart';
 
 /// 에어코리아 예보 등급 → PM2.5 수치 변환 + Spline 보간
@@ -70,6 +69,46 @@ class AqiGradeConverter {
     final smoothT = t * t * (3 - 2 * t); // smoothstep
     return from + (to - from) * smoothT;
   }
+
+  /// 마스크 필터율 상수
+  static const Map<String, double> maskFilterRates = {
+    'KF94':  0.94,
+    'KF80':  0.80,
+    'KF-AD': 0.70,
+  };
+
+  /// 현재 PM2.5 → 미래 horizonHours 동안 Cubic ease Spline으로 FlSpot 생성
+  ///
+  /// [currentPm25]   : 현재 실측 PM2.5
+  /// [forecastGrade] : 향후 예보 등급
+  /// [horizonHours]  : 미래 예측 범위 (기본 12시간)
+  ///
+  /// 반환: FlSpot(x=시간(0~horizonHours), y=PM2.5) 리스트 — x=0 현재 포함
+  static List<({double x, double y})> buildFutureSpots({
+    required double currentPm25,
+    required String forecastGrade,
+    int horizonHours = 12,
+  }) {
+    final target = gradeToMidvalue(forecastGrade);
+    return List.generate(horizonHours + 1, (h) {
+      final t = horizonHours == 0 ? 1.0 : h / horizonHours;
+      final smooth = t * t * (3 - 2 * t);
+      final value = currentPm25 + (target - currentPm25) * smooth;
+      return (x: h.toDouble(), y: value.clamp(0.0, 200.0));
+    });
+  }
+
+  /// 대기 농도 → 마스크 착용 시 흡입 농도 변환
+  ///
+  /// 흡입량 = airPm25 × (1 − filterRate)
+  /// ThresholdEngine.filteredExposure()와 동일한 공식 — 일관성 유지
+  static List<({double x, double y})> buildMaskSpotsFromFuture(
+    List<({double x, double y})> airSpots,
+    double filterRate,
+  ) =>
+      airSpots
+          .map((s) => (x: s.x, y: (s.y * (1 - filterRate)).clamp(0.0, 200.0)))
+          .toList();
 
   // ── 차트 데이터 통합 ────────────────────────────────────────
 

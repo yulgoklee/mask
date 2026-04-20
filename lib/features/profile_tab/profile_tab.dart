@@ -1,4 +1,5 @@
 import 'package:animated_digit/animated_digit.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -277,7 +278,7 @@ class ProfileEditButton extends ConsumerWidget {
       icon: Icons.health_and_safety_outlined,
       title: '건강 프로필 수정',
       subtitle: summary,
-      onTap: () => Navigator.pushNamed(context, '/profile'),
+      onTap: () => context.push('/profile/edit'),
     );
   }
 
@@ -321,7 +322,7 @@ class NotificationSettingButton extends ConsumerWidget {
           ),
         ),
       ),
-      onTap: () => Navigator.pushNamed(context, '/notifications'),
+      onTap: () => context.push('/notifications'),
     );
   }
 

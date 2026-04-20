@@ -1,3 +1,4 @@
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -60,7 +61,7 @@ class _AnalysisLoadingScreenState
     await Future.delayed(const Duration(milliseconds: 900));
     if (!mounted) return;
 
-    Navigator.of(context).pushReplacementNamed('/dashboard');
+    context.go('/dashboard');
   }
 
   @override

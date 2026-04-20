@@ -1,3 +1,4 @@
+import 'package:go_router/go_router.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -196,11 +197,9 @@ class NotificationTimeScreen extends ConsumerWidget {
                         final permStatus =
                             await Permission.notification.status;
                         if (!context.mounted) return;
-                        Navigator.of(context).pushReplacementNamed(
-                          permStatus.isGranted
-                              ? '/onboarding_complete'
-                              : '/permission',
-                        );
+                        context.go(permStatus.isGranted
+                            ? '/onboarding_complete'
+                            : '/permission');
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
