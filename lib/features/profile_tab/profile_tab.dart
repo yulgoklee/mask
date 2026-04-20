@@ -77,12 +77,12 @@ class PersonaCard extends ConsumerWidget {
           alignment: Alignment.center,
           border: 1.5,
           linearGradient: LinearGradient(
-            colors: [Colors.white.withOpacity(0.8), Colors.white.withOpacity(0.5)],
+            colors: [Colors.white.withValues(alpha: 0.8), Colors.white.withValues(alpha: 0.5)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderGradient: LinearGradient(
-            colors: [Colors.white.withOpacity(0.5), Colors.white.withOpacity(0.1)],
+            colors: [Colors.white.withValues(alpha: 0.5), Colors.white.withValues(alpha: 0.1)],
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),

@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/notification_log.dart';
 import '../../../providers/core_providers.dart';
 import '../../../providers/location_providers.dart';
-import '../../../providers/profile_providers.dart';
 import '../models/report_models.dart';
 
 // ── 기간 선택 상태 ────────────────────────────────────────
@@ -22,8 +21,6 @@ final dailyBarProvider = FutureProvider.family<List<DailyBarData>, ReportPeriod>
       stationName: station,
       hours: period.days * 24,
     );
-    final stats = await db.getNotifActionStats(days: period.days);
-
     final byDay = <String, List<double>>{};
     final maskByDay = <String, bool>{};
 

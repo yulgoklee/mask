@@ -19,6 +19,43 @@ class CareTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final dustAsync = ref.watch(dustDataProvider);
 
+    if (dustAsync.hasError) {
+      return Scaffold(
+        backgroundColor: DT.background,
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.wifi_off_rounded, size: 56, color: DT.border),
+                  const SizedBox(height: 20),
+                  const Text(
+                    '미세먼지 정보를 불러올 수 없어요.',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: DT.text),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '네트워크 연결을 확인해 주세요.',
+                    style: TextStyle(fontSize: 14, color: DT.gray),
+                  ),
+                  const SizedBox(height: 28),
+                  FilledButton.icon(
+                    onPressed: () => ref.refresh(dustDataProvider.future),
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('다시 시도'),
+                    style: FilledButton.styleFrom(backgroundColor: DT.primary),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: DT.background,
       body: SafeArea(
