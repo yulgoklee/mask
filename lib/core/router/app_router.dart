@@ -21,6 +21,60 @@ import '../../widgets/main_shell.dart';
 final _rootNavigatorKey  = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
+CustomTransitionPage<void> _fadePage(GoRouterState state, Widget child) =>
+    CustomTransitionPage(
+      key: state.pageKey,
+      child: child,
+      transitionDuration: const Duration(milliseconds: 350),
+      transitionsBuilder: (_, animation, __, child) => FadeTransition(
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        child: child,
+      ),
+    );
+
+CustomTransitionPage<void> _slidePage(GoRouterState state, Widget child) =>
+    CustomTransitionPage(
+      key: state.pageKey,
+      child: child,
+      transitionDuration: const Duration(milliseconds: 280),
+      reverseTransitionDuration: const Duration(milliseconds: 250),
+      transitionsBuilder: (_, animation, secondaryAnimation, child) {
+        final tween = Tween<Offset>(
+          begin: const Offset(1.0, 0),
+          end: Offset.zero,
+        ).chain(CurveTween(curve: Curves.easeOutCubic));
+        final reverseTween = Tween<Offset>(
+          begin: Offset.zero,
+          end: const Offset(-0.3, 0),
+        ).chain(CurveTween(curve: Curves.easeInCubic));
+        return SlideTransition(
+          position: animation.drive(tween),
+          child: SlideTransition(
+            position: secondaryAnimation.drive(reverseTween),
+            child: child,
+          ),
+        );
+      },
+    );
+
+CustomTransitionPage<void> _slideUpPage(GoRouterState state, Widget child) =>
+    CustomTransitionPage(
+      key: state.pageKey,
+      child: child,
+      transitionDuration: const Duration(milliseconds: 320),
+      reverseTransitionDuration: const Duration(milliseconds: 280),
+      transitionsBuilder: (_, animation, __, child) {
+        final tween = Tween<Offset>(
+          begin: const Offset(0, 1.0),
+          end: Offset.zero,
+        ).chain(CurveTween(curve: Curves.easeOutCubic));
+        return SlideTransition(
+          position: animation.drive(tween),
+          child: child,
+        );
+      },
+    );
+
 final appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/splash',
@@ -28,59 +82,60 @@ final appRouter = GoRouter(
     // ── 스플래시 / 온보딩 플로우 ─────────────────────────────
     GoRoute(
       path: '/splash',
-      builder: (_, __) => const SplashScreen(),
+      pageBuilder: (_, state) => _fadePage(state, const SplashScreen()),
     ),
     GoRoute(
       path: '/tutorial',
-      builder: (_, __) => const TutorialScreen(),
+      pageBuilder: (_, state) => _fadePage(state, const TutorialScreen()),
     ),
     GoRoute(
       path: '/roadmap',
-      builder: (_, __) => const RoadmapScreen(),
+      pageBuilder: (_, state) => _fadePage(state, const RoadmapScreen()),
     ),
     GoRoute(
       path: '/onboarding',
-      builder: (_, __) => const OnboardingScreen(),
+      pageBuilder: (_, state) => _slidePage(state, const OnboardingScreen()),
     ),
     GoRoute(
       path: '/analysis_loading',
-      builder: (_, __) => const AnalysisLoadingScreen(),
+      pageBuilder: (_, state) => _slidePage(state, const AnalysisLoadingScreen()),
     ),
     GoRoute(
       path: '/dashboard',
-      builder: (_, __) => const DashboardScreen(),
+      pageBuilder: (_, state) => _slidePage(state, const DashboardScreen()),
     ),
     GoRoute(
       path: '/location_setup',
-      builder: (context, state) => LocationSetupScreen(
-        isOnboarding: state.extra as bool? ?? false,
+      pageBuilder: (_, state) => _slidePage(
+        state,
+        LocationSetupScreen(isOnboarding: state.extra as bool? ?? false),
       ),
     ),
     GoRoute(
       path: '/notification_time',
-      builder: (_, __) => const NotificationTimeScreen(),
+      pageBuilder: (_, state) => _slidePage(state, const NotificationTimeScreen()),
     ),
     GoRoute(
       path: '/permission',
-      builder: (_, __) => const PermissionScreen(),
+      pageBuilder: (_, state) => _slidePage(state, const PermissionScreen()),
     ),
     GoRoute(
       path: '/onboarding_complete',
-      builder: (_, __) => const OnboardingCompleteScreen(),
+      pageBuilder: (_, state) => _slidePage(state, const OnboardingCompleteScreen()),
     ),
 
     // ── 설정 / 서브 페이지 (전체 화면, ShellRoute 밖) ─────────
     GoRoute(
       path: '/notifications',
-      builder: (_, __) => const NotificationScreen(),
+      pageBuilder: (_, state) => _slideUpPage(state, const NotificationScreen()),
     ),
     GoRoute(
       path: '/info',
-      builder: (_, __) => const InfoScreen(),
+      pageBuilder: (_, state) => _slideUpPage(state, const InfoScreen()),
     ),
     GoRoute(
       path: '/profile/edit',
-      builder: (_, __) => const ProfileScreen(),
+      pageBuilder: (_, state) => _slideUpPage(state, const ProfileScreen()),
     ),
 
     // ── 메인 3탭 ShellRoute ──────────────────────────────────
@@ -90,15 +145,15 @@ final appRouter = GoRouter(
       routes: [
         GoRoute(
           path: '/care',
-          builder: (_, __) => const CareTab(),
+          pageBuilder: (_, state) => _fadePage(state, const CareTab()),
         ),
         GoRoute(
           path: '/report',
-          builder: (_, __) => const ReportTab(),
+          pageBuilder: (_, state) => _fadePage(state, const ReportTab()),
         ),
         GoRoute(
           path: '/profile',
-          builder: (_, __) => const ProfileTab(),
+          pageBuilder: (_, state) => _fadePage(state, const ProfileTab()),
         ),
       ],
     ),

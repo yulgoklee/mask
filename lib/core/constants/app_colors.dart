@@ -33,6 +33,16 @@ class AppColors {
   static const Color notifEvening = Color(0xFF8B5CF6);   // 전날 예보 — purple
   static const Color notifReturn  = Color(0xFF10B981);   // 귀가 후   — green
 
+  // 시맨틱 배경 — 위험도별 홈 배경
+  static const Color bgSafe     = Color(0xFFE8F4FF); // low — 브랜드 안심
+  static const Color bgNormal   = Color(0xFFFFFBEB); // normal — 평소
+  static const Color bgWarning  = Color(0xFFFFF7ED); // warning
+  static const Color bgDanger   = Color(0xFFFEF2F2); // danger
+  static const Color bgCritical = Color(0xFFF5F3FF); // critical
+
+  // 온보딩 진단 배경 — 흰색보다 살짝 따뜻한 파란 틴트
+  static const Color bgOnboarding = Color(0xFFF5F9FF);
+
   static Color dustGradeColor(String grade) {
     switch (grade) {
       case '좋음':    return dustGood;

@@ -190,17 +190,17 @@ class DustCalculator {
     final display = profile.displayName;
     switch (risk) {
       case RiskLevel.low:
-        return '$display, 오늘 공기가 맑아요 😊\n마음껏 외출하셔도 좋아요.';
+        return '$display, 오늘 공기가 맑아요.\n마음껏 외출하셔도 좋아요 😊';
       case RiskLevel.normal:
-        return '오늘은 보통 수준이에요.\n장시간 야외 활동 시 마스크를 고려하세요.';
+        return '오늘은 보통 수준이에요.\n장시간 야외라면 마스크를 고려해보세요.';
       case RiskLevel.warning:
-        return '$display, 오늘 마스크를 꼭 챙기세요.\nPM2.5 ${pm25}μg/m³로 나빠요.';
+        return '$display, 오늘 마스크 챙겨가세요.\nPM2.5 ${pm25}μg/m³, 조금 나빠요.';
       case RiskLevel.danger:
-        return '$display, 오늘 외출 시 마스크 필수예요.\nPM2.5 ${pm25}μg/m³로 매우 나빠요.';
+        return '$display, 지금 마스크 필수예요.\nPM2.5 ${pm25}μg/m³, 매우 나빠요.';
       case RiskLevel.critical:
-        return '$display, 오늘은 외출을 자제해주세요.\nPM2.5 ${pm25}μg/m³로 매우 심각해요.';
+        return '$display, 오늘은 외출을 줄여주세요.\nPM2.5 ${pm25}μg/m³, 심각한 수준이에요.';
       case RiskLevel.unknown:
-        return '미세먼지 정보를 불러올 수 없어요.';
+        return '미세먼지 정보를 가져오고 있어요.';
     }
   }
 

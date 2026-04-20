@@ -146,7 +146,7 @@ class _OnboardingCompleteScreenState
                     const Spacer(flex: 3),
 
                     AppButton.primary(
-                      label: '시작하기',
+                      label: '시작할게요',
                       onTap: () {
                         if (ref.read(dustDataProvider).hasValue == false) {
                           ref.invalidate(dustDataProvider);

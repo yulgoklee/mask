@@ -367,7 +367,7 @@ class _ZeroDayView extends StatelessWidget {
               size: 32, color: AppColors.textHint),
           SizedBox(height: 10),
           Text(
-            '데이터를 수집 중이에요',
+            '데이터를 모으고 있어요',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -376,7 +376,7 @@ class _ZeroDayView extends StatelessWidget {
           ),
           SizedBox(height: 4),
           Text(
-            '잠시 후 PM2.5 추이 차트가 표시됩니다',
+            '잠시 후 차트가 표시돼요',
             style: TextStyle(fontSize: 12, color: AppColors.textHint),
           ),
         ],

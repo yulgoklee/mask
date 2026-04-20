@@ -73,7 +73,7 @@ class _RoadmapScreenState extends State<RoadmapScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '내 기관지에 맞는 기준을 만들어드릴게요.',
+                    '내 몸에 맞는 기준으로 챙겨드릴게요.',
                     style: TextStyle(
                       fontSize: 16,
                       color: AppColors.textPrimary.withValues(alpha: 0.65),
@@ -112,7 +112,7 @@ class _RoadmapScreenState extends State<RoadmapScreen>
 
                   // ── 시작 버튼 ─────────────────────────────────
                   AppButton.primary(
-                    label: '진단 시작하기',
+                    label: '시작하기',
                     onTap: () => context.go('/onboarding'),
                   ),
                   const SizedBox(height: 24),

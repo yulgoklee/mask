@@ -146,19 +146,19 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   child: Column(
                     children: [
                       const Text(
-                        '당신의 기관지는\n남들과 다릅니다.',
+                        '같은 공기,\n다른 기준.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 26,
+                          fontSize: 28,
                           fontWeight: FontWeight.bold,
                           color: AppColors.textPrimary,
-                          height: 1.35,
+                          height: 1.3,
                           letterSpacing: -0.5,
                         ),
                       ),
                       const SizedBox(height: 14),
                       Text(
-                        '당신만을 위한 마스크 타이밍.',
+                        '내 건강 상태에 맞게 알려드려요.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 16,
