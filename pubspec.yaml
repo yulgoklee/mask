@@ -51,6 +51,19 @@ dependencies:
   uuid: ^4.5.3
   fl_chart: ^0.69.0
 
+  # UI 애니메이션
+  flutter_animate: ^4.5.0
+  flutter_staggered_animations: ^1.1.1
+
+  # 스켈레톤 로딩
+  skeletonizer: ^1.4.2
+
+  # 글래스모피즘
+  glassmorphism: ^3.0.0
+
+  # 숫자 롤링 애니메이션
+  animated_digit: ^3.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
