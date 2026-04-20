@@ -38,32 +38,36 @@ class AqiHistoryRepository {
     required String forecastGrade,
     UserProfile? profile,
   }) async {
-    final station = _polling.resolveStation(_prefs, profile);
-    if (station == null) {
+    try {
+      final station = _polling.resolveStation(_prefs, profile);
+      if (station == null) {
+        return AqiChartData.noStation();
+      }
+
+      final records = await _db.getRecentAqiRecords(
+        stationName: station,
+        hours: 6,
+      );
+
+      final points = AqiGradeConverter.buildChartPoints(
+        pastRecords: records,
+        targetGrade: forecastGrade,
+        horizonHours: 3,
+      );
+
+      final lastRecord = records.isNotEmpty ? records.last : null;
+
+      return AqiChartData(
+        stationName: station,
+        points: points,
+        lastDataTime: lastRecord?.dataTime,
+        fetchedAt: lastRecord?.fetchedAt,
+        hasEnoughData: records.length >= 2,
+        currentPm25: lastRecord?.pm25Value?.toDouble(),
+      );
+    } catch (_) {
       return AqiChartData.noStation();
     }
-
-    final records = await _db.getRecentAqiRecords(
-      stationName: station,
-      hours: 6,
-    );
-
-    final points = AqiGradeConverter.buildChartPoints(
-      pastRecords: records,
-      targetGrade: forecastGrade,
-      horizonHours: 3,
-    );
-
-    final lastRecord = records.isNotEmpty ? records.last : null;
-
-    return AqiChartData(
-      stationName: station,
-      points: points,
-      lastDataTime: lastRecord?.dataTime,
-      fetchedAt: lastRecord?.fetchedAt,
-      hasEnoughData: records.length >= 2,
-      currentPm25: lastRecord?.pm25Value?.toDouble(),
-    );
   }
 
   /// 현재 측정소 이름

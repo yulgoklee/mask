@@ -242,7 +242,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   ),
                                   child: DustGaugeWidget(
                                     value: dust.pm10Value,
-                                    label: '미세먼지',
+                                    label: 'PM10',
                                     grade: pm10Grade,
                                   ),
                                 ),
@@ -263,7 +263,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   ),
                                   child: DustGaugeWidget(
                                     value: dust.pm25Value,
-                                    label: '초미세먼지',
+                                    label: 'PM2.5',
                                     grade: pm25Grade,
                                   ),
                                 ),
