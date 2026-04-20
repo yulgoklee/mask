@@ -291,7 +291,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         if (!didPop && _currentPage > 0) _prevPage();
       },
       child: Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bgOnboarding,
       body: SafeArea(
         child: Column(
           children: [

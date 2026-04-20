@@ -739,8 +739,16 @@ class _BasicInfoSection extends ConsumerWidget {
 
   const _BasicInfoSection({required this.profile});
 
-  void _save(WidgetRef ref, UserProfile updated) {
+  void _save(BuildContext context, WidgetRef ref, UserProfile updated) {
     ref.read(profileProvider.notifier).update(updated);
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('저장됐어요'),
+        duration: Duration(seconds: 1),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -755,7 +763,7 @@ class _BasicInfoSection extends ConsumerWidget {
           values: const ['male', 'female', 'other'],
           selected: profile.gender,
           labelOf: (v) => v == 'male' ? '남성' : v == 'female' ? '여성' : '기타',
-          onSelect: (v) => _save(ref, profile.copyWith(gender: v)),
+          onSelect: (v) => _save(context, ref, profile.copyWith(gender: v)),
         ),
         const SizedBox(height: 20),
 
@@ -764,7 +772,7 @@ class _BasicInfoSection extends ConsumerWidget {
         const SizedBox(height: 8),
         _BirthYearPicker(
           birthYear: profile.birthYear,
-          onChanged: (year) => _save(ref, profile.copyWith(birthYear: year)),
+          onChanged: (year) => _save(context, ref, profile.copyWith(birthYear: year)),
         ),
         const SizedBox(height: 20),
 
@@ -780,7 +788,7 @@ class _BasicInfoSection extends ConsumerWidget {
             3 => '비염+천식',
             _ => '건강해요',
           },
-          onSelect: (v) => _save(ref, profile.copyWith(respiratoryStatus: v)),
+          onSelect: (v) => _save(context, ref, profile.copyWith(respiratoryStatus: v)),
         ),
         const SizedBox(height: 20),
 
@@ -791,7 +799,7 @@ class _BasicInfoSection extends ConsumerWidget {
           values: const [0, 1, 2],
           selected: profile.outdoorMinutes,
           labelOf: (v) => v == 0 ? '1시간 미만' : v == 1 ? '1~3시간' : '3시간 이상',
-          onSelect: (v) => _save(ref, profile.copyWith(outdoorMinutes: v)),
+          onSelect: (v) => _save(context, ref, profile.copyWith(outdoorMinutes: v)),
         ),
         const SizedBox(height: 20),
 
@@ -807,7 +815,7 @@ class _BasicInfoSection extends ConsumerWidget {
           values: const [0, 1, 2],
           selected: profile.sensitivityLevel,
           labelOf: (v) => v == 0 ? '무던해요' : v == 1 ? '보통이에요' : '매우 예민해요',
-          onSelect: (v) => _save(ref, profile.copyWith(sensitivityLevel: v)),
+          onSelect: (v) => _save(context, ref, profile.copyWith(sensitivityLevel: v)),
         ),
         const SizedBox(height: 20),
 
@@ -818,7 +826,7 @@ class _BasicInfoSection extends ConsumerWidget {
           values: const [0, 1, 2],
           selected: profile.discomfortLevel,
           labelOf: (v) => v == 0 ? '안 느껴요' : v == 1 ? '보통이에요' : '많이 불편해요',
-          onSelect: (v) => _save(ref, profile.copyWith(discomfortLevel: v)),
+          onSelect: (v) => _save(context, ref, profile.copyWith(discomfortLevel: v)),
         ),
       ],
     );
@@ -1322,6 +1330,16 @@ class _QuietHoursSection extends ConsumerWidget {
               ? setting.copyWith(quietHoursStartHour: picked.hour)
               : setting.copyWith(quietHoursEndHour: picked.hour),
         );
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('방해 금지 시간이 저장됐어요'),
+          duration: Duration(seconds: 1),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
@@ -1358,9 +1376,19 @@ class _QuietHoursSection extends ConsumerWidget {
             ),
             trailing: Switch(
               value: enabled,
-              onChanged: (v) => ref
-                  .read(notificationSettingProvider.notifier)
-                  .update(setting.copyWith(quietHoursEnabled: v)),
+              onChanged: (v) {
+                ref
+                    .read(notificationSettingProvider.notifier)
+                    .update(setting.copyWith(quietHoursEnabled: v));
+                ScaffoldMessenger.of(context).clearSnackBars();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(v ? '방해 금지가 켜졌어요' : '방해 금지가 꺼졌어요'),
+                    duration: const Duration(seconds: 1),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
               activeColor: AppColors.primary,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),

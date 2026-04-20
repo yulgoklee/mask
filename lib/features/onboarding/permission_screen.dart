@@ -88,7 +88,7 @@ class PermissionScreen extends ConsumerWidget {
 
               // 권한 허용 버튼
               AppButton.primary(
-                label: '알림 허용하기',
+                label: '알림 받기',
                 onTap: () async {
                   var status = await Permission.notification.status;
                   if (!status.isGranted) {
@@ -144,7 +144,7 @@ class PermissionScreen extends ConsumerWidget {
 
               // 건너뛰기
               AppButton.text(
-                label: '나중에 설정할게요',
+                label: '나중에 할게요',
                 onTap: () => context.go('/onboarding_complete'),
               ),
               const SizedBox(height: 8),

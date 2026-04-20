@@ -18,6 +18,7 @@ import '../../widgets/app_card.dart';
 import '../../widgets/async_state_widgets.dart';
 import '../../widgets/dust_gauge_widget.dart';
 import '../../widgets/section_header.dart';
+import '../../core/utils/app_router.dart';
 import '../location_setup/location_setup_screen.dart';
 import 'dust_detail_screen.dart';
 import 'dust_forecast_detail_screen.dart';
@@ -81,10 +82,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Color _bgColor(RiskLevel? level) {
     switch (level) {
-      case RiskLevel.low:      return const Color(0xFFECFDF5);
-      case RiskLevel.warning:  return const Color(0xFFFFF7ED);
-      case RiskLevel.danger:   return const Color(0xFFFEF2F2);
-      case RiskLevel.critical: return const Color(0xFFF5F3FF);
+      case RiskLevel.low:      return AppColors.bgSafe;
+      case RiskLevel.normal:   return AppColors.bgNormal;
+      case RiskLevel.warning:  return AppColors.bgWarning;
+      case RiskLevel.danger:   return AppColors.bgDanger;
+      case RiskLevel.critical: return AppColors.bgCritical;
       default:                 return AppColors.background;
     }
   }
@@ -134,7 +136,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 parameters: {'error_type': e.runtimeType.toString()},
               );
               return ErrorStateWidget(
-                message: '미세먼지 정보를 불러올 수 없어요.\n네트워크 연결을 확인해 주세요.',
+                message: '잠깐, 연결이 안 돼요.\n네트워크를 확인하고 다시 시도해주세요.',
                 onRetry: () {
                   ref.invalidate(dustDataProvider);
                   ref.invalidate(tomorrowForecastProvider);
@@ -156,7 +158,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 return ErrorStateWidget(
                   icon: Icons.cloud_off_outlined,
                   message:
-                      '[$savedStation] 데이터를 가져올 수 없어요.\n잠시 후 다시 시도해 주세요.',
+                      '[$savedStation] 데이터를 아직 못 가져왔어요.\n잠시 후 다시 확인할게요.',
                   onRetry: () {
                     ref.invalidate(dustDataProvider);
                     ref.invalidate(tomorrowForecastProvider);
@@ -181,8 +183,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       isDetecting: locationState.isDetecting,
                       onChangeStation: () => Navigator.push(
                         context,
-                        MaterialPageRoute(
-                            builder: (_) => const LocationSetupScreen()),
+                        AppRouter.slideUp(const LocationSetupScreen()),
                       ).then((_) {
                         ref
                             .read(locationStateProvider.notifier)
@@ -208,8 +209,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             highlightOverride: _highlightHero,
                             onTap: () => Navigator.push(
                               context,
-                              MaterialPageRoute(
-                                  builder: (_) => const RiskDetailScreen()),
+                              AppRouter.slideUp(const RiskDetailScreen()),
                             ),
                           ),
 
@@ -235,14 +235,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 child: GestureDetector(
                                   onTap: () => Navigator.push(
                                     context,
-                                    MaterialPageRoute(
-                                      builder: (_) => DustDetailScreen(
-                                        pm10Value: dust.pm10Value,
-                                        pm25Value: dust.pm25Value,
-                                        pm10Grade: pm10Grade,
-                                        pm25Grade: pm25Grade,
-                                      ),
-                                    ),
+                                    AppRouter.slideUp(DustDetailScreen(
+                                      pm10Value: dust.pm10Value,
+                                      pm25Value: dust.pm25Value,
+                                      pm10Grade: pm10Grade,
+                                      pm25Grade: pm25Grade,
+                                    )),
                                   ),
                                   child: DustGaugeWidget(
                                     value: dust.pm10Value,
@@ -256,14 +254,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 child: GestureDetector(
                                   onTap: () => Navigator.push(
                                     context,
-                                    MaterialPageRoute(
-                                      builder: (_) => DustDetailScreen(
-                                        pm10Value: dust.pm10Value,
-                                        pm25Value: dust.pm25Value,
-                                        pm10Grade: pm10Grade,
-                                        pm25Grade: pm25Grade,
-                                      ),
-                                    ),
+                                    AppRouter.slideUp(DustDetailScreen(
+                                      pm10Value: dust.pm10Value,
+                                      pm25Value: dust.pm25Value,
+                                      pm10Grade: pm10Grade,
+                                      pm25Grade: pm25Grade,
+                                    )),
                                   ),
                                   child: DustGaugeWidget(
                                     value: dust.pm25Value,
@@ -313,7 +309,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('내 위치로 측정소를 업데이트했어요'),
+          content: Text('내 위치로 업데이트했어요'),
           duration: Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
         ),
@@ -1016,12 +1012,10 @@ class _HourlySection extends StatelessWidget {
         _analytics.logEvent(name: 'detail_screen_opened');
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => DustForecastDetailScreen(
-              stationName: stationName,
-              sidoName: sidoName,
-            ),
-          ),
+          AppRouter.slideUp(DustForecastDetailScreen(
+            stationName: stationName,
+            sidoName: sidoName,
+          )),
         );
       },
       child: AppCard(
@@ -1228,7 +1222,7 @@ class _NoStationView extends StatelessWidget {
                 size: 56, color: AppColors.textHint),
             const SizedBox(height: 16),
             const Text(
-              '위치가 설정되지 않았어요.\n내 지역을 먼저 설정해주세요.',
+              '어디 계세요?\n내 지역을 설정하면 바로 알려드릴게요.',
               style: TextStyle(
                   fontSize: 15,
                   color: AppColors.textSecondary,
@@ -1237,7 +1231,7 @@ class _NoStationView extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             AppButton.primary(
-              label: '지역 설정하기',
+              label: '지금 설정하기',
               onTap: onSetup,
               fullWidth: false,
               leading: const Icon(Icons.my_location, size: 18, color: Colors.white),

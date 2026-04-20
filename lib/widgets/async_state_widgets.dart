@@ -115,7 +115,7 @@ class ErrorStateWidget extends StatelessWidget {
 
   const ErrorStateWidget({
     super.key,
-    this.message = '데이터를 불러올 수 없어요.',
+    this.message = '잠깐, 데이터를 가져오지 못했어요.',
     this.onRetry,
     this.icon = Icons.wifi_off_rounded,
   });
@@ -139,7 +139,7 @@ class ErrorStateWidget extends StatelessWidget {
             if (onRetry != null) ...[
               const SizedBox(height: 24),
               AppButton.primary(
-                label: '다시 시도',
+                label: '다시 시도하기',
                 onTap: onRetry,
                 fullWidth: false,
                 leading: const Icon(Icons.refresh, size: 18, color: Colors.white),

@@ -97,7 +97,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
 
                     // ⑤ CTA 버튼
                     AppButton.primary(
-                      label: '위치 설정 →',
+                      label: '위치 설정하고 시작하기 →',
                       onTap: () => context.go('/location_setup', extra: true),
                     ),
                     const SizedBox(height: 32),

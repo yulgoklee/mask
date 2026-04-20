@@ -60,16 +60,16 @@ class _LocationSetupScreenState extends ConsumerState<LocationSetupScreen> {
     VoidCallback? action;
     switch (result.error) {
       case LocationError.serviceDisabled:
-        msg = 'GPS가 꺼져 있어요.\n위치 서비스를 켠 뒤 다시 시도해주세요.';
+        msg = 'GPS가 꺼져 있어요.\n위치 서비스를 켜주시면 자동으로 찾아드릴게요.';
         action = () => ref.read(locationServiceProvider).openLocationSettings();
       case LocationError.permissionDeniedForever:
         msg = '위치 권한이 영구 거절되었어요.\n설정에서 허용한 뒤 다시 시도해주세요.';
         action = () => ref.read(locationServiceProvider).openAppSettings();
       case LocationError.permissionDenied:
-        msg = '위치 권한을 허용해야 자동 감지가 가능해요.\n아래에서 지역을 직접 선택해주세요.';
+        msg = '위치 권한이 필요해요.\n아래에서 지역을 직접 선택하셔도 돼요.';
         action = null;
       case LocationError.timeout:
-        msg = '위치를 찾는 데 너무 오래 걸려요.\n아래에서 지역을 직접 선택해주세요.';
+        msg = '위치를 찾는 데 시간이 걸려요.\n직접 지역을 선택해주셔도 괜찮아요.';
         action = null;
       default:
         msg = '위치 감지에 실패했어요.\n아래에서 지역을 직접 선택해주세요.';
