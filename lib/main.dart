@@ -9,9 +9,11 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'app.dart';
+import 'core/config/app_config.dart';
 import 'core/database/local_database.dart';
 import 'core/services/air_korea_service.dart';
 import 'core/services/aqi_polling_service.dart';
+import 'core/services/cloud_functions_data_source.dart';
 import 'core/services/notification_deep_link.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/workmanager_push_scheduler.dart';
@@ -127,8 +129,10 @@ void _seedAqiDataIfNeeded(SharedPreferences prefs) {
   Future.microtask(() async {
     try {
       final db = LocalDatabase();
-      final airKorea = AirKoreaService(prefs);
-      final polling = AqiPollingService(airKorea: airKorea, db: db);
+      final dataSource = AppConfig.cloudFunctionsBaseUrl.isNotEmpty
+          ? CloudFunctionsDataSource()
+          : AirKoreaService(prefs);
+      final polling = AqiPollingService(airKorea: dataSource, db: db);
       await polling.runPollingCycle(prefs: prefs);
       await db.close();
     } catch (_) {

@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/models/user_profile.dart';
+import '../engine/threshold_engine.dart';
 
 /// 민감도 계수(S) 관련 유틸리티 — UserProfile v2 기반 경량 래퍼
 ///
@@ -69,13 +70,9 @@ class SensitivityCalculator {
   // ── 공개 가중치 헬퍼 (v2 필드 기반) ──────────────────────
   // onboarding_result_screen, result_screen 등에서 사용
 
-  /// 호흡기 상태 가중치 (비트플래그 — 비염+천식 중복 가능)
-  static double conditionWeight(UserProfile p) {
-    double w = 0.0;
-    if (p.respiratoryStatus & 2 != 0) w += 0.30; // 천식 (bit 1)
-    if (p.respiratoryStatus & 1 != 0) w += 0.15; // 비염 (bit 0)
-    return w;
-  }
+  /// 호흡기·건강 상태 가중치 — ThresholdEngine 위임 (우선순위-max)
+  static double conditionWeight(UserProfile p) =>
+      const ThresholdEngine().computeWHealth(p);
 
   /// Q9 활동 태그 가중치 (최대 0.10)
   static double activityTagWeight(UserProfile p) {
@@ -86,14 +83,9 @@ class SensitivityCalculator {
     return w.clamp(0.0, 0.10);
   }
 
-  /// 야외 활동량 가중치 (Q8 시간 + Q9 활동태그 합산, 최대 0.20)
-  static double activityWeight(UserProfile p) {
-    double w = 0.0;
-    if (p.outdoorMinutes == 2)      w += 0.10;
-    else if (p.outdoorMinutes == 1) w += 0.05;
-    w += activityTagWeight(p);
-    return w.clamp(0.0, 0.20);
-  }
+  /// 야외 활동량 가중치 — ThresholdEngine 위임
+  static double activityWeight(UserProfile p) =>
+      const ThresholdEngine().computeWLifestyle(p);
 
   /// 주관적 민감도 가중치
   static double sensitivityWeightFromProfile(UserProfile p) {

@@ -44,7 +44,7 @@ final dustRepositoryProvider = Provider<DustRepository>((ref) {
 
 final aqiPollingServiceProvider = Provider<AqiPollingService>((ref) {
   return AqiPollingService(
-    airKorea: ref.watch(airKoreaServiceProvider),
+    airKorea: ref.watch(dustDataSourceProvider),
     db: ref.watch(localDatabaseProvider),
   );
 });

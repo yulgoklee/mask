@@ -78,30 +78,13 @@ class UserProfile {
     return '건강함';
   }
 
-  /// 민감도 계수 S ([0.1, 0.6] clamp)
+  /// 민감도 계수 S ([0.1, 0.6] clamp) — ThresholdEngine 위임
   ///
-  /// 기저 0.0에서 시작해 각 조건에 따라 가중치 누적
+  /// W_health(우선순위-max) + W_lifestyle 합산
   double get sensitivityIndex {
-    double s = 0.0;
-    if (isVulnerableAge)                       s += 0.10;
-    if (respiratoryStatus & 1 != 0)            s += 0.15; // 비염 (bit 0)
-    if (respiratoryStatus & 2 != 0)            s += 0.30; // 천식 (bit 1)
-    if (sensitivityLevel == 1)                 s += 0.05; // 보통
-    if (sensitivityLevel == 2)                 s += 0.10; // 매우 예민
-    if ((gender == 'female' || gender.isEmpty) && isPregnant) s += 0.30; // 임신 (성별 미선택 포함)
-    if (isSkinTreatmentActive)                 s += 0.25; // 피부 시술 (2주 내)
-    if (outdoorMinutes == 1)                   s += 0.05; // 1~3h
-    if (outdoorMinutes == 2)                   s += 0.10; // 3h이상
-    // Q9 활동 태그 — 운동·배달 +5%, 기타 +3%, 최대 +10%
-    double tagW = 0.0;
-    for (final tag in activityTags) {
-      tagW += (tag == ActivityTag.exercise || tag == ActivityTag.delivery)
-          ? 0.05
-          : 0.03;
-    }
-    s += tagW.clamp(0.0, 0.10);
-    if (discomfortLevel == 2)                  s -= 0.10; // 많이 불편 (완화)
-    return s.clamp(0.1, 0.6);
+    const engine = ThresholdEngine();
+    final w = engine.computeWHealth(this) + engine.computeWLifestyle(this);
+    return w.clamp(0.1, 0.6);
   }
 
   /// 최종 PM2.5 알림 임계치 (μg/m³) — ThresholdEngine v2
