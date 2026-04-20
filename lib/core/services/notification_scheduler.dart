@@ -215,9 +215,9 @@ class NotificationScheduler {
           actions: result.maskRequired
               ? NotificationService.maskActions
               : null,
-          iosCategory: result.maskRequired
-              ? NotificationService.categoryMask
-              : null,
+          // iosCategory: result.maskRequired // iOS: not implemented yet
+          //     ? NotificationService.categoryMask
+          //     : null,
           smallIcon: result.maskRequired
               ? NotificationService.iconMask
               : null,
@@ -266,9 +266,9 @@ class NotificationScheduler {
           actions: forecastCheck.maskRequired
               ? NotificationService.maskActions
               : null,
-          iosCategory: forecastCheck.maskRequired
-              ? NotificationService.categoryMask
-              : null,
+          // iosCategory: forecastCheck.maskRequired // iOS: not implemented yet
+          //     ? NotificationService.categoryMask
+          //     : null,
           smallIcon: forecastCheck.maskRequired
               ? NotificationService.iconMask
               : null,
@@ -306,9 +306,9 @@ class NotificationScheduler {
           actions: returnMaskRequired
               ? NotificationService.maskActions
               : null,
-          iosCategory: returnMaskRequired
-              ? NotificationService.categoryMask
-              : null,
+          // iosCategory: returnMaskRequired // iOS: not implemented yet
+          //     ? NotificationService.categoryMask
+          //     : null,
           smallIcon: returnMaskRequired
               ? NotificationService.iconMask
               : null,
@@ -337,7 +337,7 @@ class NotificationScheduler {
           body: content.body,
           gradeColor: NotificationService.colorForGrade('매우나쁨'),
           actions: NotificationService.alertActions,
-          iosCategory: NotificationService.categoryAlert,
+          // iosCategory: NotificationService.categoryAlert, // iOS: not implemented yet
           smallIcon: NotificationService.iconWarning,
           onSuccess: () => _markSentHour(prefs, 'realtime'),
           pm25: pm25,
@@ -567,7 +567,8 @@ Future<T?> _fetchWithRetry<T>(
 
 /// 급증 감지 최소 상승 속도 (μg/m³/h)
 /// 7 μg/m³/h ≈ 1시간 후 보통→나쁨 경계 돌파 가능 수준
-const double _kSurgeRateThreshold = 7.0;
+// surge 기울기 기준은 AppConstants.surgeRateThreshold 로 이전
+
 
 /// 급증 감지 결과
 class _SurgeResult {
@@ -581,7 +582,7 @@ class _SurgeResult {
 /// 알고리즘:
 /// 1. 실측 데이터(non-forecast) 마지막 2개 포인트 추출
 /// 2. 시간당 변화율(ratePerHour) 계산
-/// 3. rate ≥ [_kSurgeRateThreshold] 이면 1시간 후 값 예측
+/// 3. rate ≥ [AppConstants.surgeRateThreshold] 이면 1시간 후 값 예측
 /// 4. 등급 경계(보통→나쁨, 나쁨→매우나쁨) 돌파 예상 시 결과 반환
 _SurgeResult? _detectSurge(List<HourlyDustData> history, int currentPm25) {
   final measurements = history
@@ -596,7 +597,7 @@ _SurgeResult? _detectSurge(List<HourlyDustData> history, int currentPm25) {
   if (diffMins <= 0 || diffMins > 180) return null; // 데이터 간격 이상
 
   final ratePerHour = (latest.pm25! - prev.pm25!) * 60.0 / diffMins;
-  if (ratePerHour < _kSurgeRateThreshold) return null; // 상승 속도 미달
+  if (ratePerHour < AppConstants.surgeRateThreshold) return null; // 상승 속도 미달
 
   final projected = currentPm25 + ratePerHour.round();
 
@@ -644,7 +645,7 @@ Future<void> _checkSurgeAlert({
       body: content.body,
       gradeColor: NotificationService.colorForGrade(surge.targetGrade),
       actions: NotificationService.alertActions,
-      iosCategory: NotificationService.categoryAlert,
+      // iosCategory: NotificationService.categoryAlert, // iOS: not implemented yet
       smallIcon: NotificationService.iconWarning,
       onSuccess: () => _markSentHour(prefs, 'surge'),
     );

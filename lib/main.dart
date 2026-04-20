@@ -4,7 +4,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+// import 'package:google_mobile_ads/google_mobile_ads.dart'; // P4: AdMob 비활성화
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
@@ -49,8 +49,8 @@ void main() async {
   }
 
   if (!kIsWeb) {
-    // AdMob 초기화
-    await MobileAds.instance.initialize();
+    // AdMob 초기화 — P4: 비활성화
+    // await MobileAds.instance.initialize();
 
     // 알림 서비스 초기화
     final notifService = NotificationService();

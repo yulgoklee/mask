@@ -39,4 +39,9 @@ class AppConstants {
 
   /// 튜토리얼 열람 여부
   static const String prefTutorialSeen = 'tutorial_seen';
+
+  // ── 알림 임계값 ───────────────────────────────────────────
+  /// 급증 경보 판단 기준 기울기 (μg/m³/h)
+  /// 실사용 데이터 분석 후 조정 가능
+  static const double surgeRateThreshold = 7.0;
 }
