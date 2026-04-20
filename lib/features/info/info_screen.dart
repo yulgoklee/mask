@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
-import '../../widgets/ad_banner_widget.dart';
+// import '../../widgets/ad_banner_widget.dart'; // P4: AdMob 비활성화
 
 class InfoScreen extends StatelessWidget {
   const InfoScreen({super.key});
@@ -40,11 +40,11 @@ class InfoScreen extends StatelessWidget {
               ],
             ),
           ),
-          // 광고 배너 (정보 화면 하단)
-          const SafeArea(
-            top: false,
-            child: AdBannerWidget(),
-          ),
+          // 광고 배너 — P4: AdMob 비활성화
+          // const SafeArea(
+          //   top: false,
+          //   child: AdBannerWidget(),
+          // ),
         ],
       ),
     );

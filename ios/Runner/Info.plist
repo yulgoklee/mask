@@ -33,16 +33,16 @@
     <key>NSLocationAlwaysUsageDescription</key>
     <string>외출 전 미세먼지 알림을 받으려면 백그라운드 위치 접근이 필요합니다.</string>
 
-    <!-- 백그라운드 모드 -->
-    <key>UIBackgroundModes</key>
+    <!-- 백그라운드 모드 — iOS: not implemented yet -->
+    <!-- <key>UIBackgroundModes</key>
     <array>
         <string>fetch</string>
         <string>processing</string>
-    </array>
+    </array> -->
 
-    <!-- AdMob App ID (실제 ID로 교체 필요) -->
-    <key>GADApplicationIdentifier</key>
-    <string>ca-app-pub-xxxxxxxxxxxxxxxx~xxxxxxxxxx</string>
+    <!-- AdMob App ID — iOS: not implemented yet -->
+    <!-- <key>GADApplicationIdentifier</key>
+    <string>ca-app-pub-xxxxxxxxxxxxxxxx~xxxxxxxxxx</string> -->
 
     <key>UILaunchStoryboardName</key>
     <string>LaunchScreen</string>

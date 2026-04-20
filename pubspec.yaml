@@ -32,8 +32,8 @@ dependencies:
   # 위치
   geolocator: ^13.0.1
 
-  # 광고
-  google_mobile_ads: ^5.1.0
+  # 광고 — P4: AdMob 비활성화 (나중에 살리기 쉽게 주석으로 보존)
+  # google_mobile_ads: ^5.1.0
 
   # 권한
   permission_handler: ^11.3.1

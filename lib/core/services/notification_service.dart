@@ -37,25 +37,42 @@ void onNotificationActionBackground(NotificationResponse response) async {
 
     if (response.actionId == NotificationService.actionAcknowledge) {
       // ── "마스크 챙겼어요" ─────────────────────────────────────
+      final maskType =
+          prefs.getString(NotificationService.prefLastNotifMaskType) ?? 'KF80';
+
+      // SharedPreferences + SQLite 두 쓰기를 각각 try-catch로 감싸 정합성 로그 기록
+      bool prefsSaved = false;
+      bool dbSaved = false;
+
       if (pm25 > 0) {
-        final maskType =
-            prefs.getString(NotificationService.prefLastNotifMaskType) ??
-                'KF80';
-        final record = DefenseRecord.create(pm25: pm25, maskType: maskType);
-        await DefenseRepository.addRecordToPrefs(prefs, record);
+        try {
+          final record = DefenseRecord.create(pm25: pm25, maskType: maskType);
+          await DefenseRepository.addRecordToPrefs(prefs, record);
+          prefsSaved = true;
+        } catch (e) {
+          debugPrint('[Notification] DefenseRecord SharedPrefs 저장 실패: $e');
+        }
+      } else {
+        prefsSaved = true; // pm25 == 0이면 기록 불필요 — 불일치 아님
       }
-      // SQLite: 가장 최근 미처리 로그에 maskWorn + maskType 스냅샷 기록
+
       try {
-        final maskType =
-            prefs.getString(NotificationService.prefLastNotifMaskType) ??
-                'KF80';
         final db = LocalDatabase();
         final log = await db.getLatestNoneLog();
         if (log?.id != null) {
           await db.updateMaskWorn(log!.id!, maskType);
+          dbSaved = true;
+        } else {
+          dbSaved = true; // 로그 없으면 업데이트 불필요 — 불일치 아님
         }
         await db.close();
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('[Notification] DefenseRecord SQLite 저장 실패: $e');
+      }
+
+      if (!prefsSaved || !dbSaved) {
+        debugPrint('[Notification] ⚠️ 방어율 데이터 불일치 — prefs=$prefsSaved, db=$dbSaved');
+      }
 
       // 피드백 기록
       final pending = _loadPendingNotifId(prefs);
@@ -157,22 +174,41 @@ Future<void> _handleNotificationResponse(NotificationResponse response) async {
 
     if (response.actionId == NotificationService.actionAcknowledge) {
       // "마스크 챙겼어요" — background 핸들러와 동일 처리
+      final maskType =
+          prefs.getString(NotificationService.prefLastNotifMaskType) ?? 'KF80';
+
+      bool prefsSaved = false;
+      bool dbSaved = false;
+
       if (pm25 > 0) {
-        final maskType =
-            prefs.getString(NotificationService.prefLastNotifMaskType) ??
-                'KF80';
-        final record = DefenseRecord.create(pm25: pm25, maskType: maskType);
-        await DefenseRepository.addRecordToPrefs(prefs, record);
+        try {
+          final record = DefenseRecord.create(pm25: pm25, maskType: maskType);
+          await DefenseRepository.addRecordToPrefs(prefs, record);
+          prefsSaved = true;
+        } catch (e) {
+          debugPrint('[Notification] DefenseRecord SharedPrefs 저장 실패: $e');
+        }
+      } else {
+        prefsSaved = true;
       }
+
       try {
-        final maskType =
-            prefs.getString(NotificationService.prefLastNotifMaskType) ??
-                'KF80';
         final db = LocalDatabase();
         final log = await db.getLatestNoneLog();
-        if (log?.id != null) await db.updateMaskWorn(log!.id!, maskType);
+        if (log?.id != null) {
+          await db.updateMaskWorn(log!.id!, maskType);
+          dbSaved = true;
+        } else {
+          dbSaved = true;
+        }
         await db.close();
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('[Notification] DefenseRecord SQLite 저장 실패: $e');
+      }
+
+      if (!prefsSaved || !dbSaved) {
+        debugPrint('[Notification] ⚠️ 방어율 데이터 불일치 — prefs=$prefsSaved, db=$dbSaved');
+      }
       await NotificationDeepLink.setPendingPayload(type: 'scheduled');
     } else if (response.actionId == NotificationService.actionSnoozeToday) {
       // "나중에 ✋" — 6시간 스누즈
@@ -280,14 +316,17 @@ class NotificationService {
   static const String actionSnoozeToday = 'action_snooze';
 
   // ── iOS 카테고리 ID ────────────────────────────────────────────
-  static const String _categoryMask  = 'category_mask';   // 마스크 관련 알림
-  static const String _categoryAlert = 'category_alert';  // 경보 알림
+  // iOS: not implemented yet
+  // static const String _categoryMask  = 'category_mask';   // 마스크 관련 알림
+  // static const String _categoryAlert = 'category_alert';  // 경보 알림
 
   /// iOS 카테고리: 마스크 알림 (챙겼어요 / 오늘 끄기)
-  static String get categoryMask  => _categoryMask;
+  // iOS: not implemented yet
+  // static String get categoryMask  => _categoryMask;
 
   /// iOS 카테고리: 경보 알림 (확인했어요)
-  static String get categoryAlert => _categoryAlert;
+  // iOS: not implemented yet
+  // static String get categoryAlert => _categoryAlert;
 
   // ── 알림 아이콘 리소스 이름 ────────────────────────────────────
   static const String _iconMask    = '@drawable/ic_notif_mask';
@@ -345,30 +384,30 @@ class NotificationService {
     const androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    // iOS 카테고리: 마스크 알림(챙겼어요 / 오늘 끄기) + 경보 알림(확인했어요)
-    final iosSettings = DarwinInitializationSettings(
+    // iOS: not implemented yet — notificationCategories 비활성화
+    const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
       requestSoundPermission: false,
-      notificationCategories: [
-        DarwinNotificationCategory(
-          _categoryMask,
-          actions: [
-            DarwinNotificationAction.plain(actionAcknowledge, '마스크 챙겼어요 ✓'),
-            DarwinNotificationAction.plain(
-              actionSnoozeToday,
-              '나중에 ✋',
-              options: {DarwinNotificationActionOption.destructive},
-            ),
-          ],
-        ),
-        DarwinNotificationCategory(
-          _categoryAlert,
-          actions: [
-            DarwinNotificationAction.plain(actionAcknowledge, '확인했어요'),
-          ],
-        ),
-      ],
+      // notificationCategories: [
+      //   DarwinNotificationCategory(
+      //     _categoryMask,
+      //     actions: [
+      //       DarwinNotificationAction.plain(actionAcknowledge, '마스크 챙겼어요 ✓'),
+      //       DarwinNotificationAction.plain(
+      //         actionSnoozeToday,
+      //         '나중에 ✋',
+      //         options: {DarwinNotificationActionOption.destructive},
+      //       ),
+      //     ],
+      //   ),
+      //   DarwinNotificationCategory(
+      //     _categoryAlert,
+      //     actions: [
+      //       DarwinNotificationAction.plain(actionAcknowledge, '확인했어요'),
+      //     ],
+      //   ),
+      // ],
     );
 
     await _plugin.initialize(
@@ -428,11 +467,11 @@ class NotificationService {
           styleInformation: BigTextStyleInformation(body),
           actions: actions,
         ),
-        iOS: DarwinNotificationDetails(
+        iOS: const DarwinNotificationDetails(
           presentAlert: true,
           presentBadge: true,
           presentSound: true,
-          categoryIdentifier: iosCategory,
+          // categoryIdentifier: iosCategory, // iOS: not implemented yet
         ),
       ),
       payload: payload,
