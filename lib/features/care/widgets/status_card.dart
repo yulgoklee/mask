@@ -1,8 +1,7 @@
 import 'package:animated_digit/animated_digit.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart' hide ShimmerEffect;
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:skeletonizer/skeletonizer.dart';
 import '../../../core/constants/design_tokens.dart';
 import '../../../providers/dust_providers.dart';
 import '../models/care_models.dart';
@@ -17,19 +16,13 @@ class StatusCard extends ConsumerWidget {
     final dustAsync = ref.watch(dustDataProvider);
     final isLoading = dustAsync.isLoading;
 
-    return Skeletonizer(
-      enabled: isLoading,
-      effect: const ShimmerEffect(
-        baseColor: Color(0xFFE5E7EB),
-        highlightColor: Color(0xFFF9FAFB),
-        duration: Duration(milliseconds: 1200),
-      ),
-      child: _StatusCardContent(data: data),
-    )
+    final card = _StatusCardContent(data: data)
         .animate()
         .fadeIn(duration: 300.ms, curve: Curves.easeOutCubic)
         .slideY(begin: 0.08, end: 0, duration: 300.ms)
         .scale(begin: const Offset(0.97, 0.97), end: const Offset(1, 1), duration: 300.ms);
+    if (!isLoading) return card;
+    return card.animate().shimmer(duration: 1200.ms, color: const Color(0xFFF9FAFB));
   }
 }
 

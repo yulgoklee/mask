@@ -1,9 +1,8 @@
 import 'package:animated_digit/animated_digit.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart' hide ShimmerEffect;
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
-import 'package:skeletonizer/skeletonizer.dart';
 import '../../../core/constants/design_tokens.dart';
 import '../../../providers/dust_providers.dart';
 import '../models/care_models.dart';
@@ -25,41 +24,35 @@ class _PollutantDetailCardState extends ConsumerState<PollutantDetailCard> {
     final dustAsync = ref.watch(dustDataProvider);
     final isLoading = dustAsync.isLoading;
 
-    return Skeletonizer(
-      enabled: isLoading,
-      effect: const ShimmerEffect(
-        baseColor: Color(0xFFE5E7EB),
-        highlightColor: Color(0xFFF9FAFB),
-        duration: Duration(milliseconds: 1200),
-      ),
-      child: GestureDetector(
-        onTap: () => setState(() => _expanded = !_expanded),
-        child: Container(
-          decoration: BoxDecoration(
-            color: DT.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: const [
-              BoxShadow(offset: Offset(0, 4), blurRadius: 16, color: Color(0x0A000000)),
-            ],
-          ),
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-          child: Column(
-            children: [
-              _buildPmRow(data),
-              AnimatedSize(
-                duration: const Duration(milliseconds: 350),
-                curve: Curves.easeOutCubic,
-                child: _expanded ? _buildExtended(data) : const SizedBox.shrink(),
-              ),
-              _buildToggleHint(),
-            ],
-          ),
+    final card = GestureDetector(
+      onTap: () => setState(() => _expanded = !_expanded),
+      child: Container(
+        decoration: BoxDecoration(
+          color: DT.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: const [
+            BoxShadow(offset: Offset(0, 4), blurRadius: 16, color: Color(0x0A000000)),
+          ],
+        ),
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+        child: Column(
+          children: [
+            _buildPmRow(data),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeOutCubic,
+              child: _expanded ? _buildExtended(data) : const SizedBox.shrink(),
+            ),
+            _buildToggleHint(),
+          ],
         ),
       ),
     )
         .animate(delay: 200.ms)
         .fadeIn(duration: 350.ms, curve: Curves.easeOutCubic)
         .slideY(begin: 0.08, end: 0, duration: 350.ms);
+    if (!isLoading) return card;
+    return card.animate().shimmer(duration: 1200.ms, color: const Color(0xFFF9FAFB));
   }
 
   Widget _buildPmRow(PollutantCardData data) {
