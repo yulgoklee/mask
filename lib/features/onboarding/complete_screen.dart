@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/services/workmanager_push_scheduler.dart';
 import '../../providers/providers.dart';
 
 /// 온보딩 완료 화면 — "준비됐어요, [이름]님"
@@ -32,6 +34,15 @@ class _OnboardingCompleteScreenState
       CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
     );
     _ctrl.forward();
+    _registerBackgroundTask();
+  }
+
+  Future<void> _registerBackgroundTask() async {
+    try {
+      await WorkmanagerPushScheduler().register();
+    } catch (e) {
+      debugPrint('[CompleteScreen] 백그라운드 태스크 등록 실패 (무시): $e');
+    }
   }
 
   @override

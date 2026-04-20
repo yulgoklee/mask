@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -32,9 +33,16 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
 
   Future<void> _done() async {
     final repo = ref.read(profileRepositoryProvider);
-    await repo.completeTutorial();
+    try {
+      await repo.completeTutorial();
+    } catch (e) {
+      debugPrint('[Tutorial] completeTutorial 오류 (무시): $e');
+    }
     if (!mounted) return;
-    final onboardingDone = await repo.isOnboardingCompleted();
+    bool onboardingDone = false;
+    try {
+      onboardingDone = await repo.isOnboardingCompleted();
+    } catch (_) {}
     if (!mounted) return;
     context.go(onboardingDone ? '/care' : '/roadmap');
   }

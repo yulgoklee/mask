@@ -7,6 +7,41 @@ import 'widgets/status_card.dart';
 import 'widgets/protection_area_chart.dart';
 import 'widgets/pollutant_detail_card.dart';
 
+class _ForecastErrorBanner extends ConsumerWidget {
+  const _ForecastErrorBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final forecastAsync = ref.watch(tomorrowForecastProvider);
+    if (!forecastAsync.hasError) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7ED),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFFED7AA)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.cloud_off_outlined, size: 16, color: Color(0xFFF97316)),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text(
+              '내일 예보를 불러오지 못했어요. 차트는 현재 수치 기준으로 표시돼요.',
+              style: TextStyle(fontSize: 12, color: Color(0xFF92400E), height: 1.4),
+            ),
+          ),
+          GestureDetector(
+            onTap: () => ref.invalidate(tomorrowForecastProvider),
+            child: const Icon(Icons.refresh, size: 16, color: Color(0xFFF97316)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class CareTab extends ConsumerWidget {
   const CareTab({super.key});
 
@@ -68,6 +103,7 @@ class CareTab extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
+                    const _ForecastErrorBanner(),
                     const StatusCard(),
                     const SizedBox(height: 16),
                     const ProtectionAreaChart(),

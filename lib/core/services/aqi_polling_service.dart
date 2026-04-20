@@ -4,7 +4,7 @@ import '../../data/models/aqi_record.dart';
 import '../../data/models/user_profile.dart';
 import '../constants/app_constants.dart';
 import '../database/local_database.dart';
-import 'air_korea_service.dart';
+import 'dust_data_source.dart';
 
 /// AQI 주기적 폴링 + SQLite 저장 서비스
 ///
@@ -13,11 +13,11 @@ import 'air_korea_service.dart';
 /// 2. Zero-day 시딩: DB 기록 부족 시 24시간치 과거 데이터 일괄 수집
 /// 3. 측정소 Null → 5km Fallback (관심지역 → GPS 순)
 class AqiPollingService {
-  final AirKoreaService _airKorea;
+  final DustDataSource _airKorea;
   final LocalDatabase _db;
 
   AqiPollingService({
-    required AirKoreaService airKorea,
+    required DustDataSource airKorea,
     required LocalDatabase db,
   })  : _airKorea = airKorea,
         _db = db;
