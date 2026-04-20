@@ -567,7 +567,7 @@ Future<T?> _fetchWithRetry<T>(
 
 /// 급증 감지 최소 상승 속도 (μg/m³/h)
 /// 7 μg/m³/h ≈ 1시간 후 보통→나쁨 경계 돌파 가능 수준
-// surge 기울기 기준은 AppConstants.surgeRateThreshold 로 이전
+// surge 기울기 기준은 AppConstants.surgeRateThresholdUgPerHour 로 이전
 
 
 /// 급증 감지 결과
@@ -582,7 +582,7 @@ class _SurgeResult {
 /// 알고리즘:
 /// 1. 실측 데이터(non-forecast) 마지막 2개 포인트 추출
 /// 2. 시간당 변화율(ratePerHour) 계산
-/// 3. rate ≥ [AppConstants.surgeRateThreshold] 이면 1시간 후 값 예측
+/// 3. rate ≥ [AppConstants.surgeRateThresholdUgPerHour] 이면 1시간 후 값 예측
 /// 4. 등급 경계(보통→나쁨, 나쁨→매우나쁨) 돌파 예상 시 결과 반환
 _SurgeResult? _detectSurge(List<HourlyDustData> history, int currentPm25) {
   final measurements = history
@@ -597,7 +597,7 @@ _SurgeResult? _detectSurge(List<HourlyDustData> history, int currentPm25) {
   if (diffMins <= 0 || diffMins > 180) return null; // 데이터 간격 이상
 
   final ratePerHour = (latest.pm25! - prev.pm25!) * 60.0 / diffMins;
-  if (ratePerHour < AppConstants.surgeRateThreshold) return null; // 상승 속도 미달
+  if (ratePerHour < AppConstants.surgeRateThresholdUgPerHour) return null; // 상승 속도 미달
 
   final projected = currentPm25 + ratePerHour.round();
 

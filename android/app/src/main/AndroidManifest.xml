@@ -64,10 +64,11 @@
             android:foregroundServiceType="dataSync"
             android:exported="false"/>
 
-        <!-- AdMob App ID -->
+        <!-- AdMob: not activated yet
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-2943697287082336~2248905378"/>
+        -->
 
         <meta-data
             android:name="flutterEmbedding"
