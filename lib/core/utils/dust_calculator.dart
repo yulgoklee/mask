@@ -47,7 +47,16 @@ class DustCalculator {
     bool maskRequired = ratio >= 1.0;
     String? maskType = ratio >= 1.5 ? 'KF94' : ratio >= 1.0 ? 'KF80' : null;
 
-    final shouldSendRealtime = ratio >= 2.0;
+    // ── PM10 안전망 ──────────────────────────────────────────
+    // PM10 매우나쁨(>150μg/m³)이면 PM2.5 기준 미달이어도 마스크 권고
+    final pm10 = dust.pm10Value;
+    final pm10Emergency = pm10 != null && pm10 > DustStandards.pm10Bad;
+    if (pm10Emergency) {
+      maskRequired = true;
+      maskType = _stricterMaskType(maskType, 'KF80');
+    }
+
+    final shouldSendRealtime = ratio >= 2.0 || pm10Emergency;
 
     // ── Tier 2: 기간 상태 ────────────────────────────────────
     final actualGrade = DustStandards.getPm25Grade(pm25);
@@ -89,7 +98,9 @@ class DustCalculator {
       shouldSendRealtime: shouldSendRealtime,
       message: _buildMessage(riskLevel, pm25, profile),
       heroText: heroText,
-      reason: '초미세먼지 ${pm25}μg/m³ · ${actualGrade.label}',
+      reason: pm10Emergency
+          ? 'PM10 ${pm10}μg/m³ · 매우나쁨 / PM2.5 ${pm25}μg/m³ · ${actualGrade.label}'
+          : '초미세먼지 ${pm25}μg/m³ · ${actualGrade.label}',
       personalNote: personalNote,
       maskRequired: maskRequired,
       maskType: maskType,
