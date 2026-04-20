@@ -4,11 +4,13 @@ import 'package:flutter/widgets.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
+import '../config/app_config.dart';
 import '../constants/app_constants.dart';
 import '../database/local_database.dart';
 import '../../firebase_options.dart';
 import '../services/air_korea_service.dart';
 import '../services/aqi_polling_service.dart';
+import '../services/cloud_functions_data_source.dart';
 import 'notification_scheduler.dart';
 
 /// 백그라운드 GPS 갱신 간격 (밀리초)
@@ -58,8 +60,10 @@ Future<void> _runDustCheck() async {
 Future<void> _runAqiPolling(SharedPreferences prefs) async {
   try {
     final db = LocalDatabase();
-    final airKorea = AirKoreaService(prefs);
-    final polling = AqiPollingService(airKorea: airKorea, db: db);
+    final dataSource = AppConfig.cloudFunctionsBaseUrl.isNotEmpty
+        ? CloudFunctionsDataSource()
+        : AirKoreaService(prefs);
+    final polling = AqiPollingService(airKorea: dataSource, db: db);
     await polling.runPollingCycle(prefs: prefs);
     await db.close();
   } catch (e) {

@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_constants.dart';
+import '../../providers/core_providers.dart';
 import '../../providers/providers.dart';
 
 /// 스플래시 화면 — Phase 1 리디자인
@@ -65,19 +68,28 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     await Future.delayed(const Duration(milliseconds: 2200));
     if (!mounted) return;
 
-    final repo = ref.read(profileRepositoryProvider);
-    final tutorialSeen = await repo.isTutorialSeen();
-    final onboardingDone = await repo.isOnboardingCompleted();
-    if (!mounted) return;
+    try {
+      final repo = ref.read(profileRepositoryProvider);
+      final tutorialSeen = await repo.isTutorialSeen();
+      final onboardingDone = await repo.isOnboardingCompleted();
+      if (!mounted) return;
 
-    if (!tutorialSeen) {
-      // 튜토리얼 미확인 → 앱 소개 화면 먼저 (신규 유저 포함)
-      context.go('/tutorial');
-    } else if (!onboardingDone) {
-      // 튜토리얼은 봤으나 온보딩 미완료 → 로드맵부터 시작
-      context.go('/roadmap');
-    } else {
-      context.go('/care');
+      if (!tutorialSeen) {
+        context.go('/tutorial');
+      } else if (!onboardingDone) {
+        context.go('/roadmap');
+      } else {
+        final prefs = ref.read(sharedPreferencesProvider);
+        final savedStation = prefs.getString(AppConstants.prefStationName);
+        if (savedStation == null || savedStation.isEmpty) {
+          context.go('/location_setup', extra: true);
+        } else {
+          context.go('/care');
+        }
+      }
+    } catch (e) {
+      debugPrint('[Splash] _navigate 오류: $e');
+      if (mounted) context.go('/tutorial');
     }
   }
 

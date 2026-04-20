@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../core/constants/design_tokens.dart';
+import '../core/services/background_service.dart';
 import '../core/services/notification_deep_link.dart';
 import '../providers/providers.dart';
 
@@ -34,7 +35,10 @@ class _MainShellState extends ConsumerState<MainShell>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _handlePendingDeepLink();
+    if (state == AppLifecycleState.resumed) {
+      _handlePendingDeepLink();
+      BackgroundService.runOnce();
+    }
   }
 
   Future<void> _handlePendingDeepLink() async {
