@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_tokens.dart';
 import '../../providers/providers.dart';
+import '../../widgets/app_button.dart';
+import '../../widgets/app_card.dart';
 
 /// 알림 권한 요청 — 맥락 있는 설명 화면
 class PermissionScreen extends ConsumerWidget {
@@ -20,7 +23,7 @@ class PermissionScreen extends ConsumerWidget {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(horizontal: AppTokens.screenH),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -54,13 +57,8 @@ class PermissionScreen extends ConsumerWidget {
               const SizedBox(height: 16),
 
               // 알림 예시 카드
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  border: Border.all(color: AppColors.divider),
-                  borderRadius: BorderRadius.circular(14),
-                ),
+              AppCard(
+                padding: const EdgeInsets.all(AppTokens.cardMd),
                 child: const Column(
                   children: [
                     _ExampleRow(
@@ -89,89 +87,65 @@ class PermissionScreen extends ConsumerWidget {
               const Spacer(),
 
               // 권한 허용 버튼
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    // 시뮬레이션에서 이미 허용한 경우 → 재요청 없이 진행
-                    var status = await Permission.notification.status;
-                    if (!status.isGranted) {
-                      status = await Permission.notification.request();
-                    }
+              AppButton.primary(
+                label: '알림 허용하기',
+                onTap: () async {
+                  var status = await Permission.notification.status;
+                  if (!status.isGranted) {
+                    status = await Permission.notification.request();
+                  }
 
-                    if (!context.mounted) return;
+                  if (!context.mounted) return;
 
-                    // 거부 → 계속 여부 확인
-                    if (status.isDenied || status.isPermanentlyDenied) {
-                      final proceed = await showDialog<bool>(
-                        context: context,
-                        builder: (_) => AlertDialog(
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16)),
-                          title: const Text('알림 없이 계속할까요?',
-                              style: TextStyle(fontSize: 18,
-                                  fontWeight: FontWeight.w700)),
-                          content: const Text(
-                            '알림 권한이 없으면 미세먼지 경보를 받을 수 없어요.\n설정에서 언제든 다시 허용할 수 있어요.',
-                            style: TextStyle(fontSize: 14, height: 1.5),
-                          ),
-                          actions: [
-                            if (status.isPermanentlyDenied)
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.pop(context, false);
-                                  openAppSettings();
-                                },
-                                child: const Text('설정 열기'),
-                              ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              child: const Text('취소'),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, true),
-                              child: const Text('알림 없이 계속',
-                                  style: TextStyle(
-                                      color: AppColors.textSecondary)),
-                            ),
-                          ],
+                  if (status.isDenied || status.isPermanentlyDenied) {
+                    final proceed = await showDialog<bool>(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppTokens.radiusLg)),
+                        title: const Text('알림 없이 계속할까요?',
+                            style: TextStyle(fontSize: 18,
+                                fontWeight: FontWeight.w700)),
+                        content: const Text(
+                          '알림 권한이 없으면 미세먼지 경보를 받을 수 없어요.\n설정에서 언제든 다시 허용할 수 있어요.',
+                          style: TextStyle(fontSize: 14, height: 1.5),
                         ),
-                      ) ?? false;
+                        actions: [
+                          if (status.isPermanentlyDenied)
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context, false);
+                                openAppSettings();
+                              },
+                              child: const Text('설정 열기'),
+                            ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('취소'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('알림 없이 계속',
+                                style: TextStyle(
+                                    color: AppColors.textSecondary)),
+                          ),
+                        ],
+                      ),
+                    ) ?? false;
 
-                      if (!proceed) return;
-                      if (!context.mounted) return;
-                    }
+                    if (!proceed) return;
+                    if (!context.mounted) return;
+                  }
 
-                    context.go('/onboarding_complete');
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    '알림 허용하기',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                ),
+                  context.go('/onboarding_complete');
+                },
               ),
               const SizedBox(height: 12),
 
               // 건너뛰기
-              SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  onPressed: () => context.go('/onboarding_complete'),
-                  child: const Text(
-                    '나중에 설정할게요',
-                    style: TextStyle(
-                        fontSize: 15, color: AppColors.textSecondary),
-                  ),
-                ),
+              AppButton.text(
+                label: '나중에 설정할게요',
+                onTap: () => context.go('/onboarding_complete'),
               ),
               const SizedBox(height: 8),
             ],

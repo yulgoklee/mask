@@ -1,6 +1,8 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_tokens.dart';
+import '../../widgets/app_button.dart';
 
 /// 온보딩 시작 전 로드맵 소개 화면
 ///
@@ -49,7 +51,7 @@ class _RoadmapScreenState extends State<RoadmapScreen>
       backgroundColor: AppColors.primaryLight,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28),
+          padding: const EdgeInsets.symmetric(horizontal: AppTokens.screenH),
           child: FadeTransition(
             opacity: _fadeAnim,
             child: SlideTransition(
@@ -109,27 +111,9 @@ class _RoadmapScreenState extends State<RoadmapScreen>
                   const Spacer(),
 
                   // ── 시작 버튼 ─────────────────────────────────
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => context.go('/onboarding'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.textPrimary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 17),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: const Text(
-                        '진단 시작하기',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
+                  AppButton.primary(
+                    label: '진단 시작하기',
+                    onTap: () => context.go('/onboarding'),
                   ),
                   const SizedBox(height: 24),
                 ],

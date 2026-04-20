@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/constants/app_colors.dart';
+import 'app_button.dart';
 
 // ── 스켈레톤 공통 ──────────────────────────────────────────
 
@@ -137,18 +138,11 @@ class ErrorStateWidget extends StatelessWidget {
             ),
             if (onRetry != null) ...[
               const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('다시 시도'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
+              AppButton.primary(
+                label: '다시 시도',
+                onTap: onRetry,
+                fullWidth: false,
+                leading: const Icon(Icons.refresh, size: 18, color: Colors.white),
               ),
             ],
           ],

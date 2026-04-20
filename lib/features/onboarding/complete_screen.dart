@@ -3,8 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_tokens.dart';
 import '../../core/services/workmanager_push_scheduler.dart';
 import '../../providers/providers.dart';
+import '../../widgets/app_button.dart';
 
 /// 온보딩 완료 화면 — "준비됐어요, [이름]님"
 class OnboardingCompleteScreen extends ConsumerStatefulWidget {
@@ -90,7 +92,7 @@ class _OnboardingCompleteScreenState
             child: Transform.translate(
               offset: Offset(0, _slideUp.value),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: AppTokens.screenH),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -143,31 +145,14 @@ class _OnboardingCompleteScreenState
 
                     const Spacer(flex: 3),
 
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          // 만약 패치가 아직 안 됐으면 강제 재시작
-                          if (ref.read(dustDataProvider).hasValue == false) {
-                            ref.invalidate(dustDataProvider);
-                          }
-                          context.go('/care');
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: const Text(
-                          '시작하기',
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w600),
-                        ),
-                      ),
+                    AppButton.primary(
+                      label: '시작하기',
+                      onTap: () {
+                        if (ref.read(dustDataProvider).hasValue == false) {
+                          ref.invalidate(dustDataProvider);
+                        }
+                        context.go('/care');
+                      },
                     ),
                     const SizedBox(height: 24),
                   ],
