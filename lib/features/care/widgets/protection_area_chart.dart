@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart' hide ShimmerEffect;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
@@ -329,10 +330,7 @@ class _ChartCard extends StatelessWidget {
       child: Align(
         alignment: Alignment.centerRight,
         child: TextButton(
-          onPressed: () {
-            final nav = Navigator.of(context, rootNavigator: true);
-            nav.pushNamed('/report');
-          },
+          onPressed: () => context.go('/report'),
           style: TextButton.styleFrom(
             foregroundColor: DT.primary,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

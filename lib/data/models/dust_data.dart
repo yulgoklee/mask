@@ -11,6 +11,10 @@ class DustData {
   final String o3Grade;       // 오존 등급
   final double? no2Value;     // 이산화질소 (ppm)
   final String no2Grade;      // 이산화질소 등급
+  final double? coValue;      // 일산화탄소 (ppm)
+  final String coGrade;       // 일산화탄소 등급
+  final double? so2Value;     // 아황산가스 (ppm)
+  final String so2Grade;      // 아황산가스 등급
   final DateTime dataTime;    // 측정 시각
   final DateTime fetchedAt;   // 조회 시각
 
@@ -24,6 +28,10 @@ class DustData {
     this.no2Value,
     this.o3Grade = '알수없음',
     this.no2Grade = '알수없음',
+    this.coValue,
+    this.coGrade = '알수없음',
+    this.so2Value,
+    this.so2Grade = '알수없음',
     required this.dataTime,
     required this.fetchedAt,
   });
@@ -39,6 +47,10 @@ class DustData {
       o3Grade: _gradeLabel(json['o3Grade']),
       no2Value: _parseDoubleOrNull(json['no2Value']),
       no2Grade: _gradeLabel(json['no2Grade']),
+      coValue: _parseDoubleOrNull(json['coValue']),
+      coGrade: _gradeLabel(json['coGrade']),
+      so2Value: _parseDoubleOrNull(json['so2Value']),
+      so2Grade: _gradeLabel(json['so2Grade']),
       dataTime: _parseDataTime(json['dataTime'] as String?),
       fetchedAt: DateTime.now(),
     );
@@ -54,6 +66,10 @@ class DustData {
     'o3Grade': o3Grade,
     'no2Value': no2Value,
     'no2Grade': no2Grade,
+    'coValue': coValue,
+    'coGrade': coGrade,
+    'so2Value': so2Value,
+    'so2Grade': so2Grade,
     'dataTime': dataTime.toIso8601String(),
     'fetchedAt': fetchedAt.toIso8601String(),
   };
@@ -69,10 +85,28 @@ class DustData {
       o3Grade: json['o3Grade'] as String? ?? '알수없음',
       no2Value: (json['no2Value'] as num?)?.toDouble(),
       no2Grade: json['no2Grade'] as String? ?? '알수없음',
+      coValue: (json['coValue'] as num?)?.toDouble(),
+      coGrade: json['coGrade'] as String? ?? '알수없음',
+      so2Value: (json['so2Value'] as num?)?.toDouble(),
+      so2Grade: json['so2Grade'] as String? ?? '알수없음',
       dataTime: _parseDataTime(json['dataTime'] as String?),
       fetchedAt: _parseDataTime(json['fetchedAt'] as String?),
     );
   }
+
+  factory DustData.placeholder() => DustData(
+        stationName: '',
+        pm25Value: 0,
+        pm10Value: 0,
+        pm25Grade: '보통',
+        pm10Grade: '보통',
+        o3Grade: '보통',
+        no2Grade: '보통',
+        coGrade: '보통',
+        so2Grade: '보통',
+        dataTime: DateTime.now(),
+        fetchedAt: DateTime.now(),
+      );
 
   /// 캐시가 유효한지 확인
   /// 조건: 조회한 지 [AppConstants.cacheFetchMaxMinutes]분 이하
@@ -124,5 +158,5 @@ class DustData {
 
   @override
   String toString() =>
-      'DustData(station: $stationName, PM2.5: $pm25Value($pm25Grade), PM10: $pm10Value($pm10Grade), O3: $o3Value($o3Grade), NO2: $no2Value($no2Grade))';
+      'DustData(station: $stationName, PM2.5: $pm25Value($pm25Grade), PM10: $pm10Value($pm10Grade), O3: $o3Value($o3Grade), NO2: $no2Value($no2Grade), CO: $coValue($coGrade), SO2: $so2Value($so2Grade))';
 }

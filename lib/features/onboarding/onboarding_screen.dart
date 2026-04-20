@@ -1,3 +1,4 @@
+import 'package:go_router/go_router.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -220,7 +221,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     await _analytics.logEvent(name: 'onboarding_completed');
 
     if (mounted) {
-      Navigator.of(context).pushReplacementNamed('/analysis_loading');
+      context.go('/analysis_loading');
     }
   }
 
@@ -251,8 +252,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     if (!saved) return;
 
     if (mounted) {
-      Navigator.of(context).pushReplacementNamed('/location_setup',
-          arguments: true);
+      context.go('/location_setup',
+          extra: true);
     }
   }
 

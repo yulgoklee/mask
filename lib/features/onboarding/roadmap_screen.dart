@@ -1,3 +1,4 @@
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 
@@ -111,8 +112,7 @@ class _RoadmapScreenState extends State<RoadmapScreen>
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () => Navigator.of(context)
-                          .pushReplacementNamed('/onboarding'),
+                      onPressed: () => context.go('/onboarding'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.textPrimary,
                         foregroundColor: Colors.white,

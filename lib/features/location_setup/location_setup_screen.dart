@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/location_stations.dart';
 import '../../core/services/location_service.dart';
@@ -12,7 +13,8 @@ const _regionStations = locationRegionStations;
 // ── 화면 ────────────────────────────────────────────────────────────
 
 class LocationSetupScreen extends ConsumerStatefulWidget {
-  const LocationSetupScreen({super.key});
+  final bool isOnboarding;
+  const LocationSetupScreen({super.key, this.isOnboarding = false});
 
   @override
   ConsumerState<LocationSetupScreen> createState() =>
@@ -106,13 +108,8 @@ class _LocationSetupScreenState extends ConsumerState<LocationSetupScreen> {
   void _goHome() {
     ref.invalidate(dustDataProvider);
     ref.invalidate(tomorrowForecastProvider);
-    // route arguments로 진입 맥락 판단
-    //  true  → 온보딩 플로우 (dashboard → location_setup)
-    //  false → 설정 화면 진입 (home → location_setup)
-    final fromOnboarding =
-        ModalRoute.of(context)?.settings.arguments as bool? ?? false;
-    if (fromOnboarding) {
-      Navigator.of(context).pushReplacementNamed('/notification_time');
+    if (widget.isOnboarding) {
+      context.go('/notification_time');
     } else {
       Navigator.of(context).pop();
     }

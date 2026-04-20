@@ -1,3 +1,4 @@
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -141,8 +142,7 @@ class PermissionScreen extends ConsumerWidget {
                       if (!context.mounted) return;
                     }
 
-                    Navigator.of(context)
-                        .pushReplacementNamed('/onboarding_complete');
+                    context.go('/onboarding_complete');
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
@@ -165,8 +165,7 @@ class PermissionScreen extends ConsumerWidget {
               SizedBox(
                 width: double.infinity,
                 child: TextButton(
-                  onPressed: () => Navigator.of(context)
-                      .pushReplacementNamed('/onboarding_complete'),
+                  onPressed: () => context.go('/onboarding_complete'),
                   child: const Text(
                     '나중에 설정할게요',
                     style: TextStyle(

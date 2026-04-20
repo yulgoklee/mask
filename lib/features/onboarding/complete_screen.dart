@@ -1,3 +1,4 @@
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
@@ -139,7 +140,7 @@ class _OnboardingCompleteScreenState
                           if (ref.read(dustDataProvider).hasValue == false) {
                             ref.invalidate(dustDataProvider);
                           }
-                          Navigator.of(context).pushReplacementNamed('/home');
+                          context.go('/care');
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,

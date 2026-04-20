@@ -12,7 +12,7 @@ import '../../data/models/notification_log.dart';
 ///                      v2: mask_type, snooze_until 컬럼 추가 / defense_daily 제거
 class LocalDatabase {
   static const _dbName = 'mask_alert.db';
-  static const _dbVersion = 2;
+  static const _dbVersion = 3;
 
   Database? _db;
 
@@ -62,7 +62,6 @@ class LocalDatabase {
     ''');
   }
 
-  /// v1 → v2: mask_type, snooze_until 컬럼 추가 / defense_daily 제거
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       await db.execute(
@@ -70,6 +69,16 @@ class LocalDatabase {
       await db.execute(
           'ALTER TABLE notification_logs ADD COLUMN snooze_until TEXT');
       await db.execute('DROP TABLE IF EXISTS defense_daily');
+    }
+    if (oldVersion < 3) {
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_aqi_station_time '
+        'ON aqi_records(station_name, data_time)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_notif_triggered '
+        'ON notification_logs(triggered_at)',
+      );
     }
   }
 
@@ -203,6 +212,80 @@ class LocalDatabase {
     );
     if (rows.isEmpty) return null;
     return NotificationLog.fromMap(rows.first);
+  }
+
+  // ── 리포트 탭 집계 쿼리 ──────────────────────────────────────
+
+  /// 날짜별 PM2.5 평균 집계 (리포트 바 차트용)
+  ///
+  /// 반환: [{day: 'YYYY-MM-DD', pm25_avg: double, pm10_avg: double, record_count: int}]
+  Future<List<Map<String, dynamic>>> getDailyAqiAverages({
+    required String stationName,
+    required int days,
+  }) async {
+    final db = await database;
+    final since = DateTime.now()
+        .subtract(Duration(days: days))
+        .toIso8601String();
+    return db.rawQuery('''
+      SELECT
+        DATE(data_time) AS day,
+        AVG(CAST(pm25_value AS REAL)) AS pm25_avg,
+        AVG(CAST(pm10_value AS REAL)) AS pm10_avg,
+        COUNT(*) AS record_count
+      FROM aqi_records
+      WHERE station_name = ?
+        AND data_time >= ?
+        AND pm25_value IS NOT NULL
+      GROUP BY DATE(data_time)
+      ORDER BY day ASC
+    ''', [stationName, since]);
+  }
+
+  /// 기간 내 PM2.5 최고값 기록 (하이라이트 카드용)
+  Future<AqiRecord?> getMaxPm25Record({
+    required String stationName,
+    required int days,
+  }) async {
+    final db = await database;
+    final since = DateTime.now()
+        .subtract(Duration(days: days))
+        .toIso8601String();
+    final rows = await db.rawQuery('''
+      SELECT * FROM aqi_records
+      WHERE station_name = ?
+        AND data_time >= ?
+        AND pm25_value IS NOT NULL
+      ORDER BY pm25_value DESC
+      LIMIT 1
+    ''', [stationName, since]);
+    if (rows.isEmpty) return null;
+    return AqiRecord.fromMap(rows.first);
+  }
+
+  /// 최근 N일 알림 로그 날짜별 그룹 조회 (캘린더용)
+  ///
+  /// 반환: {'YYYY-MM-DD': [NotificationLog, ...]}
+  Future<Map<String, List<NotificationLog>>> getLogsGroupedByDate({
+    int days = 7,
+  }) async {
+    final db = await database;
+    final since = DateTime.now()
+        .subtract(Duration(days: days - 1))
+        .toIso8601String();
+    final rows = await db.query(
+      'notification_logs',
+      where: 'triggered_at >= ?',
+      whereArgs: [since],
+      orderBy: 'triggered_at ASC',
+    );
+    final result = <String, List<NotificationLog>>{};
+    for (final row in rows) {
+      final log = NotificationLog.fromMap(row);
+      final key = log.triggeredAt.toIso8601String().substring(0, 10);
+      result.putIfAbsent(key, () => []).add(log);
+    }
+    return result;
   }
 
   // ── Phase 5: 방어율·달력 쿼리 ────────────────────────────────

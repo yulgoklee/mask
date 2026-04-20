@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/providers.dart';
 
@@ -71,12 +72,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     if (!tutorialSeen) {
       // 튜토리얼 미확인 → 앱 소개 화면 먼저 (신규 유저 포함)
-      Navigator.of(context).pushReplacementNamed('/tutorial');
+      context.go('/tutorial');
     } else if (!onboardingDone) {
       // 튜토리얼은 봤으나 온보딩 미완료 → 로드맵부터 시작
-      Navigator.of(context).pushReplacementNamed('/roadmap');
+      context.go('/roadmap');
     } else {
-      Navigator.of(context).pushReplacementNamed('/home');
+      context.go('/care');
     }
   }
 
