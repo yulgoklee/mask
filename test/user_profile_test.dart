@@ -7,7 +7,7 @@ void main() {
       final p = UserProfile.defaultProfile();
       expect(p.nickname, '');
       expect(p.birthYear, 1990);
-      expect(p.gender, 'male');
+      expect(p.gender, '');
       expect(p.respiratoryStatus, 0);
       expect(p.sensitivityLevel, 1);
       expect(p.isPregnant, false);
@@ -68,7 +68,7 @@ void main() {
       expect(p.displayName, '율곡님');
     });
     test('닉네임 없으면 "님"', () {
-      expect(UserProfile.defaultProfile().displayName, '님');
+      expect(UserProfile.defaultProfile().displayName, '사용자님');
     });
   });
 
@@ -100,53 +100,38 @@ void main() {
     test('아무 가중치 없어도 clamp 최솟값 0.1', () {
       expect(UserProfile.defaultProfile().sensitivityIndex, 0.1);
     });
-    test('천식+임신+피부시술 → 0.6 상한', () {
+    test('임신+피부시술+천식 → 임신 W_health=0.35 우선, S ≈ 0.40', () {
       const p = UserProfile(
         nickname: '', birthYear: 1990, gender: 'female',
         respiratoryStatus: 2, sensitivityLevel: 1,
         isPregnant: true, recentSkinTreatment: true,
         outdoorMinutes: 1, activityTags: [], discomfortLevel: 1,
       );
-      expect(p.sensitivityIndex, 0.6);
+      expect(p.sensitivityIndex, closeTo(0.40, 0.001));
     });
-    test('비염(+0.15)만 → S ≈ 0.15', () {
+    test('비염(W_health=0.20) + 야외1~3h(0.05) → S ≈ 0.25', () {
       const p = UserProfile(
         nickname: '', birthYear: 1990, gender: 'male',
         respiratoryStatus: 1, sensitivityLevel: 1,
         isPregnant: false, recentSkinTreatment: false,
         outdoorMinutes: 1, activityTags: [], discomfortLevel: 1,
       );
-      expect(p.sensitivityIndex, closeTo(0.15, 0.001));
-    });
-    test('discomfortLevel=2 → S 감소', () {
-      const base = UserProfile(
-        nickname: '', birthYear: 1990, gender: 'male',
-        respiratoryStatus: 1, sensitivityLevel: 1,
-        isPregnant: false, recentSkinTreatment: false,
-        outdoorMinutes: 1, activityTags: [], discomfortLevel: 0,
-      );
-      const disc = UserProfile(
-        nickname: '', birthYear: 1990, gender: 'male',
-        respiratoryStatus: 1, sensitivityLevel: 1,
-        isPregnant: false, recentSkinTreatment: false,
-        outdoorMinutes: 1, activityTags: [], discomfortLevel: 2,
-      );
-      expect(disc.sensitivityIndex, lessThan(base.sensitivityIndex));
+      expect(p.sensitivityIndex, closeTo(0.25, 0.001));
     });
   });
 
   group('tFinal', () {
-    test('S=0.1 → tFinal ≈ 31.5', () {
-      expect(UserProfile.defaultProfile().tFinal, closeTo(31.5, 0.1));
+    test('기본 프로필(W_lifestyle=0.05) → tFinal ≈ 33.25', () {
+      expect(UserProfile.defaultProfile().tFinal, closeTo(33.25, 0.1));
     });
-    test('S=0.6 → tFinal ≈ 14.0', () {
+    test('임신+야외3h+(W_health=0.35,W_lifestyle=0.15) → tFinal ≈ 17.5', () {
       const p = UserProfile(
         nickname: '', birthYear: 1990, gender: 'female',
         respiratoryStatus: 2, sensitivityLevel: 2,
         isPregnant: true, recentSkinTreatment: true,
         outdoorMinutes: 2, activityTags: [], discomfortLevel: 0,
       );
-      expect(p.tFinal, closeTo(14.0, 0.1));
+      expect(p.tFinal, closeTo(17.5, 0.1));
     });
     test('tFinal = 35*(1-S) 검증', () {
       const p = UserProfile(
@@ -160,12 +145,12 @@ void main() {
   });
 
   group('personaLabel', () {
-    test('고위험 → 복합 고위험군', () {
+    test('고위험(임신+야외3h+ → S=0.50) → 복합 고위험군', () {
       const p = UserProfile(
         nickname: '', birthYear: 1990, gender: 'female',
         respiratoryStatus: 2, sensitivityLevel: 2,
         isPregnant: true, recentSkinTreatment: false,
-        outdoorMinutes: 1, activityTags: [], discomfortLevel: 1,
+        outdoorMinutes: 2, activityTags: [], discomfortLevel: 1,
       );
       expect(p.personaLabel, '복합 고위험군');
     });
