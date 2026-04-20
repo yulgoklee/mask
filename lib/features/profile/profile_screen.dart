@@ -4,12 +4,14 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_tokens.dart';
 import '../../core/utils/sensitivity_calculator.dart';
 import '../../data/models/notification_setting.dart';
 import '../../data/models/temporary_state.dart';
 import '../../data/models/today_situation.dart';
 import '../../data/models/user_profile.dart';
 import '../../providers/providers.dart';
+import '../../widgets/app_button.dart';
 import '../diagnosis/diagnosis_screen.dart';
 import '../diagnosis/result_screen.dart';
 
@@ -582,7 +584,7 @@ class _ActiveStateTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTokens.radiusMd),
         border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
       ),
       child: Row(
@@ -658,7 +660,7 @@ class _InactiveStateTile extends StatelessWidget {
         color: highlight
             ? AppColors.primary.withValues(alpha: 0.03)
             : Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTokens.radiusMd),
         border: Border.all(
           color: highlight
               ? AppColors.primary.withValues(alpha: 0.2)
@@ -984,7 +986,7 @@ class _SettingRow extends StatelessWidget {
         color: isActive
             ? AppColors.primary.withValues(alpha: 0.07)
             : Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTokens.radiusMd),
         border: Border.all(
           color: isActive
               ? AppColors.primary.withValues(alpha: 0.25)
@@ -1158,24 +1160,9 @@ class _AddStateSheetState extends ConsumerState<_AddStateSheet> {
           ),
           const SizedBox(height: 20),
 
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _save,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                '적용하기',
-                style:
-                    TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
+          AppButton.primary(
+            label: '적용하기',
+            onTap: _save,
           ),
         ],
       ),
@@ -1344,7 +1331,7 @@ class _QuietHoursSection extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         color: enabled ? AppColors.primary.withValues(alpha: 0.07) : Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTokens.radiusMd),
         border: Border.all(
           color: enabled
               ? AppColors.primary.withValues(alpha: 0.25)

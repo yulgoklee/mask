@@ -3,8 +3,10 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_tokens.dart';
 import '../../data/models/user_profile.dart';
 import '../../providers/providers.dart';
+import '../../widgets/app_button.dart';
 import 'diagnosis_cards.dart';
 
 final _analytics = FirebaseAnalytics.instance;
@@ -368,30 +370,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
             // ── 다음 버튼 ──────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-              child: SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: ElevatedButton(
-                  onPressed: _saving ? null : _nextPage,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: Text(
-                    _currentPage == _totalPages - 1
-                        ? '분석 시작하기  →'
-                        : '다음',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
+              padding: const EdgeInsets.fromLTRB(
+                AppTokens.screenH, 8, AppTokens.screenH, 24),
+              child: AppButton.primary(
+                label: _currentPage == _totalPages - 1 ? '분석 시작하기  →' : '다음',
+                onTap: _saving ? null : _nextPage,
+                isLoading: _saving,
               ),
             ),
           ],

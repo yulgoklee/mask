@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_tokens.dart';
 import '../../data/models/notification_setting.dart';
 import '../../providers/providers.dart';
+import '../../widgets/app_button.dart';
 
 /// 위치 설정 이후 — 알림 시간 + 톤 설정 화면 (리디자인 v2)
 class NotificationTimeScreen extends ConsumerWidget {
@@ -25,7 +27,7 @@ class NotificationTimeScreen extends ConsumerWidget {
           children: [
             // ── 헤더 ──────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 36, 24, 0),
+              padding: const EdgeInsets.fromLTRB(AppTokens.screenH, 36, AppTokens.screenH, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -182,41 +184,22 @@ class NotificationTimeScreen extends ConsumerWidget {
                 children: [
                   _SimulationButton(setting: setting),
                   const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 54,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        try {
-                          await ref
-                              .read(profileRepositoryProvider)
-                              .completeOnboarding();
-                        } catch (_) {}
-                        if (!context.mounted) return;
-                        // 이미 권한이 있으면 권한 화면 건너뛰기
-                        final permStatus =
-                            await Permission.notification.status;
-                        if (!context.mounted) return;
-                        context.go(permStatus.isGranted
-                            ? '/onboarding_complete'
-                            : '/permission');
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: const Text(
-                        '설정 완료  →',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
+                  AppButton.primary(
+                    label: '설정 완료  →',
+                    onTap: () async {
+                      try {
+                        await ref
+                            .read(profileRepositoryProvider)
+                            .completeOnboarding();
+                      } catch (_) {}
+                      if (!context.mounted) return;
+                      final permStatus =
+                          await Permission.notification.status;
+                      if (!context.mounted) return;
+                      context.go(permStatus.isGranted
+                          ? '/onboarding_complete'
+                          : '/permission');
+                    },
                   ),
                 ],
               ),
@@ -347,7 +330,7 @@ class _CupertinoTimePickerSheetState
 
           // ── 헤더 ─────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(horizontal: AppTokens.screenH),
             child: Row(
               children: [
                 GestureDetector(

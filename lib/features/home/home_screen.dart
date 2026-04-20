@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_tokens.dart';
 import '../../core/constants/dust_standards.dart';
 import '../../core/services/air_korea_service.dart' show AirKoreaService;
 import '../../core/utils/dust_calculator.dart';
@@ -12,8 +13,11 @@ import '../../data/models/forecast_models.dart';
 import '../../data/models/today_situation.dart';
 import '../../providers/providers.dart';
 import '../../providers/core_providers.dart';
+import '../../widgets/app_button.dart';
+import '../../widgets/app_card.dart';
 import '../../widgets/async_state_widgets.dart';
 import '../../widgets/dust_gauge_widget.dart';
+import '../../widgets/section_header.dart';
 import '../location_setup/location_setup_screen.dart';
 import 'dust_detail_screen.dart';
 import 'dust_forecast_detail_screen.dart';
@@ -618,7 +622,7 @@ class _HeroButtonState extends State<_HeroButton>
                         horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.20),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppTokens.radiusSm),
                     ),
                     child: Text(
                       riskLevel.label,
@@ -1020,32 +1024,22 @@ class _HourlySection extends StatelessWidget {
           ),
         );
       },
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.divider),
-        ),
+      child: AppCard(
+        padding: const EdgeInsets.fromLTRB(
+            AppTokens.cardMd, AppTokens.cardSm, AppTokens.cardMd, AppTokens.cardSm),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const Text(
-                  '시간별 현황',
-                  style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondary),
-                ),
-                const Spacer(),
-                const Text('자세히 보기',
-                    style:
-                        TextStyle(fontSize: 11, color: AppColors.primary)),
-                const Icon(Icons.chevron_right,
-                    size: 16, color: AppColors.primary),
-              ],
+            SectionHeader(
+              '시간별 현황',
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Text('자세히 보기',
+                      style: TextStyle(fontSize: 11, color: AppColors.primary)),
+                  Icon(Icons.chevron_right, size: 16, color: AppColors.primary),
+                ],
+              ),
             ),
             const SizedBox(height: 12),
             hourlyAsync.when(
@@ -1116,7 +1110,7 @@ class _HourlyList extends StatelessWidget {
                 color: isNow
                     ? AppColors.primary.withValues(alpha: 0.08)
                     : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppTokens.radiusSm),
                 border: isNow
                     ? Border.all(
                         color: AppColors.primary.withValues(alpha: 0.30))
@@ -1242,18 +1236,11 @@ class _NoStationView extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: onSetup,
-              icon: const Icon(Icons.my_location, size: 18),
-              label: const Text('지역 설정하기'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 28, vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
+            AppButton.primary(
+              label: '지역 설정하기',
+              onTap: onSetup,
+              fullWidth: false,
+              leading: const Icon(Icons.my_location, size: 18, color: Colors.white),
             ),
           ],
         ),

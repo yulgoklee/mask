@@ -6,6 +6,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/utils/sensitivity_calculator.dart';
 import '../../data/models/user_profile.dart';
 import '../../providers/providers.dart';
+import '../../widgets/app_button.dart';
 
 /// 온보딩 완료 후 개인 민감도 대시보드 (Step 3)
 ///
@@ -95,25 +96,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     const SizedBox(height: 28),
 
                     // ⑤ CTA 버튼
-                    SizedBox(
-                      width: double.infinity,
-                      height: 54,
-                      child: ElevatedButton(
-                        onPressed: () => context.go('/location_setup', extra: true), // 온보딩 플로우
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: const Text(
-                          '위치 설정 →',
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w700),
-                        ),
-                      ),
+                    AppButton.primary(
+                      label: '위치 설정 →',
+                      onTap: () => context.go('/location_setup', extra: true),
                     ),
                     const SizedBox(height: 32),
                   ],

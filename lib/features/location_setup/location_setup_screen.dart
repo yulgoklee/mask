@@ -5,6 +5,8 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/location_stations.dart';
 import '../../core/services/location_service.dart';
 import '../../providers/providers.dart';
+import '../../widgets/app_button.dart';
+import '../../widgets/section_header.dart';
 
 // 공유 상수 별칭 (하위 호환)
 const _sidoList = locationSidoList;
@@ -162,27 +164,13 @@ class _LocationSetupScreenState extends ConsumerState<LocationSetupScreen> {
               const SizedBox(height: 32),
 
               // ── GPS 자동 감지 버튼 ──────────────────────────────
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: _detecting ? null : _detectLocation,
-                  icon: _detecting
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.my_location, size: 18),
-                  label: Text(
-                      _detecting ? '위치 감지 중...' : '현재 위치로 자동 감지'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    side: const BorderSide(color: AppColors.primary),
-                    foregroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
+              AppButton.secondary(
+                label: _detecting ? '위치 감지 중...' : '현재 위치로 자동 감지',
+                onTap: _detecting ? null : _detectLocation,
+                isLoading: _detecting,
+                leading: _detecting
+                    ? null
+                    : const Icon(Icons.my_location, size: 18, color: AppColors.primary),
               ),
 
               // ── GPS 오류 메시지 ─────────────────────────────────
@@ -195,23 +183,11 @@ class _LocationSetupScreenState extends ConsumerState<LocationSetupScreen> {
                         height: 1.4)),
                 if (_settingsAction != null) ...[
                   const SizedBox(height: 6),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: _settingsAction,
-                      icon:
-                          const Icon(Icons.settings_outlined, size: 16),
-                      label: const Text('설정 열기'),
-                      style: OutlinedButton.styleFrom(
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 10),
-                        side: const BorderSide(
-                            color: AppColors.textSecondary),
-                        foregroundColor: AppColors.textSecondary,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
+                  AppButton.secondary(
+                    label: '설정 열기',
+                    onTap: _settingsAction,
+                    leading: const Icon(Icons.settings_outlined,
+                        size: 16, color: AppColors.primary),
                   ),
                 ],
               ],
@@ -232,11 +208,7 @@ class _LocationSetupScreenState extends ConsumerState<LocationSetupScreen> {
               const SizedBox(height: 24),
 
               // ── 시/도 선택 ──────────────────────────────────────
-              const Text('시·도 선택',
-                  style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondary)),
+              const SectionHeader('시·도 선택'),
               const SizedBox(height: 10),
               Wrap(
                 spacing: 8,
@@ -283,13 +255,7 @@ class _LocationSetupScreenState extends ConsumerState<LocationSetupScreen> {
               // ── 시/군/구 선택 ────────────────────────────────────
               if (_selectedSido != null) ...[
                 const SizedBox(height: 24),
-                Text(
-                  '$_selectedSido 지역 선택',
-                  style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondary),
-                ),
+                SectionHeader('$_selectedSido 지역 선택'),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 8,
@@ -321,12 +287,9 @@ class _LocationSetupScreenState extends ConsumerState<LocationSetupScreen> {
 
               const SizedBox(height: 36),
               Center(
-                child: TextButton(
-                  onPressed: _goHome,
-                  child: const Text('나중에 설정하기',
-                      style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary)),
+                child: AppButton.text(
+                  label: '나중에 설정하기',
+                  onTap: _goHome,
                 ),
               ),
             ],
