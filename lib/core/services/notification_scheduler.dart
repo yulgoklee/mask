@@ -104,7 +104,7 @@ class NotificationScheduler {
       }
 
       // ── Tier 2: 기간 상태 로드 ─────────────────────────
-      final tempStatesRaw = prefs.getString('temporary_states');
+      final tempStatesRaw = prefs.getString(AppConstants.prefTemporaryStates);
       final temporaryStates = tempStatesRaw != null
           ? (jsonDecode(tempStatesRaw) as List<dynamic>)
               .map((e) => TemporaryState.fromJson(e as Map<String, dynamic>))
@@ -113,7 +113,7 @@ class NotificationScheduler {
           : <TemporaryState>[];
 
       // ── Tier 3: 오늘의 상황 로드 (List) ──────────────────
-      final todaySitRaw = prefs.getString('today_situation');
+      final todaySitRaw = prefs.getString(AppConstants.prefTodaySituation);
       List<TodaySituation> todaySituations = [];
       if (todaySitRaw != null) {
         try {
@@ -182,7 +182,7 @@ class NotificationScheduler {
         );
         // 안심 알림 트리거용: 마지막 마스크 필요 알림 시각 기록
         await prefs.setString(
-            'notif_last_mask_required_at', now.toIso8601String());
+            AppConstants.prefLastMaskRequiredAt, now.toIso8601String());
         // 피드백 수집: 발송 이후 응답 대기 등록
         final notifId = DateTime.now().millisecondsSinceEpoch.toString();
         await feedbackRepo.markPending(notifId, DateTime.now(), pm25);
@@ -225,6 +225,7 @@ class NotificationScheduler {
           pm25: pm25,
           tFinal: tFinalValue,
           prefs: prefs,
+          setting: setting,
         );
       }
 
@@ -276,6 +277,7 @@ class NotificationScheduler {
           pm25: pm25,
           tFinal: tFinalValue,
           prefs: prefs,
+          setting: setting,
         );
       }
 
@@ -316,6 +318,7 @@ class NotificationScheduler {
           pm25: pm25,
           tFinal: tFinalValue,
           prefs: prefs,
+          setting: setting,
         );
       }
 
@@ -343,6 +346,7 @@ class NotificationScheduler {
           pm25: pm25,
           tFinal: tFinalValue,
           prefs: prefs,
+          setting: setting,
         );
       }
 
@@ -402,16 +406,26 @@ class NotificationScheduler {
 /// [tFinal]      : 발송 시점 개인 임계치 (SQLite 기록용)
 /// [prefs]       : SharedPreferences (nullable → 내부 획득)
 /// 기기 로컬 시각 기준 방해 금지 시간 내인지 확인
-bool _isInQuietHours(SharedPreferences prefs) {
-  final enabled = prefs.getBool('quiet_hours_enabled') ?? false;
-  if (!enabled) return false;
-  final start = prefs.getInt('quiet_hours_start_hour') ?? 22;
-  final end   = prefs.getInt('quiet_hours_end_hour')   ?? 7;
+bool _isInQuietHours(NotificationSetting setting) {
+  if (!setting.quietHoursEnabled) return false;
+  final start = setting.quietHoursStartHour;
+  final end   = setting.quietHoursEndHour;
   final now   = DateTime.now().hour; // 기기 로컬 타임존
   // 자정을 걸치는 구간(start > end): 예) 22~7
   if (start > end) return now >= start || now < end;
   // 당일 구간(start < end): 예) 2~6
   return now >= start && now < end;
+}
+
+/// SharedPreferences에서 NotificationSetting 복원 (fallback용)
+NotificationSetting _settingFromPrefs(SharedPreferences prefs) {
+  final raw = prefs.getString(AppConstants.prefNotificationSetting);
+  if (raw == null) return const NotificationSetting();
+  try {
+    return NotificationSetting.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+  } catch (_) {
+    return const NotificationSetting();
+  }
 }
 
 Future<void> _sendNotification({
@@ -429,11 +443,13 @@ Future<void> _sendNotification({
   int? pm25,
   double? tFinal,
   SharedPreferences? prefs,
+  NotificationSetting? setting,
 }) async {
   final p = prefs ?? await SharedPreferences.getInstance();
+  final s = setting ?? _settingFromPrefs(p);
   // 실시간 경보(PM2.5 ≥75)는 방해 금지 시간을 오버라이드 — 건강 안전 우선
   final isEmergency = type == 'realtime';
-  if (!isEmergency && _isInQuietHours(p)) {
+  if (!isEmergency && _isInQuietHours(s)) {
     debugPrint('[NotificationScheduler] 🌙 방해 금지 시간 — 알림 건너뜀 ($type)');
     // 억제된 알림도 SQLite에 기록 (통계 분모에서는 제외되지만 이력 추적용)
     try {
@@ -449,7 +465,7 @@ Future<void> _sendNotification({
     } catch (_) {}
     return;
   }
-  if (isEmergency && _isInQuietHours(p)) {
+  if (isEmergency && _isInQuietHours(s)) {
     debugPrint('[NotificationScheduler] 🚨 재난 수준 PM2.5 — 방해 금지 시간 오버라이드');
   }
 
@@ -514,11 +530,11 @@ bool _inWindow(DateTime now, int hour, int minute) {
 }
 
 bool _sentToday(SharedPreferences prefs, String type) {
-  return prefs.getBool('notif_sent_${type}_${_dateKey()}') ?? false;
+  return prefs.getBool('${AppConstants.prefNotifSent}${type}_${_dateKey()}') ?? false;
 }
 
 void _markSent(SharedPreferences prefs, String type) {
-  prefs.setBool('notif_sent_${type}_${_dateKey()}', true);
+  prefs.setBool('${AppConstants.prefNotifSent}${type}_${_dateKey()}', true);
 }
 
 String _dateKey() {
@@ -528,11 +544,11 @@ String _dateKey() {
 }
 
 bool _sentThisHour(SharedPreferences prefs, String type) {
-  return prefs.getBool('notif_sent_${type}_${_hourKey()}') ?? false;
+  return prefs.getBool('${AppConstants.prefNotifSent}${type}_${_hourKey()}') ?? false;
 }
 
 void _markSentHour(SharedPreferences prefs, String type) {
-  prefs.setBool('notif_sent_${type}_${_hourKey()}', true);
+  prefs.setBool('${AppConstants.prefNotifSent}${type}_${_hourKey()}', true);
 }
 
 String _hourKey() {
@@ -673,14 +689,14 @@ Future<void> _checkSafeEntryAlert({
   try {
     if (pm25 >= tFinal) {
       // T_final 이상 → 아래 추적 초기화
-      await prefs.remove('notif_below_tfinal_since');
+      await prefs.remove(AppConstants.prefBelowTFinalSince);
       return;
     }
 
     // T_final 미만 진입 시각 기록
-    final belowSinceStr = prefs.getString('notif_below_tfinal_since');
+    final belowSinceStr = prefs.getString(AppConstants.prefBelowTFinalSince);
     if (belowSinceStr == null) {
-      await prefs.setString('notif_below_tfinal_since', now.toIso8601String());
+      await prefs.setString(AppConstants.prefBelowTFinalSince, now.toIso8601String());
       return;
     }
 
@@ -689,7 +705,7 @@ Future<void> _checkSafeEntryAlert({
     if (minutesBelow < 15) return; // 아직 15분 미달
 
     // 이전에 마스크 필요 알림이 발송됐는지 확인
-    final lastMaskStr = prefs.getString('notif_last_mask_required_at');
+    final lastMaskStr = prefs.getString(AppConstants.prefLastMaskRequiredAt);
     if (lastMaskStr == null) return; // 이전 위험 알림 없음
 
     final lastMask = DateTime.parse(lastMaskStr);
@@ -717,7 +733,7 @@ Future<void> _checkSafeEntryAlert({
         _markSentHour(prefs, 'safeEntry');
         // 이번 사이클 완료 → 추적 초기화 (다음 사이클 대비)
         prefs.remove('notif_below_tfinal_since');
-        prefs.remove('notif_last_mask_required_at');
+        prefs.remove(AppConstants.prefLastMaskRequiredAt);
       },
       pm25: pm25,
       tFinal: tFinal,

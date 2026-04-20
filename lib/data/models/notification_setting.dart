@@ -58,6 +58,11 @@ class NotificationSetting {
   // 알림 문체 (다정한/단호한)
   final NotificationVoice notificationVoice;
 
+  // 방해 금지 시간
+  final bool quietHoursEnabled;
+  final int quietHoursStartHour;   // 0~23
+  final int quietHoursEndHour;     // 0~23
+
   const NotificationSetting({
     this.eveningForecastEnabled = false,
     this.eveningForecastHour = 21,
@@ -70,6 +75,9 @@ class NotificationSetting {
     this.eveningReturnMinute = 0,
     this.realtimeAlertEnabled = true,
     this.notificationVoice = NotificationVoice.friendlyVoice,
+    this.quietHoursEnabled = false,
+    this.quietHoursStartHour = 22,
+    this.quietHoursEndHour = 7,
   });
 
   NotificationSetting copyWith({
@@ -84,6 +92,9 @@ class NotificationSetting {
     int? eveningReturnMinute,
     bool? realtimeAlertEnabled,
     NotificationVoice? notificationVoice,
+    bool? quietHoursEnabled,
+    int?  quietHoursStartHour,
+    int?  quietHoursEndHour,
   }) {
     return NotificationSetting(
       eveningForecastEnabled: eveningForecastEnabled ?? this.eveningForecastEnabled,
@@ -97,6 +108,9 @@ class NotificationSetting {
       eveningReturnMinute: eveningReturnMinute ?? this.eveningReturnMinute,
       realtimeAlertEnabled: realtimeAlertEnabled ?? this.realtimeAlertEnabled,
       notificationVoice: notificationVoice ?? this.notificationVoice,
+      quietHoursEnabled:   quietHoursEnabled   ?? this.quietHoursEnabled,
+      quietHoursStartHour: quietHoursStartHour ?? this.quietHoursStartHour,
+      quietHoursEndHour:   quietHoursEndHour   ?? this.quietHoursEndHour,
     );
   }
 
@@ -112,6 +126,9 @@ class NotificationSetting {
     'eveningReturnMinute': eveningReturnMinute,
     'realtimeAlertEnabled': realtimeAlertEnabled,
     'notificationVoice': notificationVoice.value,
+    'quietHoursEnabled':   quietHoursEnabled,
+    'quietHoursStartHour': quietHoursStartHour,
+    'quietHoursEndHour':   quietHoursEndHour,
   };
 
   factory NotificationSetting.fromJson(Map<String, dynamic> json) =>
@@ -128,5 +145,8 @@ class NotificationSetting {
         realtimeAlertEnabled: json['realtimeAlertEnabled'] as bool? ?? true,
         notificationVoice: NotificationVoice.fromString(
             json['notificationVoice'] as String?),
+        quietHoursEnabled:   json['quietHoursEnabled']   as bool? ?? false,
+        quietHoursStartHour: json['quietHoursStartHour'] as int?  ?? 22,
+        quietHoursEndHour:   json['quietHoursEndHour']   as int?  ?? 7,
       );
 }

@@ -7,6 +7,7 @@ import '../core/services/geolocator_gps_service.dart';
 import '../core/services/gps_service.dart';
 import '../core/services/location_service.dart';
 import '../core/services/notification_service.dart';
+import '../core/services/remote_config_service.dart';
 
 // ── 기반 Provider ─────────────────────────────────────────
 
@@ -42,12 +43,14 @@ final localDatabaseProvider = Provider<LocalDatabase>((ref) {
   return db;
 });
 
-/// ThresholdEngine — 기본 설정으로 초기화 (향후 Remote Config 연동 시 교체)
-final thresholdConfigProvider = Provider<ThresholdConfig>(
-  (_) => ThresholdConfig.defaults,
-);
+/// ThresholdConfig — Firebase Remote Config에서 비동기 로드
+/// 로드 완료 전 또는 실패 시 ThresholdConfig.defaults 폴백
+final thresholdConfigProvider = FutureProvider<ThresholdConfig>((ref) async {
+  return RemoteConfigService.loadThresholdConfig();
+});
 
 final thresholdEngineProvider = Provider<ThresholdEngine>((ref) {
-  final config = ref.watch(thresholdConfigProvider);
+  final config = ref.watch(thresholdConfigProvider).valueOrNull
+      ?? ThresholdConfig.defaults;
   return ThresholdEngine(config: config);
 });

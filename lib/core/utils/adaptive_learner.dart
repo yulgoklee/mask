@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/datasources/feedback_repository.dart';
 import '../../data/models/notification_feedback.dart';
+import '../constants/app_constants.dart';
 import 'sensitivity_calculator.dart';
 
 /// 피드백 기반 민감도 자동 조정 (5단계 학습 알고리즘)
@@ -48,10 +49,10 @@ class AdaptiveLearner {
   static const double kHighIgnoreThreshold = 0.60; // 무시율 ≥ 60% → 과다 알림
   static const double kLowAckThreshold     = 0.30; // 응답률 < 30% → 무관심
 
-  // ── SharedPreferences 키 ───────────────────────────────────
-  static const String _prefKeyOffset    = 'adaptive_s_offset';
-  static const String _prefKeyLastEval  = 'adaptive_last_eval';
-  static const String _prefKeyEvalCount = 'adaptive_eval_count';
+  // ── SharedPreferences 키 → AppConstants ───────────────────
+  static String get _prefKeyOffset    => AppConstants.prefAdaptiveSOffset;
+  static String get _prefKeyLastEval  => AppConstants.prefAdaptiveLastEval;
+  static String get _prefKeyEvalCount => AppConstants.prefAdaptiveEvalCount;
 
   // ── 공개 API ───────────────────────────────────────────────
 

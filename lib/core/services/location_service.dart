@@ -11,9 +11,6 @@ export 'gps_service.dart' show LocationResult, LocationError;
 /// - GPS 위치 조회 → [GpsService]에 위임 (테스트 시 교체 가능)
 /// - 측정소·위치 정보 영속 저장 → SharedPreferences
 class LocationService {
-  static const String _latKey = 'saved_lat';
-  static const String _lngKey = 'saved_lng';
-
   final SharedPreferences _prefs;
   final GpsService _gps;
 
@@ -46,14 +43,14 @@ class LocationService {
 
   /// 마지막 위치 저장
   Future<void> saveLastPosition(double lat, double lng) async {
-    await _prefs.setDouble(_latKey, lat);
-    await _prefs.setDouble(_lngKey, lng);
+    await _prefs.setDouble(AppConstants.prefSavedLat, lat);
+    await _prefs.setDouble(AppConstants.prefSavedLng, lng);
   }
 
   /// 마지막 저장 위치 반환
   (double, double)? getLastPosition() {
-    final lat = _prefs.getDouble(_latKey);
-    final lng = _prefs.getDouble(_lngKey);
+    final lat = _prefs.getDouble(AppConstants.prefSavedLat);
+    final lng = _prefs.getDouble(AppConstants.prefSavedLng);
     if (lat == null || lng == null) return null;
     return (lat, lng);
   }

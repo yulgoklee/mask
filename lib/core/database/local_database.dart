@@ -62,7 +62,14 @@ class LocalDatabase {
     ''');
   }
 
+  // 마이그레이션 패턴:
+  //   1. 각 블록은 `if (oldVersion < N)` 가드로 독립 실행 — 건너뜀 없음
+  //   2. 컬럼 추가: ALTER TABLE … ADD COLUMN (DEFAULT 없으면 NULL)
+  //   3. 컬럼 삭제/이름 변경: SQLite는 지원 안 함 → 새 테이블 생성 후 데이터 이동 → 구 테이블 DROP
+  //   4. _dbVersion 상수와 블록 수를 항상 동기화 (누락 시 신규 설치가 onCreate 호출, 업그레이드는 _onUpgrade 호출)
+  //   5. 실패해도 앱 크래시가 나지 않도록 try/catch 또는 IF EXISTS 사용 권장
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    // v1 → v2: mask_type·snooze_until 추가, defense_daily 제거
     if (oldVersion < 2) {
       await db.execute(
           'ALTER TABLE notification_logs ADD COLUMN mask_type TEXT');
@@ -70,6 +77,7 @@ class LocalDatabase {
           'ALTER TABLE notification_logs ADD COLUMN snooze_until TEXT');
       await db.execute('DROP TABLE IF EXISTS defense_daily');
     }
+    // v2 → v3: 조회 성능 개선용 복합 인덱스 2개 추가
     if (oldVersion < 3) {
       await db.execute(
         'CREATE INDEX IF NOT EXISTS idx_aqi_station_time '
@@ -80,6 +88,10 @@ class LocalDatabase {
         'ON notification_logs(triggered_at)',
       );
     }
+    // v3 → v4 예시 (추후 작성):
+    //   if (oldVersion < 4) {
+    //     await db.execute('ALTER TABLE aqi_records ADD COLUMN source TEXT');
+    //   }
   }
 
   // ── AQI Records ─────────────────────────────────────────────
