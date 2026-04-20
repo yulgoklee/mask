@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' show Color;
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -13,6 +15,52 @@ import '../../data/models/notification_log.dart';
 import '../../data/models/user_profile.dart';
 import '../database/local_database.dart';
 import 'notification_deep_link.dart';
+
+/// "마스크 챙겼어요" 탭 시 두 저장소에 동시 기록
+///
+/// SharedPreferences(DefenseRecord) + SQLite(notification_log) 각각 독립 시도.
+/// 어느 쪽 실패도 다른 쪽에 영향 없음. 실패 시 Crashlytics 로깅.
+Future<void> _recordMaskWorn(SharedPreferences prefs) async {
+  final pm25 = prefs.getInt(NotificationService.prefLastNotifPm25) ?? 0;
+  final maskType =
+      prefs.getString(NotificationService.prefLastNotifMaskType) ?? 'KF80';
+
+  // 1. SharedPreferences: DefenseRecord
+  if (pm25 > 0) {
+    try {
+      final record = DefenseRecord.create(pm25: pm25, maskType: maskType);
+      await DefenseRepository.addRecordToPrefs(prefs, record);
+      debugPrint('[MaskWorn] DefenseRecord 저장 완료 (pm25=$pm25, mask=$maskType)');
+    } catch (e, st) {
+      debugPrint('[MaskWorn] ❌ DefenseRecord 저장 실패: $e');
+      try {
+        FirebaseCrashlytics.instance.recordError(
+          e, st, fatal: false, reason: 'defense_record_save_failed',
+        );
+      } catch (_) {}
+    }
+  }
+
+  // 2. SQLite: notification_log userAction 갱신
+  try {
+    final db = LocalDatabase();
+    final log = await db.getLatestNoneLog();
+    if (log?.id != null) {
+      await db.updateMaskWorn(log!.id!, maskType);
+      debugPrint('[MaskWorn] SQLite log 갱신 완료 (id=${log.id})');
+    } else {
+      debugPrint('[MaskWorn] ⚠️ 갱신할 notification_log 없음');
+    }
+    await db.close();
+  } catch (e, st) {
+    debugPrint('[MaskWorn] ❌ SQLite 갱신 실패: $e');
+    try {
+      FirebaseCrashlytics.instance.recordError(
+        e, st, fatal: false, reason: 'notification_log_update_failed',
+      );
+    } catch (_) {}
+  }
+}
 
 /// 배경 isolate: 알림 액션 버튼 탭 처리
 ///
@@ -37,42 +85,7 @@ void onNotificationActionBackground(NotificationResponse response) async {
 
     if (response.actionId == NotificationService.actionAcknowledge) {
       // ── "마스크 챙겼어요" ─────────────────────────────────────
-      final maskType =
-          prefs.getString(NotificationService.prefLastNotifMaskType) ?? 'KF80';
-
-      // SharedPreferences + SQLite 두 쓰기를 각각 try-catch로 감싸 정합성 로그 기록
-      bool prefsSaved = false;
-      bool dbSaved = false;
-
-      if (pm25 > 0) {
-        try {
-          final record = DefenseRecord.create(pm25: pm25, maskType: maskType);
-          await DefenseRepository.addRecordToPrefs(prefs, record);
-          prefsSaved = true;
-        } catch (e) {
-          debugPrint('[Notification] DefenseRecord SharedPrefs 저장 실패: $e');
-        }
-      } else {
-        prefsSaved = true; // pm25 == 0이면 기록 불필요 — 불일치 아님
-      }
-
-      try {
-        final db = LocalDatabase();
-        final log = await db.getLatestNoneLog();
-        if (log?.id != null) {
-          await db.updateMaskWorn(log!.id!, maskType);
-          dbSaved = true;
-        } else {
-          dbSaved = true; // 로그 없으면 업데이트 불필요 — 불일치 아님
-        }
-        await db.close();
-      } catch (e) {
-        debugPrint('[Notification] DefenseRecord SQLite 저장 실패: $e');
-      }
-
-      if (!prefsSaved || !dbSaved) {
-        debugPrint('[Notification] ⚠️ 방어율 데이터 불일치 — prefs=$prefsSaved, db=$dbSaved');
-      }
+      await _recordMaskWorn(prefs);
 
       // 피드백 기록
       final pending = _loadPendingNotifId(prefs);
@@ -170,45 +183,10 @@ void onNotificationResponseForeground(NotificationResponse response) {
 Future<void> _handleNotificationResponse(NotificationResponse response) async {
   try {
     final prefs = await SharedPreferences.getInstance();
-    final pm25 = prefs.getInt(NotificationService.prefLastNotifPm25) ?? 0;
 
     if (response.actionId == NotificationService.actionAcknowledge) {
       // "마스크 챙겼어요" — background 핸들러와 동일 처리
-      final maskType =
-          prefs.getString(NotificationService.prefLastNotifMaskType) ?? 'KF80';
-
-      bool prefsSaved = false;
-      bool dbSaved = false;
-
-      if (pm25 > 0) {
-        try {
-          final record = DefenseRecord.create(pm25: pm25, maskType: maskType);
-          await DefenseRepository.addRecordToPrefs(prefs, record);
-          prefsSaved = true;
-        } catch (e) {
-          debugPrint('[Notification] DefenseRecord SharedPrefs 저장 실패: $e');
-        }
-      } else {
-        prefsSaved = true;
-      }
-
-      try {
-        final db = LocalDatabase();
-        final log = await db.getLatestNoneLog();
-        if (log?.id != null) {
-          await db.updateMaskWorn(log!.id!, maskType);
-          dbSaved = true;
-        } else {
-          dbSaved = true;
-        }
-        await db.close();
-      } catch (e) {
-        debugPrint('[Notification] DefenseRecord SQLite 저장 실패: $e');
-      }
-
-      if (!prefsSaved || !dbSaved) {
-        debugPrint('[Notification] ⚠️ 방어율 데이터 불일치 — prefs=$prefsSaved, db=$dbSaved');
-      }
+      await _recordMaskWorn(prefs);
       await NotificationDeepLink.setPendingPayload(type: 'scheduled');
     } else if (response.actionId == NotificationService.actionSnoozeToday) {
       // "나중에 ✋" — 6시간 스누즈

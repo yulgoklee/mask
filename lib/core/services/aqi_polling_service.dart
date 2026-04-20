@@ -46,9 +46,22 @@ class AqiPollingService {
 
   /// 현재 AQI 수치 1건 조회 → SQLite 저장
   ///
+  /// [prefs] 전달 시 50분 쿨다운 체크 — 성공 시 마지막 폴링 시각 기록.
   /// 측정소 Null 데이터 시 자동으로 5km 이내 인근 측정소 Fallback 없음
   /// (GPS Fallback은 BackgroundService._tryRefreshStation에서 처리)
-  Future<bool> pollAndSave(String stationName) async {
+  Future<bool> pollAndSave(String stationName, {SharedPreferences? prefs}) async {
+    // ── 폴링 쿨다운 체크 (50분) ──────────────────────────────
+    if (prefs != null) {
+      final lastMs = prefs.getInt(AppConstants.prefLastAqiPollMs) ?? 0;
+      final nowMs = DateTime.now().millisecondsSinceEpoch;
+      final elapsedMin = (nowMs - lastMs) / 60000;
+
+      if (elapsedMin < AppConstants.aqiPollCooldownMinutes) {
+        debugPrint('[AqiPolling] 쿨다운 중 (${elapsedMin.toStringAsFixed(0)}분 경과) → 스킵');
+        return false;
+      }
+    }
+
     try {
       final dust = await _airKorea.getDustData(stationName);
       if (dust == null) {
@@ -64,6 +77,10 @@ class AqiPollingService {
         dataTime: dust.dataTime,
         fetchedAt: DateTime.now(),
       ));
+
+      // 성공 시 마지막 폴링 시각 갱신
+      await prefs?.setInt(
+          AppConstants.prefLastAqiPollMs, DateTime.now().millisecondsSinceEpoch);
       debugPrint('[AqiPolling] 저장 완료: $stationName '
           'PM2.5=${dust.pm25Value} @ ${dust.dataTime}');
       return true;
@@ -118,14 +135,10 @@ class AqiPollingService {
 
   // ── 폴링 + 시딩 통합 진입점 ──────────────────────────────
 
-  static const String _prefPollTimePrefix = 'aqi_last_poll_';
-  static const int _cooldownMinutes = 60;
-
   /// 백그라운드 태스크에서 호출하는 통합 메서드
   ///
-  /// 1. 측정소당 1시간 쿨다운 — 이전 폴링으로부터 60분 미만이면 스킵
-  /// 2. Zero-day면 시딩 먼저
-  /// 3. 현재 수치 1건 저장
+  /// 1. Zero-day면 시딩 먼저
+  /// 2. 현재 수치 1건 저장 (pollAndSave 내부에서 50분 쿨다운 체크)
   Future<void> runPollingCycle({
     required SharedPreferences prefs,
     UserProfile? profile,
@@ -136,21 +149,8 @@ class AqiPollingService {
       return;
     }
 
-    final lastPollKey = '$_prefPollTimePrefix$station';
-    final lastPollMs = prefs.getInt(lastPollKey) ?? 0;
-    final nowMs = DateTime.now().millisecondsSinceEpoch;
-    final elapsedMin = (nowMs - lastPollMs) / 60000;
-
-    if (elapsedMin < _cooldownMinutes) {
-      debugPrint('[AqiPolling] 쿨다운 중 — 스킵 ($station, ${elapsedMin.toStringAsFixed(1)}분 경과)');
-      return;
-    }
-
     await seedInitialData(station);
-    final saved = await pollAndSave(station);
-    if (saved) {
-      await prefs.setInt(lastPollKey, nowMs);
-    }
+    await pollAndSave(station, prefs: prefs);
   }
 }
 

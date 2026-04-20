@@ -40,10 +40,6 @@
         <string>processing</string>
     </array> -->
 
-    <!-- AdMob App ID — iOS: not implemented yet -->
-    <!-- <key>GADApplicationIdentifier</key>
-    <string>ca-app-pub-xxxxxxxxxxxxxxxx~xxxxxxxxxx</string> -->
-
     <key>UILaunchStoryboardName</key>
     <string>LaunchScreen</string>
     <key>UIMainStoryboardFile</key>

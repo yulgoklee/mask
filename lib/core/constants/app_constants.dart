@@ -40,8 +40,15 @@ class AppConstants {
   /// 튜토리얼 열람 여부
   static const String prefTutorialSeen = 'tutorial_seen';
 
+  // ── AQI 폴링 ─────────────────────────────────────────────
+  /// 마지막 AQI 폴링 시각 (ms, SharedPreferences)
+  static const String prefLastAqiPollMs = 'aqi_last_poll_ms';
+
+  /// AQI 폴링 쿨다운 (분) — 에어코리아 실측값은 1시간 단위 갱신
+  static const int aqiPollCooldownMinutes = 50;
+
   // ── 알림 임계값 ───────────────────────────────────────────
-  /// 급증 경보 판단 기준 기울기 (μg/m³/h)
-  /// 실사용 데이터 분석 후 조정 가능
-  static const double surgeRateThreshold = 7.0;
+  /// 급변 선제 알림 발동 기준 상승 속도 (μg/m³/h)
+  /// 7.0 = 1시간 후 '보통→나쁨' 경계 돌파 예상 최소 속도
+  static const double surgeRateThresholdUgPerHour = 7.0;
 }
