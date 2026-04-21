@@ -24,10 +24,10 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
       description: '미세먼지 수치를 확인하는 앱이 아니에요.\n"오늘 마스크 챙겨야겠다!" 라고\n행동하게 만드는 앱이에요.',
     ),
     _TutorialPage(
-      emoji: '🏥',
-      color: Color(0xFF10B981),
-      title: '내 건강 상태에 맞게,\n오늘 할 행동을 알려드려요',
-      description: '나이, 기저질환, 활동량에 따라\n나에게 딱 맞는 기준으로\n마스크 착용 여부를 판단해드려요.',
+      emoji: '🧬',
+      color: Color(0xFFA2D2FF),
+      title: '같은 공기도\n나에겐 다를 수 있어요',
+      description: '"오늘 보통이에요"가 아니라\n"보통이지만 임신 중이라\nKF94가 필요해요"라고 알려드려요.',
     ),
   ];
 
