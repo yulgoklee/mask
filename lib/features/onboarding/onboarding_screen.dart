@@ -11,15 +11,23 @@ import 'diagnosis_cards.dart';
 
 final _analytics = FirebaseAnalytics.instance;
 
-/// Phase 2 온보딩 — Q1~Q10 카드 PageView
+/// Phase 2 온보딩 — Q1~Q9 카드 PageView (개편 버전)
 ///
-///  Q1  닉네임          Q6  임신 여부 (female/미선택만, male 완전 제외)
-///  Q2  출생연도         Q7  피부 시술
-///  Q3  성별             Q8  야외 활동량
-///  Q4  호흡기 상태      Q9  활동 태그
-///  Q5  체감 민감도      Q10 마스크 불편도
+/// Step 1 — 기본 (5개)
+///   Q1 닉네임          Q4 호흡기
+///   Q2 출생연도         Q5 민감도
+///   Q3 성별
 ///
-///  완료 → analysis_loading_screen → dashboard
+/// Step 2 — 특별 상태
+///   Q6 피부시술
+///   Q7 임신 (female/미선택만, male 제외)
+///
+/// Step 3 — 생활
+///   Q8 (또는 Q7)  야외활동
+///   Q9 (또는 Q8)  마스크 불편도
+///
+/// 총 9개 (female/미선택) / 8개 (male)
+/// 완료 → analysis_loading_screen → dashboard
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -34,10 +42,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   // ── Q1: 닉네임 ───────────────────────────────────────────────
   String? _nickname;
 
-  // ── QLocation: 관심 지역 ────────────────────────────────────
-  String _homeStationName = '';
-  String _officeStationName = '';
-
   // ── Q2: 출생연도 ─────────────────────────────────────────────
   int? _birthYear;
 
@@ -50,57 +54,47 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   // ── Q5: 민감도 ───────────────────────────────────────────────
   int _sensitivityLevel = 1;
 
-  // ── Q6: 임신 (female/미선택만 유효, male이면 페이지 자체 제외) ──
-  bool _isPregnant = false;
-
-  // ── Q7: 피부 시술 ────────────────────────────────────────────
+  // ── Q6: 피부 시술 ────────────────────────────────────────────
   bool _recentSkinTreatment = false;
   DateTime? _skinTreatmentDate;
+
+  // ── Q7: 임신 (female/미선택만 유효, male이면 페이지 자체 제외) ──
+  bool _isPregnant = false;
 
   // ── Q8: 야외 활동량 ──────────────────────────────────────────
   int _outdoorMinutes = 1;
 
-  // ── Q9: 활동 태그 ────────────────────────────────────────────
-  List<String> _activityTags = const [];
-
-  // ── Q10: 마스크 불편도 ───────────────────────────────────────
+  // ── Q9: 마스크 불편도 ───────────────────────────────────────
   int _discomfortLevel = 1;
 
   // ── 저장 중 상태 (중복 탭 방지) ─────────────────────────────
   bool _saving = false;
 
   // ── 동적 페이지 목록 ─────────────────────────────────────────
-  //  Q6는 female 또는 성별 미선택 시만 포함
-  //  male 선택 시 Q6 완전 제거 → 9페이지
+  //  Q7(임신)은 female 또는 성별 미선택 시만 포함
+  //  male 선택 시 Q7 완전 제거 → 8페이지
   //  gender 변경 시 _currentPage <= 2 이므로 인덱스 안전
 
   /// Q6 포함 여부 — male이면 완전 제외
   bool get _includeQ6 => _genderStr != 'male';
 
   /// 실제 렌더할 페이지 위젯 목록
-  // Q6 포함 시 전체 11문항, 미포함(male) 시 10문항
-  // 번호 기준: Q1=닉네임, Q2=관심지역, Q3=출생연도, Q4=성별, Q5=호흡기,
-  //            Q6=민감도, Q7=임신(조건부), Q8=피부시술, Q9=야외, Q10=태그, Q11=불편도
+  // Step 1: 기본 5개, Step 2: 특별 상태(조건부), Step 3: 생활 2개
+  // female/미선택: 9개, male: 8개
   List<Widget> get _pages => [
+        // ── Step 1: 기본 ───────────────────────────────────
         DiagQ1Nickname(
           questionNumber: 1,
           initialValue: _nickname,
           onChanged: (v) => setState(() => _nickname = v),
         ),
-        DiagQLocation(
-          questionNumber: 2,
-          homeStation: _homeStationName,
-          officeStation: _officeStationName,
-          onHomeChanged: (v) => setState(() => _homeStationName = v),
-          onOfficeChanged: (v) => setState(() => _officeStationName = v),
-        ),
         DiagQ2BirthYear(
-          questionNumber: 3,
+          questionNumber: 2,
           initialValue: _birthYear,
           onChanged: (v) => setState(() => _birthYear = v),
         ),
         DiagQ3Gender(
-          questionNumber: 4,
+          questionNumber: 3,
           value: _genderStr,
           onChanged: (v) => setState(() {
             _genderStr = v;
@@ -108,24 +102,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           }),
         ),
         DiagQ4Respiratory(
-          questionNumber: 5,
+          questionNumber: 4,
           value: _respiratoryStatus,
           onChanged: (v) => setState(() => _respiratoryStatus = v),
         ),
         DiagQ5Sensitivity(
-          questionNumber: 6,
+          questionNumber: 5,
           value: _sensitivityLevel,
           onChanged: (v) => setState(() => _sensitivityLevel = v),
         ),
-        if (_includeQ6)
-          DiagQ6Pregnancy(
-            questionNumber: 7,
-            value: _isPregnant,
-            genderStr: _genderStr,
-            onChanged: (v) => setState(() => _isPregnant = v),
-          ),
+
+        // ── Step 2: 특별 상태 ────────────────────────────────
         DiagQ7SkinTreatment(
-          questionNumber: _includeQ6 ? 8 : 7,
+          questionNumber: 6,
           value: _recentSkinTreatment,
           onChanged: (v) => setState(() {
             _recentSkinTreatment = v;
@@ -135,24 +124,28 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           onTreatmentDateChanged: (d) =>
               setState(() => _skinTreatmentDate = d),
         ),
+        if (_includeQ6)
+          DiagQ6Pregnancy(
+            questionNumber: 7,
+            value: _isPregnant,
+            genderStr: _genderStr,
+            onChanged: (v) => setState(() => _isPregnant = v),
+          ),
+
+        // ── Step 3: 생활 ────────────────────────────────────
         DiagQ8Outdoor(
-          questionNumber: _includeQ6 ? 9 : 8,
+          questionNumber: _includeQ6 ? 8 : 7,
           value: _outdoorMinutes,
           onChanged: (v) => setState(() => _outdoorMinutes = v),
         ),
-        DiagQ9ActivityTags(
-          questionNumber: _includeQ6 ? 10 : 9,
-          value: _activityTags,
-          onChanged: (v) => setState(() => _activityTags = v),
-        ),
         DiagQ10Discomfort(
-          questionNumber: _includeQ6 ? 11 : 10,
+          questionNumber: _includeQ6 ? 9 : 8,
           value: _discomfortLevel,
           onChanged: (v) => setState(() => _discomfortLevel = v),
         ),
       ];
 
-  /// 전체 페이지 수 (male: 9, 그 외: 10)
+  /// 전체 페이지 수 (male: 8, 그 외: 9)
   int get _totalPages => _pages.length;
 
   // ── 라이프사이클 ─────────────────────────────────────────────
@@ -273,10 +266,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                          ? (_skinTreatmentDate ?? DateTime.now())
                          : null,
         outdoorMinutes:      _outdoorMinutes,
-        activityTags:        _activityTags,
+        activityTags:        const [],  // 온보딩에서 수집 안 함
         discomfortLevel:     _discomfortLevel,
-        homeStationName:     _homeStationName,
-        officeStationName:   _officeStationName,
+        homeStationName:     '',        // 온보딩에서 수집 안 함 — 프로필 탭에서 설정
+        officeStationName:   '',        // 온보딩에서 수집 안 함 — 프로필 탭에서 설정
       );
 
   // ── 빌드 ─────────────────────────────────────────────────────

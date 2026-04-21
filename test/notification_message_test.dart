@@ -46,7 +46,7 @@ void main() {
         maskRequired: false,
         maskType: null,
       );
-      expect(content.title, contains('없어도 돼요'));
+      expect(content.title, contains('오늘 공기가 맑아요'));
     });
 
     test('이름 없을 때 제목에 님 포함', () {
@@ -97,7 +97,7 @@ void main() {
         stateOnlyMask: true,
       );
       expect(content.title, contains('🛡️'));
-      expect(content.title, contains('마스크 챙기세요'));
+      expect(content.title, contains('마스크를 챙기는 게 좋아요'));
     });
 
     test('stateOnlyMask=false(공기 나쁨)이면 제목에 😷 포함', () {
@@ -124,12 +124,12 @@ void main() {
       expect(content.body, contains('나쁨'));
     });
 
-    test('내일 좋음 → 괜찮아요 포함', () {
+    test('내일 좋음 → 공기 좋음 문구 포함', () {
       final content = NotificationService.forecastContent(
         profile: _profile(nickname: '지수'),
         tomorrowGrade: '좋음',
       );
-      expect(content.title, contains('괜찮아요'));
+      expect(content.title, contains('공기가 좋을 것 같아요'));
       expect(content.body, contains('마스크 없이'));
     });
 
@@ -142,63 +142,63 @@ void main() {
         stateNote: '임신 중',
         stateOnlyMask: true,
       );
-      expect(content.title, contains('마스크 필요해요'));
+      expect(content.title, contains('마스크를 미리 챙겨두세요'));
       expect(content.body, contains('임신 중'));
       expect(content.body, contains('KF94'));
     });
   });
 
   group('NotificationService - 귀가 알림 (eveningReturnContent)', () {
-    test('나쁨 + maskType → 챙기세요 + 타입 포함', () {
+    test('나쁨 + maskType → 챙겨주세요 + 타입 포함', () {
       final content = NotificationService.eveningReturnContent(
         profile: _profile(nickname: '지수'),
         gradeName: '매우나쁨',
         maskType: 'KF94',
       );
-      expect(content.title, contains('챙기세요'));
+      expect(content.title, contains('마스크를 챙겨주세요'));
       expect(content.body, contains('KF94'));
     });
 
-    test('좋음 → 괜찮아요 + 수고 포함', () {
+    test('좋음 → 퇴근길 공기 좋음 + 수고 포함', () {
       final content = NotificationService.eveningReturnContent(
         profile: _profile(nickname: '지수'),
         gradeName: '좋음',
       );
-      expect(content.title, contains('괜찮아요'));
+      expect(content.title, contains('공기가 좋아요'));
       expect(content.body, contains('수고'));
     });
 
-    test('stateNote 있으면 챙기세요 + 상태명 포함', () {
+    test('stateNote 있으면 챙겨주세요 + 상태명 포함', () {
       final content = NotificationService.eveningReturnContent(
         profile: _profile(nickname: '지수'),
         gradeName: '좋음',
         stateNote: '피부 시술 후 회복',
         maskType: 'KF80',
       );
-      expect(content.title, contains('챙기세요'));
+      expect(content.title, contains('마스크를 챙겨주세요'));
       expect(content.body, contains('피부 시술 후 회복'));
     });
   });
 
   group('NotificationService - 실시간 급등 알림 (realtimeContent)', () {
-    test('제목에 이름 + 나빠졌어요 포함', () {
+    test('제목에 이름 + 마스크 필요 문구 포함', () {
       final content = NotificationService.realtimeContent(
         profile: _profile(nickname: '지수'),
         pm25: 72,
       );
       expect(content.title, contains('지수님'));
-      expect(content.title, contains('나빠졌어요'));
+      expect(content.title, contains('KF94 마스크가 꼭 필요해요'));
       expect(content.body, contains('72'));
     });
 
-    test('stateNote 있으면 본문에 상태명 + 즉시 포함', () {
+    test('stateNote 있으면 본문에 상태명 + 주의 문구 포함', () {
       final content = NotificationService.realtimeContent(
         profile: _profile(nickname: '지수'),
         pm25: 90,
         stateNote: '임신 중',
       );
       expect(content.body, contains('임신 중'));
-      expect(content.body, contains('즉시'));
+      expect(content.body, contains('특히 주의가 필요해요'));
     });
   });
 }

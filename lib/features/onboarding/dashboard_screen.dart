@@ -70,6 +70,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   children: [
                     const SizedBox(height: 28),
 
+                    // ⓪ 감정 섹션 (신규)
+                    _EmotionSection(profile: profile),
+                    const SizedBox(height: 32),
+
+                    // ── 시각적 구분선 ──
+                    Container(height: 1, color: AppColors.divider),
+                    const SizedBox(height: 28),
+
                     // ① 헤더
                     _DashboardHeader(profile: profile, s: s, tFinal: tFinal),
 
@@ -83,19 +91,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     // ③ 민감도 기여 카드
                     _ContributionList(profile: profile, s: s),
 
-                    const SizedBox(height: 20),
-
-                    // ④ 알림 시뮬레이션 미리보기
-                    _SimulationCard(
-                      profile: profile,
-                      tFinal: tFinal,
-                      onDetailTap: () =>
-                          _showWeightSheet(context, profile, s, tFinal),
-                    ),
-
                     const SizedBox(height: 28),
 
-                    // ⑤ CTA 버튼
+                    // ④ CTA 버튼
                     AppButton.primary(
                       label: '위치 설정하고 시작하기 →',
                       onTap: () => context.go('/location_setup', extra: true),
@@ -112,17 +110,62 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     ); // PopScope
   }
 
-  void _showWeightSheet(
-    BuildContext context,
-    UserProfile profile,
-    double s,
-    double tFinal,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => _WeightSheet(profile: profile, s: s, tFinal: tFinal),
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ⓪ 감정 섹션 — 온보딩 완결의 순간, 안심을 먼저 전한다
+// ══════════════════════════════════════════════════════════════
+
+class _EmotionSection extends StatelessWidget {
+  final UserProfile profile;
+
+  const _EmotionSection({required this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    final name = profile.displayName;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── 아이콘 ────────────────────────────────────────
+        Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: AppColors.primaryLight.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: const Center(
+            child: Text('😷', style: TextStyle(fontSize: 30)),
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // ── 헤드라인 ──────────────────────────────────────
+        Text(
+          '$name의 기준이\n만들어졌어요.',
+          style: const TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+            height: 1.3,
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        // ── 서브 ──────────────────────────────────────────
+        Text(
+          '이제 공기가 나빠지기 전에\n먼저 알려드릴게요.',
+          style: TextStyle(
+            fontSize: 15,
+            color: AppColors.textPrimary.withValues(alpha: 0.65),
+            fontWeight: FontWeight.w500,
+            height: 1.5,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -931,447 +974,3 @@ class _ContribRow extends StatelessWidget {
   }
 }
 
-// ══════════════════════════════════════════════════════════════
-//  ④ 알림 시뮬레이션 카드
-// ══════════════════════════════════════════════════════════════
-
-class _SimulationCard extends StatelessWidget {
-  final UserProfile profile;
-  final double tFinal;
-  final VoidCallback onDetailTap;
-
-  const _SimulationCard({
-    required this.profile,
-    required this.tFinal,
-    required this.onDetailTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final name = profile.displayName;
-
-    return GestureDetector(
-      onTap: onDetailTap,
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.divider),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.notifications_outlined,
-                    size: 15, color: AppColors.textSecondary),
-                const SizedBox(width: 6),
-                const Text(
-                  '이런 알림이 울려요',
-                  style: TextStyle(
-                      fontSize: 12, color: AppColors.textSecondary),
-                ),
-                const Spacer(),
-                const Text(
-                  '기준이 궁금해요',
-                  style:
-                      TextStyle(fontSize: 11, color: AppColors.primary),
-                ),
-                const SizedBox(width: 2),
-                const Icon(Icons.chevron_right,
-                    size: 14, color: AppColors.primary),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color:
-                          AppColors.coral.withValues(alpha: 0.10),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.masks_outlined,
-                        size: 17, color: AppColors.coral),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '😷 $name, 오늘 마스크를 챙기는 게 좋아요',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '미세먼지가 내 기준(${tFinal.toStringAsFixed(1)}μg/m³)에\n'
-                          '도달할 것으로 예상돼요.',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                            height: 1.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              '* 실제 알림은 측정소 데이터 기반으로 발송됩니다.',
-              style: TextStyle(fontSize: 11, color: AppColors.textHint),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ══════════════════════════════════════════════════════════════
-//  가중치 상세 Bottom Sheet
-// ══════════════════════════════════════════════════════════════
-
-class _WeightSheet extends StatelessWidget {
-  final UserProfile profile;
-  final double s;
-  final double tFinal;
-
-  const _WeightSheet({
-    required this.profile,
-    required this.s,
-    required this.tFinal,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final w1    = SensitivityCalculator.conditionWeight(profile);
-    final w2    = SensitivityCalculator.activityWeight(profile);
-    final w3    = SensitivityCalculator.sensitivityWeightFromProfile(profile);
-    final wSpec = SensitivityCalculator.specialStateWeight(profile);
-    final wPref = SensitivityCalculator.prefWeight(profile);
-    final rawSum = w1 + w2 + w3 + wSpec + wPref;
-    final isClamped = rawSum > SensitivityCalculator.sMax;
-
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 핸들
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.divider,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                '나만의 알림 기준, 이렇게 계산했어요',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                '건강 상태·활동량·민감도를 합산해 일반 기준 35μg/m³에서\n'
-                '개인 기준을 낮춰드려요. 항목이 많을수록 더 일찍 알려드려요.',
-                style: TextStyle(
-                    fontSize: 12, color: AppColors.textSecondary, height: 1.5),
-              ),
-              const SizedBox(height: 20),
-
-              _SheetWeightRow(
-                icon: Icons.favorite_outline,
-                label: '호흡기 상태',
-                sublabel: profile.respiratoryLabel == '건강함'
-                    ? '해당 없음'
-                    : profile.respiratoryLabel,
-                value: w1,
-                maxValue: 0.45,
-                isPositive: true,
-              ),
-              const SizedBox(height: 10),
-              _SheetWeightRow(
-                icon: Icons.directions_walk,
-                label: '야외 활동량',
-                sublabel: () {
-                  final base = profile.outdoorMinutes == 2
-                      ? '3시간 이상'
-                      : profile.outdoorMinutes == 1
-                          ? '1~3시간'
-                          : '1시간 미만';
-                  return profile.activityTags.isEmpty
-                      ? base
-                      : '$base · 태그 ${profile.activityTags.length}개';
-                }(),
-                value: w2,
-                maxValue: 0.20,
-                isPositive: true,
-              ),
-              const SizedBox(height: 10),
-              _SheetWeightRow(
-                icon: Icons.tune,
-                label: '신체 반응도',
-                sublabel: profile.sensitivityLevel == 2
-                    ? '매우 예민'
-                    : profile.sensitivityLevel == 1
-                        ? '보통'
-                        : '무던함',
-                value: w3,
-                maxValue: 0.10,
-                isPositive: true,
-              ),
-              const SizedBox(height: 10),
-              _SheetWeightRow(
-                icon: Icons.health_and_safety_outlined,
-                label: '특별 상태',
-                sublabel: _specLabel(profile),
-                value: wSpec,
-                maxValue: 0.55,
-                isPositive: true,
-              ),
-              const SizedBox(height: 10),
-              _SheetWeightRow(
-                icon: Icons.masks_outlined,
-                label: '마스크 편의',
-                sublabel: profile.discomfortLevel == 2
-                    ? '많이 불편 (기준 완화)'
-                    : '착용 문제없음',
-                value: wPref.abs(),
-                maxValue: 0.10,
-                isPositive: false,
-              ),
-
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Divider(color: AppColors.divider),
-              ),
-
-              RichText(
-                text: TextSpan(
-                  style: const TextStyle(
-                      fontSize: 13, color: AppColors.textPrimary),
-                  children: [
-                    const TextSpan(text: '항목 합계 '),
-                    TextSpan(
-                      text: '+${(w1 * 100).round()}% + '
-                          '+${(w2 * 100).round()}% + '
-                          '+${(w3 * 100).round()}% + '
-                          '+${(wSpec * 100).round()}%'
-                          '${wPref < 0 ? ' − ${(wPref.abs() * 100).round()}%' : ''}',
-                      style: const TextStyle(color: AppColors.textSecondary),
-                    ),
-                    const TextSpan(text: ' = '),
-                    TextSpan(
-                      text: '${(s * 100).round()}%',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.coral,
-                      ),
-                    ),
-                    if (isClamped)
-                      const TextSpan(
-                        text: '  (최대 60% 적용)',
-                        style: TextStyle(
-                            fontSize: 11, color: AppColors.textHint),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              RichText(
-                text: TextSpan(
-                  style: const TextStyle(
-                      fontSize: 13, color: AppColors.textPrimary),
-                  children: [
-                    const TextSpan(text: '35μg/m³ × (1 − '),
-                    TextSpan(
-                      text: '${(s * 100).round()}%',
-                      style: const TextStyle(color: AppColors.coral),
-                    ),
-                    const TextSpan(text: ') = '),
-                    TextSpan(
-                      text: '${tFinal.toStringAsFixed(1)} μg/m³',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight.withValues(alpha: 0.40),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'PM2.5가 ${tFinal.toStringAsFixed(1)}μg/m³을 넘으면\n'
-                  '일반 기준(35μg/m³)보다 먼저 알림을 드려요.',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textPrimary,
-                    height: 1.6,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _specLabel(UserProfile p) {
-    final parts = <String>[];
-    if (p.isPregnant) parts.add('임신');
-    if (p.recentSkinTreatment) parts.add('피부 시술');
-    return parts.isEmpty ? '해당 없음' : parts.join(' · ');
-  }
-}
-
-class _SheetWeightRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String sublabel;
-  final double value;
-  final double maxValue;
-  final bool isPositive;
-
-  const _SheetWeightRow({
-    required this.icon,
-    required this.label,
-    required this.sublabel,
-    required this.value,
-    required this.maxValue,
-    required this.isPositive,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final fillRatio =
-        maxValue > 0 ? (value / maxValue).clamp(0.0, 1.0) : 0.0;
-    final hasWeight = value > 0;
-    final barColor = isPositive
-        ? (hasWeight ? AppColors.coral : AppColors.divider)
-        : (hasWeight ? AppColors.primary : AppColors.divider);
-    final iconColor = isPositive
-        ? (hasWeight ? AppColors.coral : AppColors.textHint)
-        : (hasWeight ? AppColors.primary : AppColors.textHint);
-    final bgColor = isPositive
-        ? (hasWeight
-            ? AppColors.coral.withValues(alpha: 0.10)
-            : AppColors.surfaceVariant)
-        : (hasWeight
-            ? AppColors.primary.withValues(alpha: 0.10)
-            : AppColors.surfaceVariant);
-
-    return Row(
-      children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration:
-              BoxDecoration(color: bgColor, shape: BoxShape.circle),
-          child: Icon(icon, size: 18, color: iconColor),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    sublabel,
-                    style: const TextStyle(
-                        fontSize: 11, color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              LayoutBuilder(
-                builder: (_, c) => Stack(
-                  children: [
-                    Container(
-                      height: 5,
-                      width: c.maxWidth,
-                      decoration: BoxDecoration(
-                        color: AppColors.divider,
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    ),
-                    Container(
-                      height: 5,
-                      width: c.maxWidth * fillRatio,
-                      decoration: BoxDecoration(
-                        color: barColor,
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          hasWeight
-              ? (isPositive
-                  ? '+${(value * 100).round()}%'
-                  : '−${(value * 100).round()}%')
-              : '+0%',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            color: hasWeight ? barColor : AppColors.textHint,
-          ),
-        ),
-      ],
-    );
-  }
-}
