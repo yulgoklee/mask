@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_tokens.dart';
 import '../../data/models/notification_setting.dart';
+import '../../core/services/app_logger.dart';
 import '../../providers/providers.dart';
 import '../../widgets/app_button.dart';
 
@@ -191,7 +192,9 @@ class NotificationTimeScreen extends ConsumerWidget {
                         await ref
                             .read(profileRepositoryProvider)
                             .completeOnboarding();
-                      } catch (_) {}
+                      } catch (e, st) {
+                        AppLogger.error(e, st, reason: 'onboarding_complete_save');
+                      }
                       if (!context.mounted) return;
                       final permStatus =
                           await Permission.notification.status;
@@ -941,7 +944,9 @@ class _SimulationButtonState extends ConsumerState<_SimulationButton> {
       await service.showSimulationNotification(
         voice: widget.setting.notificationVoice.value,
       );
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.error(e, st, reason: 'simulation_notif_send');
+    }
 
     if (mounted) {
       setState(() {

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/services/app_logger.dart';
 import '../models/notification_feedback.dart';
 
 /// 알림 피드백 기록 저장소
@@ -91,7 +92,9 @@ class FeedbackRepository {
       try {
         list = (jsonDecode(raw) as List<dynamic>)
             .cast<Map<String, dynamic>>();
-      } catch (_) {}
+      } catch (e, st) {
+        AppLogger.error(e, st, reason: 'feedback_prefs_parse');
+      }
     }
 
     list.add(feedback.toJson());

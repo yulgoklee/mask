@@ -14,6 +14,7 @@ import '../../data/models/notification_feedback.dart';
 import '../../data/models/notification_log.dart';
 import '../../data/models/user_profile.dart';
 import '../database/local_database.dart';
+import 'app_logger.dart';
 import 'notification_deep_link.dart';
 
 /// "마스크 챙겼어요" 탭 시 두 저장소에 동시 기록
@@ -112,7 +113,9 @@ void onNotificationActionBackground(NotificationResponse response) async {
         final notifService = NotificationService();
         await notifService.initialize();
         await notifService.cancelAll();
-      } catch (_) {}
+      } catch (e, st) {
+        AppLogger.error(e, st, reason: 'mask_worn_notif_cancel');
+      }
 
       final pending = _loadPendingNotifId(prefs);
       await FeedbackRepository.addFeedbackToPrefs(
@@ -136,7 +139,9 @@ void onNotificationActionBackground(NotificationResponse response) async {
                 jsonDecode(response.payload!) as Map<String, dynamic>;
             logId = decoded['logId'] as int?;
             dlType = decoded['type'] as String?;
-          } catch (_) {}
+          } catch (e, st) {
+            AppLogger.error(e, st, reason: 'notif_payload_parse');
+          }
         }
 
         if (logId != null) {
@@ -201,7 +206,9 @@ Future<void> _handleNotificationResponse(NotificationResponse response) async {
         final notifService = NotificationService();
         await notifService.initialize();
         await notifService.cancelAll();
-      } catch (_) {}
+      } catch (e, st) {
+        AppLogger.error(e, st, reason: 'scheduled_notif_cancel');
+      }
     } else {
       // 알림 본체 탭 → appOpened + payload logId 우선, 폴백 getLatestNoneLog
       try {
@@ -213,7 +220,9 @@ Future<void> _handleNotificationResponse(NotificationResponse response) async {
                 jsonDecode(response.payload!) as Map<String, dynamic>;
             logId = decoded['logId'] as int?;
             dlType = decoded['type'] as String?;
-          } catch (_) {}
+          } catch (e, st) {
+            AppLogger.error(e, st, reason: 'notif_payload_parse');
+          }
         }
 
         if (logId != null) {
@@ -241,7 +250,9 @@ Future<void> _handleNotificationResponse(NotificationResponse response) async {
         await NotificationDeepLink.setPendingPayload(type: 'scheduled');
       }
     }
-  } catch (_) {}
+  } catch (e, st) {
+    AppLogger.error(e, st, reason: 'notif_tap_handler');
+  }
 }
 
 String? _loadPendingNotifId(SharedPreferences prefs) {

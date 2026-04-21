@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/services/app_logger.dart';
 import '../../providers/providers.dart';
 
 class TutorialScreen extends ConsumerStatefulWidget {
@@ -42,7 +43,9 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     bool onboardingDone = false;
     try {
       onboardingDone = await repo.isOnboardingCompleted();
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.error(e, st, reason: 'tutorial_onboarding_check');
+    }
     if (!mounted) return;
     context.go(onboardingDone ? '/care' : '/roadmap');
   }

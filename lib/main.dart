@@ -16,6 +16,7 @@ import 'core/services/air_korea_service.dart';
 import 'core/services/aqi_polling_service.dart';
 import 'core/services/cloud_functions_data_source.dart';
 import 'core/services/notification_deep_link.dart';
+import 'core/services/app_logger.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/workmanager_push_scheduler.dart';
 import 'data/models/notification_log.dart';
@@ -81,7 +82,9 @@ void main() async {
           await db.close();
         }
       }
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.error(e, st, reason: 'launch_deeplink_handle');
+    }
 
     // 알림 권한 요청 — 온보딩 완료된 기존 사용자만
     // 신규 사용자는 permission_screen.dart에서 맥락과 함께 요청
