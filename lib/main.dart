@@ -38,9 +38,6 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
 
   if (firebaseReady) {
-    // TODO(단계2 테스트 전용): 디버그 빌드에서도 Crashlytics 수집 활성화 — 단계3 전에 제거
-    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
-
     // Flutter 에러 → Crashlytics로 전송
     FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
     // 비동기 에러 → Crashlytics로 전송

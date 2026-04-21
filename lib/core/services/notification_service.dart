@@ -46,9 +46,10 @@ Future<void> _recordMaskWorn(SharedPreferences prefs) async {
   try {
     final db = LocalDatabase();
     final log = await db.getLatestNoneLog();
-    if (log?.id != null) {
-      await db.updateMaskWorn(log!.id!, maskType);
-      debugPrint('[MaskWorn] SQLite log 갱신 완료 (id=${log.id})');
+    final logId0 = log?.id;
+    if (logId0 != null) {
+      await db.updateMaskWorn(logId0, maskType);
+      debugPrint('[MaskWorn] SQLite log 갱신 완료 (id=$logId0)');
     } else {
       debugPrint('[MaskWorn] ⚠️ 갱신할 notification_log 없음');
     }
@@ -105,9 +106,10 @@ void onNotificationActionBackground(NotificationResponse response) async {
       try {
         final db = LocalDatabase();
         final log = await db.getLatestNoneLog();
-        if (log?.id != null) {
+        final logId1 = log?.id;
+        if (logId1 != null) {
           await db.updateSnoozed(
-              log!.id!, DateTime.now().add(const Duration(hours: 6)));
+              logId1, DateTime.now().add(const Duration(hours: 6)));
         }
         await db.close();
         final notifService = NotificationService();
@@ -154,12 +156,13 @@ void onNotificationActionBackground(NotificationResponse response) async {
           // Fallback: 가장 최근 미처리 로그 사용
           final db = LocalDatabase();
           final log = await db.getLatestNoneLog();
-          if (log?.id != null) {
-            await db.updateUserAction(log!.id!, UserAction.appOpened);
+          final logId2 = log?.id;
+          if (logId2 != null) {
+            await db.updateUserAction(logId2, UserAction.appOpened);
             final resolvedType =
-                dlType ?? _deepLinkTypeForNotifType(log.notificationType);
+                dlType ?? _deepLinkTypeForNotifType(log!.notificationType);
             await NotificationDeepLink.setPendingPayload(
-                type: resolvedType, logId: log.id);
+                type: resolvedType, logId: logId2);
           } else {
             await NotificationDeepLink.setPendingPayload(
                 type: dlType ?? 'scheduled');
@@ -198,9 +201,10 @@ Future<void> _handleNotificationResponse(NotificationResponse response) async {
       try {
         final db = LocalDatabase();
         final log = await db.getLatestNoneLog();
-        if (log?.id != null) {
+        final logId3 = log?.id;
+        if (logId3 != null) {
           await db.updateSnoozed(
-              log!.id!, DateTime.now().add(const Duration(hours: 6)));
+              logId3, DateTime.now().add(const Duration(hours: 6)));
         }
         await db.close();
         final notifService = NotificationService();
@@ -234,12 +238,13 @@ Future<void> _handleNotificationResponse(NotificationResponse response) async {
         } else {
           final db = LocalDatabase();
           final log = await db.getLatestNoneLog();
-          if (log?.id != null) {
-            await db.updateUserAction(log!.id!, UserAction.appOpened);
+          final logId4 = log?.id;
+          if (logId4 != null) {
+            await db.updateUserAction(logId4, UserAction.appOpened);
             final resolvedType =
-                dlType ?? _deepLinkTypeForNotifType(log.notificationType);
+                dlType ?? _deepLinkTypeForNotifType(log!.notificationType);
             await NotificationDeepLink.setPendingPayload(
-                type: resolvedType, logId: log.id);
+                type: resolvedType, logId: logId4);
           } else {
             await NotificationDeepLink.setPendingPayload(
                 type: dlType ?? 'scheduled');

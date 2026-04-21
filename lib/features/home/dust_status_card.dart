@@ -131,7 +131,7 @@ class DustStatusCard extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        result.maskType!,
+                        result.maskType ?? '',
                         style: TextStyle(
                           color: _bgColor,
                           fontSize: 13,
@@ -163,7 +163,7 @@ class DustStatusCard extends ConsumerWidget {
             if (result.personalNote != null) ...[
               const SizedBox(height: 4),
               Text(
-                result.personalNote!,
+                result.personalNote ?? '',
                 style: const TextStyle(
                   color: Colors.white54,
                   fontSize: 12,
