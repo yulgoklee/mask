@@ -442,14 +442,14 @@ class _CalendarRow extends StatelessWidget {
       child: Row(
         children: List.generate(days.length, (i) {
           final day = days[i];
-          return AnimationConfiguration.staggeredList(
-            position: i,
-            duration: const Duration(milliseconds: 200),
-            delay: Duration(milliseconds: i * 50),
-            child: ScaleAnimation(
-              scale: 0.85,
-              child: FadeInAnimation(
-                child: Expanded(
+          return Expanded(
+            child: AnimationConfiguration.staggeredList(
+              position: i,
+              duration: const Duration(milliseconds: 200),
+              delay: Duration(milliseconds: i * 50),
+              child: ScaleAnimation(
+                scale: 0.85,
+                child: FadeInAnimation(
                   child: AnimatedOpacity(
                     duration: const Duration(milliseconds: 250),
                     opacity: day.isInSelectedPeriod ? 1.0 : 0.3,

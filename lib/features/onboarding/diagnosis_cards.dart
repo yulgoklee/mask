@@ -128,7 +128,7 @@ class _DiagQ2BirthYearState extends State<DiagQ2BirthYear> {
       children: [
         // ── 상단 텍스트 ──────────────────────────────────────
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
