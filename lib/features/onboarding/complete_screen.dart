@@ -70,16 +70,12 @@ class _OnboardingCompleteScreenState
 
     // 첫 번째로 켜진 알림 시간 표시 (우선순위: 외출 전 → 전날 예보 → 귀가 후)
     String? firstAlertTime;
-    String? firstAlertLabel;
     if (setting.morningAlertEnabled) {
       firstAlertTime = _formatTime(setting.morningAlertHour, setting.morningAlertMinute);
-      firstAlertLabel = '외출 전';
     } else if (setting.eveningForecastEnabled) {
       firstAlertTime = _formatTime(setting.eveningForecastHour, setting.eveningForecastMinute);
-      firstAlertLabel = '전날 예보';
     } else if (setting.eveningReturnEnabled) {
       firstAlertTime = _formatTime(setting.eveningReturnHour, setting.eveningReturnMinute);
-      firstAlertLabel = '귀가 후';
     }
 
     return Scaffold(
@@ -124,18 +120,28 @@ class _OnboardingCompleteScreenState
                     ),
                     const SizedBox(height: 12),
 
-                    if (firstAlertTime != null)
+                    if (firstAlertTime != null) ...[
                       Text(
-                        '$firstAlertLabel 알림을 $firstAlertTime에\n보내드릴게요.',
+                        '내일 $firstAlertTime,\n여기서부터 시작돼요.',
                         style: const TextStyle(
                           fontSize: 17,
                           color: AppColors.textSecondary,
                           height: 1.6,
+                          fontWeight: FontWeight.w500,
                         ),
-                      )
-                    else
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        '공기가 나빠지면 언제든 먼저 알려드릴게요.\n$name, 저만 믿으세요.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary.withValues(alpha: 0.8),
+                          height: 1.6,
+                        ),
+                      ),
+                    ] else
                       const Text(
-                        '알림을 모두 끄셨어요.\n앱을 열면 언제든 오늘의\n미세먼지를 확인할 수 있어요.',
+                        '알림을 모두 끄셨어요.\n앱을 열면 언제든\n오늘의 미세먼지를 확인할 수 있어요.',
                         style: TextStyle(
                           fontSize: 17,
                           color: AppColors.textSecondary,
