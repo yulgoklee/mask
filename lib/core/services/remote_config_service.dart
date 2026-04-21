@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
+import 'app_logger.dart';
 import '../engine/threshold_config.dart';
 
 /// Firebase Remote Config에서 ThresholdConfig를 로드하는 서비스
@@ -43,8 +44,8 @@ class RemoteConfigService {
       final config = ThresholdConfig.fromJson(json);
       debugPrint('[RemoteConfig] ThresholdConfig 로드 완료: tBase=${config.tBase}');
       return config;
-    } catch (e) {
-      debugPrint('[RemoteConfig] ThresholdConfig 로드 실패 → defaults 사용: $e');
+    } catch (e, st) {
+      AppLogger.error(e, st, reason: 'remote_config_parse');
       return ThresholdConfig.defaults;
     }
   }

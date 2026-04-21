@@ -10,6 +10,7 @@ import '../../data/models/notification_setting.dart';
 import '../../data/models/temporary_state.dart';
 import '../../data/models/today_situation.dart';
 import '../../data/models/user_profile.dart';
+import '../../core/services/app_logger.dart';
 import '../../providers/providers.dart';
 import '../../widgets/app_button.dart';
 import '../diagnosis/diagnosis_screen.dart';
@@ -1210,7 +1211,9 @@ class _AddStateSheetState extends ConsumerState<_AddStateSheet> {
     );
     try {
       await ref.read(temporaryStatesProvider.notifier).add(state);
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.error(e, st, reason: 'temporary_state_add');
+    }
     if (mounted) Navigator.pop(context);
   }
 }
@@ -1263,7 +1266,9 @@ class _EvidenceLinkState extends State<_EvidenceLink> {
       if (url.isNotEmpty && mounted) {
         setState(() => _url = url);
       }
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.error(e, st, reason: 'profile_image_url_load');
+    }
   }
 
   @override

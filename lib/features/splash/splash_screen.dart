@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_constants.dart';
 import '../../providers/core_providers.dart';
+import '../../core/services/app_logger.dart';
 import '../../providers/providers.dart';
 
 /// 스플래시 화면 — Phase 1 리디자인
@@ -87,8 +88,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           context.go('/care');
         }
       }
-    } catch (e) {
-      debugPrint('[Splash] _navigate 오류: $e');
+    } catch (e, st) {
+      AppLogger.error(e, st, reason: 'splash_navigate');
       if (mounted) context.go('/tutorial');
     }
   }

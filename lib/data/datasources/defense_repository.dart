@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/services/app_logger.dart';
 import '../models/defense_record.dart';
 
 /// 방어 기록 저장소 — SharedPreferences JSON 배열 기반
@@ -62,7 +63,9 @@ class DefenseRepository {
       try {
         list = (jsonDecode(raw) as List<dynamic>)
             .cast<Map<String, dynamic>>();
-      } catch (_) {}
+      } catch (e, st) {
+        AppLogger.error(e, st, reason: 'defense_prefs_parse');
+      }
     }
 
     list.add(record.toJson());

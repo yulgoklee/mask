@@ -6,6 +6,7 @@ import '../../data/models/forecast_models.dart';
 import '../config/app_config.dart';
 import '../constants/dust_standards.dart';
 import '../errors/app_exception.dart';
+import 'app_logger.dart';
 import 'dust_data_source.dart';
 
 /// Cloud Functions 기반 미세먼지 데이터 소스
@@ -301,8 +302,8 @@ class CloudFunctionsDataSource implements DustDataSource {
           .map((e) => e['stationName']?.toString() ?? '')
           .where((s) => s.isNotEmpty)
           .toList();
-    } catch (e) {
-      debugPrint('[CloudFn] searchStations 오류: $e');
+    } catch (e, st) {
+      AppLogger.error(e, st, reason: 'search_stations');
       return [];
     }
   }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_tokens.dart';
+import '../../core/services/app_logger.dart';
 import '../../core/services/workmanager_push_scheduler.dart';
 import '../../providers/providers.dart';
 import '../../widgets/app_button.dart';
@@ -42,8 +43,8 @@ class _OnboardingCompleteScreenState
   Future<void> _registerBackgroundTask() async {
     try {
       await WorkmanagerPushScheduler().register();
-    } catch (e) {
-      debugPrint('[CompleteScreen] 백그라운드 태스크 등록 실패 (무시): $e');
+    } catch (e, st) {
+      AppLogger.error(e, st, reason: 'workmanager_register');
     }
   }
 

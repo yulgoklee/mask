@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
+import 'app_logger.dart';
 import 'gps_service.dart';
 
 /// Geolocator 기반 GPS 서비스 구현체
@@ -25,10 +26,11 @@ class GeolocatorGpsService implements GpsService {
       return LocationResult.success(pos);
     } on TimeoutException {
       return LocationResult.failure(LocationError.timeout);
-    } catch (e) {
+    } catch (e, st) {
       if (e.toString().toLowerCase().contains('timeout')) {
         return LocationResult.failure(LocationError.timeout);
       }
+      AppLogger.error(e, st, reason: 'gps_get_position');
       return LocationResult.failure(LocationError.unknown);
     }
   }

@@ -4,6 +4,7 @@ import '../../data/models/aqi_record.dart';
 import '../../data/models/user_profile.dart';
 import '../constants/app_constants.dart';
 import '../database/local_database.dart';
+import 'app_logger.dart';
 import 'dust_data_source.dart';
 
 /// AQI 주기적 폴링 + SQLite 저장 서비스
@@ -84,8 +85,8 @@ class AqiPollingService {
       debugPrint('[AqiPolling] 저장 완료: $stationName '
           'PM2.5=${dust.pm25Value} @ ${dust.dataTime}');
       return true;
-    } catch (e) {
-      debugPrint('[AqiPolling] pollAndSave 실패: $e');
+    } catch (e, st) {
+      AppLogger.error(e, st, reason: 'aqi_poll_and_save');
       return false;
     }
   }

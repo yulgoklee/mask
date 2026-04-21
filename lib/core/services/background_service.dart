@@ -11,6 +11,7 @@ import '../../firebase_options.dart';
 import '../services/air_korea_service.dart';
 import '../services/aqi_polling_service.dart';
 import '../services/cloud_functions_data_source.dart';
+import 'app_logger.dart';
 import 'notification_scheduler.dart';
 
 /// 백그라운드 GPS 갱신 간격 (밀리초)
@@ -65,8 +66,8 @@ Future<void> _runAqiPolling(SharedPreferences prefs) async {
     final polling = AqiPollingService(airKorea: dataSource, db: db);
     await polling.runPollingCycle(prefs: prefs);
     await db.close();
-  } catch (e) {
-    debugPrint('[BGService] AQI 폴링 실패 (무시): $e');
+  } catch (e, st) {
+    AppLogger.error(e, st, reason: 'bg_aqi_poll');
   }
 }
 
@@ -116,9 +117,8 @@ Future<void> _tryRefreshStation(SharedPreferences prefs) async {
     await prefs.setDouble(AppConstants.prefSavedLng, pos.longitude);
     await prefs.setInt(AppConstants.prefLastGpsUpdateMs, nowMs);
     debugPrint('[BGService] 측정소 갱신 완료: $station');
-  } catch (e) {
-    // 백그라운드 GPS 갱신은 best-effort — 절대 throw하지 않음
-    debugPrint('[BGService] GPS 갱신 실패 (무시): $e');
+  } catch (e, st) {
+    AppLogger.error(e, st, reason: 'bg_gps_refresh');
   }
 }
 

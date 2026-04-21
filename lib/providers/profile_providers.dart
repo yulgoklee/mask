@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/services/app_logger.dart';
 import '../core/services/background_service.dart';
 import '../core/services/notification_scheduler.dart';
 import '../data/models/notification_setting.dart';
@@ -166,7 +167,9 @@ class NotificationSettingNotifier extends StateNotifier<NotificationSetting> {
     try {
       final prefs = await SharedPreferences.getInstance();
       await NotificationScheduler().runCheck(prefs);
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.error(e, st, reason: 'profile_save_reschedule');
+    }
   }
 }
 

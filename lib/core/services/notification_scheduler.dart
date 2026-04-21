@@ -24,6 +24,7 @@ import 'air_korea_service.dart';
 import 'cloud_functions_data_source.dart';
 import 'dust_data_source.dart';
 import 'notification_deep_link.dart';
+import 'app_logger.dart';
 import 'notification_service.dart';
 
 /// 미세먼지 알림 스케줄러
@@ -128,7 +129,9 @@ class NotificationScheduler {
                 .where((s) => s.isActive)
                 .toList();
           }
-        } catch (_) {}
+        } catch (e, st) {
+          AppLogger.error(e, st, reason: 'schedule_list_load');
+        }
       }
 
       // ── 계산 ────────────────────────────────────────────
@@ -462,7 +465,9 @@ Future<void> _sendNotification({
         userAction: UserAction.suppressedByQuietHours,
       ));
       await db.close();
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.error(e, st, reason: 'quiet_hours_abort_log');
+    }
     return;
   }
   if (isEmergency && _isInQuietHours(s)) {
@@ -483,8 +488,8 @@ Future<void> _sendNotification({
     await db.close();
     await NotificationDeepLink.setLastLogId(p, logId);
     debugPrint('[NotificationScheduler] 📝 SQLite log id=$logId (pre-insert)');
-  } catch (e) {
-    debugPrint('[NotificationScheduler] SQLite log 선삽입 실패 (무시): $e');
+  } catch (e, st) {
+    AppLogger.error(e, st, reason: 'sqlite_log_preinsert');
   }
 
   // 페이로드 타입 결정: 딥링크 라우팅용
@@ -665,8 +670,8 @@ Future<void> _checkSurgeAlert({
       smallIcon: NotificationService.iconWarning,
       onSuccess: () => _markSentHour(prefs, 'surge'),
     );
-  } catch (e) {
-    debugPrint('[NotificationScheduler] 급증 감지 오류 (무시): $e');
+  } catch (e, st) {
+    AppLogger.error(e, st, reason: 'surge_check');
   }
 }
 
@@ -739,8 +744,8 @@ Future<void> _checkSafeEntryAlert({
       tFinal: tFinal,
       prefs: prefs,
     );
-  } catch (e) {
-    debugPrint('[NotificationScheduler] 안심 알림 체크 오류 (무시): $e');
+  } catch (e, st) {
+    AppLogger.error(e, st, reason: 'relief_check');
   }
 }
 
