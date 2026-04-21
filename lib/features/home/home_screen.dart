@@ -440,7 +440,7 @@ class _HeroButton extends StatefulWidget {
   final double? pm25;
   final double tFinal;
   final String? name;
-  final bool highlightOverride;
+  final bool? highlightOverride;
   final VoidCallback onTap;
 
   const _HeroButton({
@@ -485,7 +485,7 @@ class _HeroButtonState extends State<_HeroButton>
 
   void _updatePulse() {
     final risk = widget.result?.riskLevel ?? RiskLevel.unknown;
-    final shouldPulse = widget.highlightOverride ||
+    final shouldPulse = (widget.highlightOverride ?? false) ||
         risk == RiskLevel.warning ||
         risk == RiskLevel.danger ||
         risk == RiskLevel.critical;
@@ -537,7 +537,7 @@ class _HeroButtonState extends State<_HeroButton>
     final result = widget.result;
     final riskLevel = result?.riskLevel ?? RiskLevel.unknown;
     final colors = _gradientColors(riskLevel);
-    final shouldPulse = widget.highlightOverride ||
+    final shouldPulse = (widget.highlightOverride ?? false) ||
         riskLevel == RiskLevel.warning ||
         riskLevel == RiskLevel.danger ||
         riskLevel == RiskLevel.critical;
@@ -690,7 +690,7 @@ class _HeroButtonState extends State<_HeroButton>
                     ),
                     const SizedBox(width: 8),
                     _WhitePill(
-                      text: result!.maskType!,
+                      text: result?.maskType ?? '',
                       highlight: true,
                       bgColor: colors[0],
                     ),
@@ -727,7 +727,7 @@ class _HeroButtonState extends State<_HeroButton>
                         if (result?.personalNote != null) ...[
                           const SizedBox(height: 2),
                           Text(
-                            result!.personalNote!,
+                            result?.personalNote ?? '',
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.65),
                               fontSize: 12,

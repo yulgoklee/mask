@@ -617,7 +617,10 @@ _SurgeResult? _detectSurge(List<HourlyDustData> history, int currentPm25) {
   final diffMins = latest.time.difference(prev.time).inMinutes;
   if (diffMins <= 0 || diffMins > 180) return null; // 데이터 간격 이상
 
-  final ratePerHour = (latest.pm25! - prev.pm25!) * 60.0 / diffMins;
+  final latestPm25 = latest.pm25;
+  final prevPm25 = prev.pm25;
+  if (latestPm25 == null || prevPm25 == null) return null;
+  final ratePerHour = (latestPm25 - prevPm25) * 60.0 / diffMins;
   if (ratePerHour < AppConstants.surgeRateThresholdUgPerHour) return null; // 상승 속도 미달
 
   final projected = currentPm25 + ratePerHour.round();
