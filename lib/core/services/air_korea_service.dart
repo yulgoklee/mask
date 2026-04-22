@@ -44,9 +44,7 @@ class AirKoreaService implements DustDataSource {
   Future<DustData?> getDustData(String stationName) async {
     // 1. 캐시 확인
     final cached = _getCachedData(stationName);
-    if (cached != null && cached.isCacheValid) {
-      return cached;
-    }
+    if (cached != null && cached.isCacheValid) return cached;
 
     // 2. API 호출
     return await _fetchFromApi(stationName);
@@ -61,39 +59,26 @@ class AirKoreaService implements DustDataSource {
           '?serviceKey=$_apiKey'
           '&returnType=json&numOfRows=1&pageNo=1'
           '&stationName=$encodedStation&dataTerm=DAILY&ver=1.0';
-      debugPrint('[AirKorea] 요청 URL: $url');
       final response = await _dio.get(url);
-
       final data = response.data;
-      debugPrint('[AirKorea] 응답: $data');
 
-      if (data is! Map) {
-        debugPrint('[AirKorea] 응답이 JSON이 아님: ${data.runtimeType}');
-        return null;
-      }
+      if (data is! Map) return null;
 
       final header = data['response']?['header'];
       final resultCode = header?['resultCode']?.toString();
-      // resultCode가 null(응답 구조 이상)이거나 '00'이 아니면 오류 처리
-      if (resultCode == null || resultCode != '00') {
-        debugPrint('[AirKorea] API 오류코드: $resultCode / ${header?['resultMsg']}');
-        return null;
-      }
+      if (resultCode == null || resultCode != '00') return null;
 
       final items = data['response']?['body']?['items'] as List?;
-      debugPrint('[AirKorea] items 개수: ${items?.length}');
       if (items == null || items.isEmpty) return null;
 
       final dustData = DustData.fromJson(items.first as Map<String, dynamic>);
       _saveCache(stationName, dustData);
       return dustData;
-    } on DioException catch (e) {
-      debugPrint('[AirKorea] DioException: ${e.type} / ${e.message}');
+    } on DioException catch (_) {
       final cached = _getCachedData(stationName);
       if (cached != null) return cached;
       throw const NetworkException();
     } catch (e, st) {
-      debugPrint('[AirKorea] 알 수 없는 오류: $e');
       FirebaseCrashlytics.instance.recordError(e, st, fatal: false, reason: 'fetchFromApi_parse');
       throw const ParseException();
     }

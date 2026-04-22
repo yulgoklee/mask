@@ -55,11 +55,9 @@ class CloudFunctionsDataSource implements DustDataSource {
       if (items == null || items.isEmpty) return null;
 
       return DustData.fromJson(items.first as Map<String, dynamic>);
-    } on DioException catch (e) {
-      debugPrint('[CloudFn] getDustData 네트워크 오류: ${e.message}');
+    } on DioException catch (_) {
       throw const NetworkException();
     } catch (e, st) {
-      debugPrint('[CloudFn] getDustData 파싱 오류: $e');
       FirebaseCrashlytics.instance.recordError(e, st, fatal: false, reason: 'getDustData_parse');
       throw const ParseException();
     }
