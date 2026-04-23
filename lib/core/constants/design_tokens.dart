@@ -30,6 +30,9 @@ class DT {
   static const Color purple     = Color(0xFF7C3AED);
   static const Color purpleLt   = Color(0xFFEDE9FE);
 
+  // ── Pink ──────────────────────────────────────────────────
+  static const Color pinkLt     = Color(0xFFFCE7F3); // 페르소나 - 예민한 감지형
+
   // ── Neutral ───────────────────────────────────────────────
   static const Color text       = Color(0xFF111827);
   static const Color gray       = Color(0xFF6B7280);
