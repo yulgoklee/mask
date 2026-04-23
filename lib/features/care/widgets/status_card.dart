@@ -225,7 +225,7 @@ class _StatusBottomSheet extends StatelessWidget {
                     child: OutlinedButton(
                       onPressed: () {
                         Navigator.pop(context);
-                        context.push('/profile/edit');
+                        context.push('/my-body-info');
                       },
                       child: const Text('프로필 수정하기 →'),
                     ),

@@ -11,8 +11,9 @@ import '../../features/onboarding/notification_time_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/onboarding/permission_screen.dart';
 import '../../features/onboarding/roadmap_screen.dart';
-import '../../features/profile/profile_screen.dart';
 import '../../features/profile_tab/profile_tab.dart';
+import '../../features/my_body_info/my_body_info_screen.dart';
+import '../../features/settings/settings_screen.dart';
 import '../../features/report_tab/report_tab.dart';
 import '../../features/splash/splash_screen.dart';
 import '../../features/tutorial/tutorial_screen.dart';
@@ -126,6 +127,14 @@ final appRouter = GoRouter(
 
     // ── 설정 / 서브 페이지 (전체 화면, ShellRoute 밖) ─────────
     GoRoute(
+      path: '/settings',
+      pageBuilder: (_, state) => _slideUpPage(state, const SettingsScreen()),
+    ),
+    GoRoute(
+      path: '/my-body-info',
+      pageBuilder: (_, state) => _slideUpPage(state, const MyBodyInfoScreen()),
+    ),
+    GoRoute(
       path: '/notifications',
       pageBuilder: (_, state) => _slideUpPage(state, const NotificationScreen()),
     ),
@@ -135,7 +144,7 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/profile/edit',
-      pageBuilder: (_, state) => _slideUpPage(state, const ProfileScreen()),
+      redirect: (_, __) => '/my-body-info',
     ),
 
     // ── 메인 3탭 ShellRoute ──────────────────────────────────
