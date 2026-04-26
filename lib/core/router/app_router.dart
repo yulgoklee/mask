@@ -6,11 +6,12 @@ import '../../features/location_setup/location_setup_screen.dart';
 import '../../features/notification_setting/notification_screen.dart';
 import '../../features/onboarding/analysis_loading_screen.dart';
 import '../../features/onboarding/complete_screen.dart';
-import '../../features/onboarding/dashboard_screen.dart';
+import '../../features/onboarding/diagnosis_result_screen.dart';
 import '../../features/onboarding/notification_time_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/onboarding/permission_screen.dart';
 import '../../features/onboarding/roadmap_screen.dart';
+import '../../features/onboarding/welcome_screen.dart';
 import '../../features/profile_tab/profile_tab.dart';
 import '../../features/my_body_info/my_body_info_screen.dart';
 import '../../features/settings/settings_screen.dart';
@@ -86,6 +87,10 @@ final appRouter = GoRouter(
       pageBuilder: (_, state) => _fadePage(state, const SplashScreen()),
     ),
     GoRoute(
+      path: '/welcome',
+      pageBuilder: (_, state) => _fadePage(state, const WelcomeScreen()),
+    ),
+    GoRoute(
       path: '/tutorial',
       pageBuilder: (_, state) => _fadePage(state, const TutorialScreen()),
     ),
@@ -102,8 +107,12 @@ final appRouter = GoRouter(
       pageBuilder: (_, state) => _slidePage(state, const AnalysisLoadingScreen()),
     ),
     GoRoute(
+      path: '/diagnosis_result',
+      pageBuilder: (_, state) => _slidePage(state, const DiagnosisResultScreen()),
+    ),
+    GoRoute(
       path: '/dashboard',
-      pageBuilder: (_, state) => _slidePage(state, const DashboardScreen()),
+      redirect: (_, __) => '/diagnosis_result',
     ),
     GoRoute(
       path: '/location_setup',

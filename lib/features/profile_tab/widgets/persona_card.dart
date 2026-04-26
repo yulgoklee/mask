@@ -2,104 +2,48 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/design_tokens.dart';
 import '../../../core/utils/persona_generator.dart';
+import '../../../data/models/user_profile.dart';
 import '../../../providers/profile_providers.dart';
 
-class PersonaCard extends ConsumerStatefulWidget {
-  const PersonaCard({super.key});
+// ── 공유 스타일 헬퍼 ──────────────────────────────────────────
 
-  @override
-  ConsumerState<PersonaCard> createState() => _PersonaCardState();
-}
+Color personaCardBgColor(PersonaType type) => switch (type) {
+      PersonaType.compound           => DT.primaryLt,
+      PersonaType.medicalCare        => DT.purpleLt,
+      PersonaType.activeAndSensitive => DT.tealLt,
+      PersonaType.activeOutdoor      => DT.safeLt,
+      PersonaType.sensitiveFeel      => DT.pinkLt,
+      PersonaType.general            => DT.grayLt,
+    };
 
-class _PersonaCardState extends ConsumerState<PersonaCard> {
-  bool _expanded = false;
-
-  Color _bgColor(PersonaType type) => switch (type) {
-        PersonaType.compound           => DT.primaryLt,
-        PersonaType.medicalCare        => DT.purpleLt,
-        PersonaType.activeAndSensitive => DT.tealLt,
-        PersonaType.activeOutdoor      => DT.safeLt,
-        PersonaType.sensitiveFeel      => DT.pinkLt,
-        PersonaType.general            => DT.grayLt,
-      };
-
-  @override
-  Widget build(BuildContext context) {
-    final profile = ref.watch(profileProvider);
-    final persona = PersonaGenerator.generate(profile);
-
-    return GestureDetector(
-      onTap: () => setState(() => _expanded = !_expanded),
-      child: Container(
-        decoration: BoxDecoration(
-          color: _bgColor(persona.type),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: const [
-            BoxShadow(
-              offset: Offset(0, 4),
-              blurRadius: 16,
-              color: Color(0x0A000000),
-            ),
-          ],
+BoxDecoration personaCardDecoration(PersonaType type) => BoxDecoration(
+      color: personaCardBgColor(type),
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: const [
+        BoxShadow(
+          offset: Offset(0, 4),
+          blurRadius: 16,
+          color: Color(0x0A000000),
         ),
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── 이모지 + 이름 + 닉네임 ─────────────────────────
-            Text(persona.emoji, style: const TextStyle(fontSize: 40)),
-            const SizedBox(height: 8),
-            Text(
-              persona.name,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: DT.text,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              profile.displayName,
-              style: const TextStyle(fontSize: 13, color: DT.gray),
-            ),
-            const SizedBox(height: 16),
-
-            // ── 기준치 비교 ────────────────────────────────────
-            _ThresholdRow(
-              label: '내 기준치',
-              value: '${profile.tFinal.toInt()} µg/m³',
-              highlight: true,
-            ),
-            const SizedBox(height: 4),
-            const _ThresholdRow(
-              label: '일반인 기준',
-              value: '35 µg/m³',
-              highlight: false,
-            ),
-
-            // ── 확장 영역 (AnimatedSize) ───────────────────────
-            AnimatedSize(
-              duration: const Duration(milliseconds: 350),
-              curve: Curves.easeOutCubic,
-              child: _expanded
-                  ? _ExpandedSection(persona: persona)
-                  : const SizedBox.shrink(),
-            ),
-
-            // ── 토글 힌트 ──────────────────────────────────────
-            _ToggleHint(expanded: _expanded),
-          ],
-        ),
-      ),
+      ],
     );
-  }
-}
 
-// ── 확장 섹션 ─────────────────────────────────────────────
+const EdgeInsets personaCardPadding = EdgeInsets.fromLTRB(20, 20, 20, 12);
 
-class _ExpandedSection extends StatelessWidget {
+// ── PersonaCardExpanded ───────────────────────────────────────
+
+/// 페르소나 카드의 확장 콘텐츠 위젯 (구분선 + reasons 또는 균형 유지형 안내 문구).
+/// PersonaCard 내부 AnimatedSize 와 DiagnosisResultScreen 카드에서 공용.
+/// DiagnosisResultScreen 에서는 기준치 행을 외부에 배치하고 이 위젯을 이어 붙임.
+class PersonaCardExpanded extends StatelessWidget {
   final Persona persona;
-  const _ExpandedSection({required this.persona});
+  final UserProfile profile;
+
+  const PersonaCardExpanded({
+    super.key,
+    required this.persona,
+    required this.profile,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -179,7 +123,81 @@ class _ExpandedSection extends StatelessWidget {
   }
 }
 
-// ── 토글 힌트 버튼 ────────────────────────────────────────
+// ── PersonaCard ───────────────────────────────────────────────
+
+class PersonaCard extends ConsumerStatefulWidget {
+  const PersonaCard({super.key});
+
+  @override
+  ConsumerState<PersonaCard> createState() => _PersonaCardState();
+}
+
+class _PersonaCardState extends ConsumerState<PersonaCard> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final profile = ref.watch(profileProvider);
+    final persona = PersonaGenerator.generate(profile);
+
+    return GestureDetector(
+      onTap: () => setState(() => _expanded = !_expanded),
+      child: Container(
+        decoration: personaCardDecoration(persona.type),
+        padding: personaCardPadding,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── 이모지 + 이름 + 닉네임 ─────────────────────────
+            Text(persona.emoji, style: const TextStyle(fontSize: 40)),
+            const SizedBox(height: 8),
+            Text(
+              persona.name,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: DT.text,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              profile.displayName,
+              style: const TextStyle(fontSize: 13, color: DT.gray),
+            ),
+            const SizedBox(height: 16),
+
+            // ── 기준치 비교 ────────────────────────────────────
+            _ThresholdRow(
+              label: '내 기준치',
+              value: '${profile.tFinal.toInt()} µg/m³',
+              highlight: true,
+            ),
+            const SizedBox(height: 4),
+            const _ThresholdRow(
+              label: '일반인 기준',
+              value: '35 µg/m³',
+              highlight: false,
+            ),
+
+            // ── 확장 영역 (AnimatedSize) ───────────────────────
+            AnimatedSize(
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeOutCubic,
+              child: _expanded
+                  ? PersonaCardExpanded(persona: persona, profile: profile)
+                  : const SizedBox.shrink(),
+            ),
+
+            // ── 토글 힌트 ──────────────────────────────────────
+            _ToggleHint(expanded: _expanded),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── 토글 힌트 버튼 ────────────────────────────────────────────
 
 class _ToggleHint extends StatelessWidget {
   final bool expanded;
@@ -207,7 +225,7 @@ class _ToggleHint extends StatelessWidget {
   }
 }
 
-// ── 기준치 비교 행 ────────────────────────────────────────
+// ── 기준치 비교 행 ────────────────────────────────────────────
 
 class _ThresholdRow extends StatelessWidget {
   final String label;

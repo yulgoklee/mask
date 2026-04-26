@@ -68,7 +68,6 @@ void main() {
       final repo = await _buildRepo();
       final setting = await repo.loadNotificationSetting();
       expect(setting.morningAlertEnabled, const NotificationSetting().morningAlertEnabled);
-      expect(setting.notificationVoice, NotificationVoice.friendlyVoice);
     });
 
     test('알림 설정 저장 후 불러오면 동일한 값 반환', () async {
@@ -79,7 +78,6 @@ void main() {
         morningAlertMinute: 30,
         eveningForecastEnabled: false,
         realtimeAlertEnabled: true,
-        notificationVoice: NotificationVoice.analyticalVoice,
       );
 
       await repo.saveNotificationSetting(setting);
@@ -90,7 +88,6 @@ void main() {
       expect(loaded.morningAlertMinute, 30);
       expect(loaded.eveningForecastEnabled, isFalse);
       expect(loaded.realtimeAlertEnabled, isTrue);
-      expect(loaded.notificationVoice, NotificationVoice.analyticalVoice);
     });
   });
 

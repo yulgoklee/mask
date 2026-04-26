@@ -336,12 +336,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  // 나중에
+                  const Spacer(),
+                  // 건너뛰기
                   GestureDetector(
                     onTap: _skipOnboarding,
                     child: const Text(
-                      '나중에',
+                      '건너뛰기',
                       style: TextStyle(
                         fontSize: 13,
                         color: AppColors.textSecondary,

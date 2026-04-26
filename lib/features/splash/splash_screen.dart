@@ -75,10 +75,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       final onboardingDone = await repo.isOnboardingCompleted();
       if (!mounted) return;
 
-      if (!tutorialSeen) {
-        context.go('/tutorial');
-      } else if (!onboardingDone) {
-        context.go('/roadmap');
+      if (!tutorialSeen || !onboardingDone) {
+        context.go('/welcome');
       } else {
         final prefs = ref.read(sharedPreferencesProvider);
         final savedStation = prefs.getString(AppConstants.prefStationName);
@@ -90,7 +88,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       }
     } catch (e, st) {
       AppLogger.error(e, st, reason: 'splash_navigate');
-      if (mounted) context.go('/tutorial');
+      if (mounted) context.go('/welcome');
     }
   }
 

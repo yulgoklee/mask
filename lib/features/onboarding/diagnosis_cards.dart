@@ -176,7 +176,7 @@ class _DiagQ2BirthYearState extends State<DiagQ2BirthYear> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Text(
-                                '취약 연령 +10%',
+                                '취약 연령',
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
@@ -257,8 +257,8 @@ class _DiagQ2BirthYearState extends State<DiagQ2BirthYear> {
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 14, 24, 16),
           child: _insightBox(
-            '취약 연령(18세 미만 · 60세 이상)은 민감도 기준값이 10% 추가 강화돼요. '
-            '나이가 어릴수록, 또는 어르신일수록 미세먼지의 영향이 커집니다.',
+            '취약 연령(18세 미만 · 60세 이상)은 미세먼지 영향이 더 커요. '
+            '기준치를 자동으로 조정해드릴게요.',
           ),
         ),
       ],
@@ -368,22 +368,15 @@ class DiagQ4Respiratory extends StatelessWidget {
     this.questionNumber = 4,
   });
 
-  // 체크박스형 조건 옵션 (bit, emoji, label, hint, badge)
+  // 체크박스형 조건 옵션 (bit, emoji, label, hint)
   static const _conditions = [
-    (1, '👃', '비염 있어요',   '코막힘·재채기가 자주 발생해요',     '+15%'),
-    (2, '🫁', '천식 등 질환',  '호흡기·심혈관 질환을 진단받았어요', '+30%'),
+    (1, '👃', '비염 있어요',   '코막힘·재채기가 자주 발생해요'),
+    (2, '🫁', '천식 등 질환',  '호흡기·심혈관 질환을 진단받았어요'),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final hasRhinitis = value & 1 != 0;
-    final hasAsthma   = value & 2 != 0;
-    final isHealthy   = value == 0;
-
-    // 총 영향도
-    int totalPct = 0;
-    if (hasRhinitis) totalPct += 15;
-    if (hasAsthma)   totalPct += 30;
+    final isHealthy = value == 0;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -443,7 +436,6 @@ class DiagQ4Respiratory extends StatelessWidget {
                       ],
                     ),
                   ),
-                  _badgeChip('+0%', isHealthy),
                 ],
               ),
             ),
@@ -452,7 +444,7 @@ class DiagQ4Respiratory extends StatelessWidget {
 
           // ── 조건 체크박스 행들 ────────────────────────────────
           ..._conditions.map((opt) {
-            final (bit, emoji, label, hint, badge) = opt;
+            final (bit, emoji, label, hint) = opt;
             final sel = value & bit != 0;
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
@@ -504,7 +496,6 @@ class DiagQ4Respiratory extends StatelessWidget {
                           ],
                         ),
                       ),
-                      _badgeChip(badge, sel),
                     ],
                   ),
                 ),
@@ -512,40 +503,11 @@ class DiagQ4Respiratory extends StatelessWidget {
             );
           }),
 
-          // ── 총 영향도 요약 (조건 선택 시) ─────────────────────
-          if (!isHealthy) ...[
-            const SizedBox(height: 4),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppColors.coral.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                    color: AppColors.coral.withValues(alpha: 0.20)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.info_outline,
-                      size: 15, color: AppColors.coral),
-                  const SizedBox(width: 8),
-                  Text(
-                    '선택한 조건으로 알림 기준이 총 +$totalPct% 강화돼요',
-                    style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.coral,
-                        fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            ),
-          ],
-
           const SizedBox(height: 20),
           _insightBox(
-            '비염이 있으면 +15%, 천식 등 호흡기 질환이 있으면 +30% 강화돼요. '
-            '두 가지 모두 해당되면 중복 적용(+45%)되어 더 일찍 알려드려요.',
+            '비염이 있으시면 코 점막이 먼지에 민감해요. '
+            '천식이 있으시면 적은 농도에도 기관지가 반응해요. '
+            '당신의 상태에 맞춰 더 일찍 알려드릴게요.',
           ),
           const SizedBox(height: 32),
         ],
@@ -571,9 +533,9 @@ class DiagQ5Sensitivity extends StatelessWidget {
   });
 
   static const _options = [
-    (0, '😶', '무던해요',      '공기 변화를 잘 못 느껴요', '+0%'),
-    (1, '😌', '보통이에요',    '가끔 느끼는 편이에요',     '+5%'),
-    (2, '😣', '매우 예민해요', '조금만 탁해도 바로 느껴요', '+10%'),
+    (0, '😶', '무던해요',      '공기 변화를 잘 못 느껴요'),
+    (1, '😌', '보통이에요',    '가끔 느끼는 편이에요'),
+    (2, '😣', '매우 예민해요', '조금만 탁해도 바로 느껴요'),
   ];
 
   /// 옵션별 고정 색상 — 0=초록(안심), 1=노랑(보통), 2=코랄(높음)
@@ -599,7 +561,7 @@ class DiagQ5Sensitivity extends StatelessWidget {
           const SizedBox(height: 32),
           Row(
             children: _options.map((opt) {
-              final (val, emoji, label, hint, badge) = opt;
+              final (val, emoji, label, hint) = opt;
               final sel = value == val;
               final optColor = _optionColors[val]; // index 기반 고정 색상
               return Expanded(
@@ -644,8 +606,6 @@ class DiagQ5Sensitivity extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          _badgeChip(badge, sel, color: optColor),
                         ],
                       ),
                     ),
@@ -656,8 +616,8 @@ class DiagQ5Sensitivity extends StatelessWidget {
           ),
           const SizedBox(height: 32),
           _insightBox(
-            '체감 민감도는 개인 경험에 기반해 알림 기준을 조정해요. '
-            '매우 예민하다면 +10% 더 엄격하게 반응해드려요.',
+            '평소 공기에 예민하다면 수치가 낮아도 몸이 먼저 알아채요. '
+            '그 감각을 기준에 반영해드릴게요.',
           ),
           const SizedBox(height: 32),
         ],
@@ -749,7 +709,7 @@ class DiagQ6Pregnancy extends StatelessWidget {
           const SizedBox(height: 14),
           _qTitle(context, '현재 임신 중이신가요?'),
           const SizedBox(height: 8),
-          _qSubtitle(context, '임신 중에는 알림 기준을 30% 강화해요.'),
+          _qSubtitle(context, '임신 중에는 더 일찍 알려드릴게요.'),
           const SizedBox(height: 36),
           _YesNoRow(
             selectedYes: value,
@@ -764,8 +724,8 @@ class DiagQ6Pregnancy extends StatelessWidget {
           ),
           const SizedBox(height: 32),
           _insightBox(
-            '임신 중에는 미세먼지가 태반을 통해 태아에게 영향을 줄 수 있어요. '
-            '기준값을 30% 강화해 더 일찍 알려드려요.',
+            '임신 중에는 태아에게도 영향이 갈 수 있어요. '
+            '더 일찍, 더 엄격한 기준으로 챙겨드릴게요.',
           ),
           const SizedBox(height: 32),
         ],
@@ -956,9 +916,9 @@ class DiagQ8Outdoor extends StatelessWidget {
   });
 
   static const _options = [
-    (0, Icons.home_outlined,   '1시간 미만', '주로 실내에 있어요',  '+0%'),
-    (1, Icons.directions_walk, '1~3시간',    '매일 외출은 해요',    '+5%'),
-    (2, Icons.directions_run,  '3시간 이상', '야외 활동이 많아요', '+10%'),
+    (0, Icons.home_outlined,   '1시간 미만', '주로 실내에 있어요'),
+    (1, Icons.directions_walk, '1~3시간',    '매일 외출은 해요'),
+    (2, Icons.directions_run,  '3시간 이상', '야외 활동이 많아요'),
   ];
 
   /// 옵션별 고정 색상 — 0=초록(안심), 1=노랑(보통), 2=코랄(높음)
@@ -983,7 +943,7 @@ class DiagQ8Outdoor extends StatelessWidget {
           _qSubtitle(context, '야외 활동이 많을수록 미세먼지 노출 위험이 높아져요.'),
           const SizedBox(height: 32),
           ..._options.map((opt) {
-            final (val, icon, label, sublabel, badge) = opt;
+            final (val, icon, label, sublabel) = opt;
             final sel = value == val;
             final badgeColor = _optionColors[val]; // index 기반 고정 색상
             return Padding(
@@ -1044,7 +1004,6 @@ class DiagQ8Outdoor extends StatelessWidget {
                           ],
                         ),
                       ),
-                      _badgeChip(badge, sel, color: badgeColor),
                     ],
                   ),
                 ),
@@ -1053,8 +1012,8 @@ class DiagQ8Outdoor extends StatelessWidget {
           }),
           const SizedBox(height: 20),
           _insightBox(
-            '하루 3시간 이상 야외 활동 시 미세먼지 흡입량이 최대 3배 증가해요. '
-            '활동 시간에 맞는 실질적인 알림 타이밍을 설정해드려요.',
+            '야외 시간이 많을수록 미세먼지 흡입량도 늘어나요. '
+            '(최대 3배까지 차이) 활동 시간에 맞춘 알림 기준으로 챙겨드릴게요.',
           ),
           const SizedBox(height: 32),
         ],
@@ -1079,13 +1038,13 @@ class DiagQ9ActivityTags extends StatelessWidget {
     this.questionNumber = 9,
   });
 
-  // (tag, emoji, label, hint, badge)
+  // (tag, emoji, label, hint)
   static const _options = [
-    (ActivityTag.commute,   '🚇', '출퇴근',     '대중교통·도보 이동',     '+3%'),
-    (ActivityTag.walk,      '🚶', '산책',       '공원·동네 가벼운 산책', '+3%'),
-    (ActivityTag.exercise,  '🏃', '운동',       '조깅·자전거·야외 운동', '+5%'),
-    (ActivityTag.delivery,  '🛵', '배달/외근',  '야외 업무·배달',         '+5%'),
-    (ActivityTag.childcare, '👶', '아이 등하원', '아이와 함께 야외 활동', '+3%'),
+    (ActivityTag.commute,   '🚇', '출퇴근',     '대중교통·도보 이동'),
+    (ActivityTag.walk,      '🚶', '산책',       '공원·동네 가벼운 산책'),
+    (ActivityTag.exercise,  '🏃', '운동',       '조깅·자전거·야외 운동'),
+    (ActivityTag.delivery,  '🛵', '배달/외근',  '야외 업무·배달'),
+    (ActivityTag.childcare, '👶', '아이 등하원', '아이와 함께 야외 활동'),
   ];
 
   @override
@@ -1103,7 +1062,7 @@ class DiagQ9ActivityTags extends StatelessWidget {
           _qSubtitle(context, '복수 선택 가능 · 없으면 건너뛰세요.'),
           const SizedBox(height: 32),
           ..._options.map((opt) {
-            final (tag, emoji, label, hint, badge) = opt;
+            final (tag, emoji, label, hint) = opt;
             final sel = value.contains(tag);
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
@@ -1161,8 +1120,6 @@ class DiagQ9ActivityTags extends StatelessWidget {
                           ],
                         ),
                       ),
-                      _badgeChip(badge, sel),
-                      const SizedBox(width: 8),
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 160),
                         width: 24,
@@ -1188,8 +1145,7 @@ class DiagQ9ActivityTags extends StatelessWidget {
           }),
           const SizedBox(height: 24),
           _insightBox(
-            '운동·배달처럼 격한 외기 노출은 +5%, 산책·출퇴근은 +3% 기준이 강화돼요. '
-            '최대 +10% 한도 내에서 중복 적용됩니다.',
+            '당신의 활동 패턴에 맞춰 알림 기준을 더 정밀하게 조정해드릴게요.',
           ),
           const SizedBox(height: 32),
         ],
@@ -1215,9 +1171,9 @@ class DiagQ10Discomfort extends StatelessWidget {
   });
 
   static const _options = [
-    (0, '😌', '편해요',        '마스크 착용이 익숙해요',   '+0%'),
-    (1, '😐', '보통이에요',    '가끔 답답하긴 해요',       '+0%'),
-    (2, '😮', '많이 불편해요', '답답함·김 서림이 심해요',  '−10%'),
+    (0, '😌', '편해요',        '마스크 착용이 익숙해요'),
+    (1, '😐', '보통이에요',    '가끔 답답하긴 해요'),
+    (2, '😮', '많이 불편해요', '답답함·김 서림이 심해요'),
   ];
 
   /// 옵션별 고정 색상 — 편함(초록) / 보통(파랑) / 불편(코랄)
@@ -1243,7 +1199,7 @@ class DiagQ10Discomfort extends StatelessWidget {
           const SizedBox(height: 32),
           Row(
             children: _options.map((opt) {
-              final (val, emoji, label, hint, badge) = opt;
+              final (val, emoji, label, hint) = opt;
               final sel = value == val;
               final badgeColor = _optionColors[val]; // index 기반 고정 색상
               return Expanded(
@@ -1288,8 +1244,6 @@ class DiagQ10Discomfort extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          _badgeChip(badge, sel, color: badgeColor),
                         ],
                       ),
                     ),
@@ -1407,16 +1361,15 @@ InputDecoration _inputDecoration(String hint) => InputDecoration(
           const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
     );
 
-/// 영향도 퍼센트 → 트래픽라이트 색상
-/// 규칙: 감도 ↑(+%) = 코랄(적색) ↔ 감도 ↓/0(−%/+0%) = 초록
+/// 영향도 퍼센트 → 트래픽라이트 색상 (단계 4 삭제 예정)
 Color _badgeColor(String badge) {
   if (badge.startsWith('−') || badge.startsWith('-')) {
-    return AppColors.success; // 완화(-%) → 초록 (알림 기준 낮아짐 = 안심)
+    return AppColors.success;
   }
   final n = int.tryParse(badge.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
-  if (n == 0)   return AppColors.success;    // +0%  → 초록
-  if (n <= 15)  return AppColors.dustNormal; // +5~15% → 노랑
-  return AppColors.coral;                    // +20~30% → 코랄(적색)
+  if (n == 0)   return AppColors.success;
+  if (n <= 15)  return AppColors.dustNormal;
+  return AppColors.coral;
 }
 
 /// 퍼센트 배지 칩 — 영향도 크기에 따라 색상 자동 적용

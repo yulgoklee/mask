@@ -490,14 +490,12 @@ class NotificationService {
   /// 온보딩 알림 시뮬레이션 — 설정 완료 전 미리 받아보기
   static const int simulationAlertId = 99;
 
-  Future<void> showSimulationNotification({String voice = 'friendly'}) async {
-    final isAnalytical = voice == 'analytical';
-    final title = isAnalytical
-        ? '😷 마스크 착용 — PM2.5 32μg/m³'
-        : '😷 오늘 마스크 챙겨가세요!';
-    final body = isAnalytical
-        ? 'KF80 이상. 외출 전 반드시 착용하세요.'
-        : '오늘 미세먼지가 조금 있어요. 가볍게 KF80 마스크 하나 챙겨가면 안심이 될 거예요 :)';
+  Future<void> showSimulationNotification({String? nickname}) async {
+    final nameClause = (nickname != null && nickname.isNotEmpty)
+        ? '$nickname님 기준'
+        : '내 기준';
+    const title = '😷 오늘 마스크를 챙기세요';
+    final body = '현재 PM2.5 32µg/m³로 $nameClause을 넘어요.\n외출 시 KF80 이상 권장이에요.';
     await showImmediateNotification(
       id: simulationAlertId,
       title: title,
@@ -513,7 +511,7 @@ class NotificationService {
   //  - 제목 = 지금 해야 할 행동 (명확하게, 마스크 종류 포함)
   //  - 본문 = 부드러운 이유 설명 ("공기가 조금 무겁네요" 스타일)
   //  - T_final 트리거 시 = 개인 기준선 도달 사실을 본문에 명시
-  //    ("당신의 기준 {X}μg/m³을 넘었어요" → 개인화 가치 체감)
+  //    ("당신의 기준 {X}µg/m³을 넘었어요" → 개인화 가치 체감)
 
   /// 아침 알림 — 오늘 마스크 여부
   ///
@@ -552,24 +550,24 @@ class NotificationService {
     if (maskRequired) {
       if (tFinalTriggered && tFinal != null) {
         // 개인 기준선 도달 → 이유를 명확히 설명
-        lines.add('PM2.5 ${pm25}μg/m³ · $gradeName');
-        lines.add('당신의 기준(${tFinal.toStringAsFixed(1)}μg/m³)을 넘었어요.');
+        lines.add('PM2.5 ${pm25}µg/m³ · $gradeName');
+        lines.add('당신의 기준(${tFinal.toStringAsFixed(1)}µg/m³)을 넘었어요.');
         lines.add(maskType != null
             ? '$maskType 착용을 권해드려요 😊'
             : '마스크 착용을 권해드려요 😊');
       } else if (stateNote != null) {
-        lines.add('PM2.5 ${pm25}μg/m³ · $gradeName');
+        lines.add('PM2.5 ${pm25}µg/m³ · $gradeName');
         lines.add('$stateNote 상태라 더 신경 쓰는 게 좋아요.');
         if (maskType != null) lines.add('$maskType 착용을 권해드려요 😊');
       } else {
-        lines.add('PM2.5 ${pm25}μg/m³ · $gradeName');
+        lines.add('PM2.5 ${pm25}µg/m³ · $gradeName');
         lines.add('공기가 조금 무겁네요.');
         lines.add(maskType != null
             ? '$maskType 착용을 권해드려요 😊'
             : '마스크를 꼭 챙겨주세요 😊');
       }
     } else {
-      lines.add('PM2.5 ${pm25}μg/m³ · $gradeName');
+      lines.add('PM2.5 ${pm25}µg/m³ · $gradeName');
       if (stateNote != null) {
         lines.add('$stateNote 상태를 참고해 주세요.');
       } else {
@@ -663,7 +661,7 @@ class NotificationService {
     if (maskRequired) {
       lines.add('PM2.5 $gradeName');
       if (tFinalTriggered && tFinal != null) {
-        lines.add('당신의 기준(${tFinal.toStringAsFixed(1)}μg/m³)을 넘었어요.');
+        lines.add('당신의 기준(${tFinal.toStringAsFixed(1)}µg/m³)을 넘었어요.');
         lines.add('귀가 시 마스크를 꼭 챙겨주세요 😊');
       } else if (stateNote != null) {
         lines.add('$stateNote 상태라 조금 더 신경 써주세요.');
@@ -693,7 +691,7 @@ class NotificationService {
     // 매우나쁨 = 안전 최우선 → 명확하되 당황하지 않게
     final title = '🚨 $name, 지금 KF94 마스크가 꼭 필요해요';
     final lines = <String>[
-      'PM2.5 ${pm25}μg/m³ · 매우나쁨',
+      'PM2.5 ${pm25}µg/m³ · 매우나쁨',
       '가능하면 야외 활동을 줄이시고, KF94 마스크를 착용해 주세요.',
     ];
     if (stateNote != null) {
@@ -705,7 +703,7 @@ class NotificationService {
 
   /// 기상 급변 선제 알림 — 현재는 괜찮지만 1시간 내 등급 악화 예상
   ///
-  /// [currentPm25] : 현재 PM2.5 μg/m³
+  /// [currentPm25] : 현재 PM2.5 µg/m³
   /// [targetGrade] : 예상 도달 등급 ('나쁨' | '매우나쁨')
   static NotificationContent surgeContent({
     required UserProfile profile,
@@ -718,7 +716,7 @@ class NotificationService {
 
     final title = '⚡ $name, 미리 $maskHint 마스크를 챙겨두세요';
     final lines = <String>[
-      'PM2.5 ${currentPm25}μg/m³ → 1시간 내 $targetGrade 예상',
+      'PM2.5 ${currentPm25}µg/m³ → 1시간 내 $targetGrade 예상',
       '지금은 괜찮지만 곧 나빠질 것 같아요.',
       '외출 전에 $maskHint 마스크를 챙겨두시면 안심이에요 😊',
     ];
@@ -728,7 +726,7 @@ class NotificationService {
 
   /// 안심 알림 — PM2.5가 개인 기준(T_final) 이하로 15분 이상 유지 시 발송
   ///
-  /// [pm25]    : 현재 PM2.5 μg/m³
+  /// [pm25]    : 현재 PM2.5 µg/m³
   /// [tFinal]  : 개인 임계치
   static NotificationContent safeEntryContent({
     required UserProfile profile,
@@ -737,8 +735,8 @@ class NotificationService {
   }) {
     final name = profile.displayName;
     final title = '✅ $name, 공기가 맑아졌어요!';
-    final body = 'PM2.5 ${pm25}μg/m³ — '
-        '당신의 기준(${tFinal.toStringAsFixed(1)}μg/m³) 이하예요.\n'
+    final body = 'PM2.5 ${pm25}µg/m³ — '
+        '당신의 기준(${tFinal.toStringAsFixed(1)}µg/m³) 이하예요.\n'
         '잠시 마스크를 내려도 괜찮아요 😊';
     return NotificationContent(title: title, body: body);
   }
