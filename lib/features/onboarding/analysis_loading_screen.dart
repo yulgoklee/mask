@@ -61,7 +61,7 @@ class _AnalysisLoadingScreenState
     await Future.delayed(const Duration(milliseconds: 900));
     if (!mounted) return;
 
-    context.go('/dashboard');
+    context.go('/diagnosis_result');
   }
 
   @override

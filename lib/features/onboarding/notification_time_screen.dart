@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_tokens.dart';
-import '../../data/models/notification_setting.dart';
 import '../../core/services/app_logger.dart';
 import '../../providers/providers.dart';
 import '../../widgets/app_button.dart';
@@ -162,9 +161,6 @@ class NotificationTimeScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 20),
 
-                    // ── 알림 톤 ───────────────────────────────
-                    _VoiceSection(setting: setting, ref: ref),
-                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -183,7 +179,7 @@ class NotificationTimeScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
               child: Column(
                 children: [
-                  _SimulationButton(setting: setting),
+                  const _SimulationButton(),
                   const SizedBox(height: 10),
                   AppButton.primary(
                     label: '설정 완료  →',
@@ -699,144 +695,11 @@ class _NotifCard extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  알림 톤 섹션
-// ══════════════════════════════════════════════════════════════
-
-class _VoiceSection extends StatelessWidget {
-  final NotificationSetting setting;
-  final WidgetRef ref;
-
-  const _VoiceSection({required this.setting, required this.ref});
-
-  @override
-  Widget build(BuildContext context) {
-    const voices = [
-      NotificationVoice.friendlyVoice,
-      NotificationVoice.analyticalVoice,
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 12),
-          child: Text(
-            '알림 문체',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ),
-        Row(
-          children: voices.map((v) {
-            final selected = setting.notificationVoice == v;
-            return Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  right: v == NotificationVoice.friendlyVoice ? 6 : 0,
-                  left: v == NotificationVoice.analyticalVoice ? 6 : 0,
-                ),
-                child: GestureDetector(
-                  onTap: () {
-                    ref
-                        .read(notificationSettingProvider.notifier)
-                        .update(setting.copyWith(notificationVoice: v));
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 18, horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? AppColors.primary.withValues(alpha: 0.07)
-                          : AppColors.surface,
-                      border: Border.all(
-                        color: selected
-                            ? AppColors.primary
-                            : AppColors.divider,
-                        width: selected ? 1.5 : 1,
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          v.emoji,
-                          style: const TextStyle(fontSize: 28),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          v.label,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: selected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            color: selected
-                                ? AppColors.primary
-                                : AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          v.description,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: selected
-                                ? AppColors.primary.withValues(alpha: 0.7)
-                                : AppColors.textHint,
-                            height: 1.4,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            color: selected
-                                ? AppColors.primary
-                                : Colors.transparent,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: selected
-                                  ? AppColors.primary
-                                  : AppColors.divider,
-                              width: 2,
-                            ),
-                          ),
-                          child: selected
-                              ? const Icon(
-                                  Icons.check,
-                                  size: 14,
-                                  color: Colors.white,
-                                )
-                              : null,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-}
-
-// ══════════════════════════════════════════════════════════════
 //  알림 시뮬레이션 버튼
 // ══════════════════════════════════════════════════════════════
 
 class _SimulationButton extends ConsumerStatefulWidget {
-  final NotificationSetting setting;
-
-  const _SimulationButton({required this.setting});
+  const _SimulationButton();
 
   @override
   ConsumerState<_SimulationButton> createState() => _SimulationButtonState();
@@ -845,15 +708,6 @@ class _SimulationButton extends ConsumerStatefulWidget {
 class _SimulationButtonState extends ConsumerState<_SimulationButton> {
   bool _loading = false;
   bool _sent = false;
-
-  @override
-  void didUpdateWidget(_SimulationButton oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // 알림 톤이 바뀌면 미리보기 재시도 허용
-    if (oldWidget.setting.notificationVoice != widget.setting.notificationVoice) {
-      setState(() => _sent = false);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -941,9 +795,8 @@ class _SimulationButtonState extends ConsumerState<_SimulationButton> {
     try {
       final service = ref.read(notificationServiceProvider);
       await service.initialize();
-      await service.showSimulationNotification(
-        voice: widget.setting.notificationVoice.value,
-      );
+      final nickname = ref.read(profileProvider).nickname;
+      await service.showSimulationNotification(nickname: nickname);
     } catch (e, st) {
       AppLogger.error(e, st, reason: 'simulation_notif_send');
     }
