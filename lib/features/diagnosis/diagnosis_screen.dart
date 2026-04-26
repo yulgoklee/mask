@@ -433,7 +433,9 @@ class _ResultPage extends StatelessWidget {
 
           const SizedBox(height: 20),
           Text(
-            '앞으로 ${profile.displayName} 기준으로 알림을 드릴게요 😊',
+            profile.displayName.isNotEmpty
+                ? '앞으로 ${profile.displayName} 기준으로 알림을 드릴게요 😊'
+                : '앞으로 내 기준으로 알림을 드릴게요 😊',
             style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),

@@ -55,9 +55,9 @@ class UserProfile {
   /// 취약 연령 여부 (18세 미만 or 60세 이상)
   bool get isVulnerableAge => age < 18 || age >= 60;
 
-  /// 알림/홈 화면 호칭 ("지수님" or "사용자님")
-  /// 닉네임 미입력 시 '님'만 남는 어색한 표현 방지
-  String get displayName => nickname.isNotEmpty ? '$nickname님' : '사용자님';
+  /// 알림/홈 화면 호칭 ("지수님" 또는 빈 문자열)
+  /// 닉네임 미입력 시 빈 문자열 반환 — 사용처에서 분기 처리
+  String get displayName => nickname.isNotEmpty ? '$nickname님' : '';
 
   /// 피부 시술 효과 활성 여부
   /// - 날짜가 없으면 사용자가 "받았어요"를 눌렀으므로 활성으로 간주

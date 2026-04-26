@@ -91,7 +91,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
             icon: Icons.wb_sunny_outlined,
             title: '외출 전 알림',
             subtitle: '매일 아침 오늘 미세먼지 상태 안내',
-            example: '예) "오늘 PM2.5 나쁨. 마스크를 꼭 착용하세요."',
+            example: '예) "현재 PM2.5 32µg/m³로 내 기준을 넘어요. 외출 시 KF80 이상 권장이에요."',
             enabled: setting.morningAlertEnabled,
             timeLabel: _timeLabel(
                 setting.morningAlertHour, setting.morningAlertMinute),
@@ -205,7 +205,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
                       ),
                       SizedBox(height: 4),
                       Text(
-                        '예) "⚠️ 미세먼지 경보. 지금 바로 마스크를 착용하세요."',
+                        '예) "⚠️ 미세먼지가 급격히 나빠졌어요. 외출 시 KF94 이상 권장이에요."',
                         style: TextStyle(
                             fontSize: 12, color: AppColors.textHint),
                       ),
@@ -224,8 +224,8 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
 
           const SizedBox(height: 24),
 
-          // 알림 테스트
-          _SectionLabel('알림 테스트'),
+          // 알림 미리 받아보기
+          _SectionLabel('알림 미리 받아보기'),
           const SizedBox(height: 10),
           _NotifTestCard(),
           const SizedBox(height: 24),
@@ -309,7 +309,7 @@ class _NotifTestCardState extends ConsumerState<_NotifTestCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            '알림이 제대로 오는지 확인해보세요.',
+            '내가 받을 알림이 어떻게 보이는지 확인해보세요.',
             style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 12),
@@ -322,7 +322,7 @@ class _NotifTestCardState extends ConsumerState<_NotifTestCard> {
                       width: 16, height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : const Icon(Icons.notifications_active_outlined, size: 18),
-              label: Text(_sending ? '발송 중...' : '테스트 알림 보내기'),
+              label: Text(_sending ? '발송 중...' : '지금 한 번 받아보기'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,

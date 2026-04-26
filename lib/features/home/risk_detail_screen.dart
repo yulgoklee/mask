@@ -116,7 +116,7 @@ class _TFinalInfoCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${profile.displayName} 맞춤 기준',
+                  profile.displayName.isNotEmpty ? '${profile.displayName} 맞춤 기준' : '내 맞춤 기준',
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,

@@ -65,7 +65,9 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen>
 
                       // ── 인사 ────────────────────────────────
                       Text(
-                        '${profile.displayName}님,\n이렇게 알려드릴게요.',
+                        profile.displayName.isNotEmpty
+                            ? '${profile.displayName},\n이렇게 알려드릴게요.'
+                            : '이렇게 알려드릴게요.',
                         style: const TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,

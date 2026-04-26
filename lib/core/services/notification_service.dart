@@ -539,9 +539,9 @@ class NotificationService {
       final action = maskType != null
           ? '오늘 $maskType 마스크를 챙기는 게 좋아요'
           : '오늘 마스크를 챙기는 게 좋아요';
-      title = '$emoji $name, $action';
+      title = '$emoji ${_p(name)}$action';
     } else {
-      title = '✅ $name, 오늘 공기가 맑아요';
+      title = '✅ ${_p(name)}오늘 공기가 맑아요';
     }
 
     // ── 본문: 이유를 부드럽게 ────────────────────────────────────
@@ -604,9 +604,9 @@ class NotificationService {
       final action = maskType != null
           ? '내일 $maskType 마스크를 미리 챙겨두세요'
           : '내일 마스크를 미리 챙겨두세요';
-      title = '$emoji $name, $action';
+      title = '$emoji ${_p(name)}$action';
     } else {
-      title = '🌤 $name, 내일 공기가 좋을 것 같아요';
+      title = '🌤 ${_p(name)}내일 공기가 좋을 것 같아요';
     }
 
     // ── 본문 ─────────────────────────────────────────────────────
@@ -650,9 +650,9 @@ class NotificationService {
       final action = maskType != null
           ? '퇴근길에 $maskType 마스크를 챙겨주세요'
           : '퇴근길에 마스크를 챙겨주세요';
-      title = '🏠 $name, $action';
+      title = '🏠 ${_p(name)}$action';
     } else {
-      title = '🏠 $name, 퇴근길 공기가 좋아요';
+      title = '🏠 ${_p(name)}퇴근길 공기가 좋아요';
     }
 
     // ── 본문 ─────────────────────────────────────────────────────
@@ -689,7 +689,7 @@ class NotificationService {
     final name = profile.displayName;
 
     // 매우나쁨 = 안전 최우선 → 명확하되 당황하지 않게
-    final title = '🚨 $name, 지금 KF94 마스크가 꼭 필요해요';
+    final title = '🚨 ${_p(name)}지금 KF94 마스크가 꼭 필요해요';
     final lines = <String>[
       'PM2.5 ${pm25}µg/m³ · 매우나쁨',
       '가능하면 야외 활동을 줄이시고, KF94 마스크를 착용해 주세요.',
@@ -714,7 +714,7 @@ class NotificationService {
     final isSevere = targetGrade == '매우나쁨';
     final maskHint = isSevere ? 'KF94' : 'KF80';
 
-    final title = '⚡ $name, 미리 $maskHint 마스크를 챙겨두세요';
+    final title = '⚡ ${_p(name)}미리 $maskHint 마스크를 챙겨두세요';
     final lines = <String>[
       'PM2.5 ${currentPm25}µg/m³ → 1시간 내 $targetGrade 예상',
       '지금은 괜찮지만 곧 나빠질 것 같아요.',
@@ -734,7 +734,7 @@ class NotificationService {
     required double tFinal,
   }) {
     final name = profile.displayName;
-    final title = '✅ $name, 공기가 맑아졌어요!';
+    final title = '✅ ${_p(name)}공기가 맑아졌어요!';
     final body = 'PM2.5 ${pm25}µg/m³ — '
         '당신의 기준(${tFinal.toStringAsFixed(1)}µg/m³) 이하예요.\n'
         '잠시 마스크를 내려도 괜찮아요 😊';
@@ -742,6 +742,8 @@ class NotificationService {
   }
 
   // ── 내부 헬퍼 ─────────────────────────────────────────────
+
+  static String _p(String name) => name.isNotEmpty ? '$name, ' : '';
 
   static String? _personalNote(UserProfile profile) {
     if (profile.respiratoryStatus & 2 != 0) return '호흡기 질환 기준으로 맞춤 관리 중이에요';

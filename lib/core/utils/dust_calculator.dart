@@ -217,17 +217,18 @@ class DustCalculator {
 
   static String _buildMessage(RiskLevel risk, int pm25, UserProfile profile) {
     final display = profile.displayName;
+    final p = display.isNotEmpty ? '$display, ' : '';
     switch (risk) {
       case RiskLevel.low:
-        return '$display, 오늘 공기가 맑아요.\n마음껏 외출하셔도 좋아요 😊';
+        return '${p}오늘 공기가 맑아요.\n마음껏 외출하셔도 좋아요 😊';
       case RiskLevel.normal:
         return '오늘은 보통 수준이에요.\n장시간 야외라면 마스크를 고려해보세요.';
       case RiskLevel.warning:
-        return '$display, 오늘 마스크 챙겨가세요.\nPM2.5 $pm25μg/m³, 조금 나빠요.';
+        return '${p}오늘 마스크 챙겨가세요.\nPM2.5 $pm25μg/m³, 조금 나빠요.';
       case RiskLevel.danger:
-        return '$display, 지금 마스크 필수예요.\nPM2.5 $pm25μg/m³, 매우 나빠요.';
+        return '${p}지금 마스크 필수예요.\nPM2.5 $pm25μg/m³, 매우 나빠요.';
       case RiskLevel.critical:
-        return '$display, 오늘은 외출을 줄여주세요.\nPM2.5 $pm25μg/m³, 심각한 수준이에요.';
+        return '${p}오늘은 외출을 줄여주세요.\nPM2.5 $pm25μg/m³, 심각한 수준이에요.';
       case RiskLevel.unknown:
         return '미세먼지 정보를 가져오고 있어요.';
     }

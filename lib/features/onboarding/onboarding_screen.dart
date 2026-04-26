@@ -311,7 +311,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 AppTokens.screenH, 8, AppTokens.screenH, 24),
               child: AppButton.primary(
                 label: _currentPage == _totalPages - 1 ? '분석 시작하기  →' : '다음',
-                onTap: _saving ? null : _nextPage,
+                onTap: (_saving || (_currentPage == 0 && !(_nickname?.trim().isNotEmpty ?? false)))
+                    ? null
+                    : _nextPage,
                 isLoading: _saving,
               ),
             ),

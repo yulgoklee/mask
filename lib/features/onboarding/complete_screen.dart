@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -112,7 +111,7 @@ class _OnboardingCompleteScreenState
                     const SizedBox(height: 32),
 
                     Text(
-                      '준비됐어요, $name 🎉',
+                      name.isNotEmpty ? '준비됐어요, $name 🎉' : '준비됐어요! 🎉',
                       style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -133,7 +132,9 @@ class _OnboardingCompleteScreenState
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        '공기가 나빠지면 언제든 먼저 알려드릴게요.\n$name, 저만 믿으세요.',
+                        name.isNotEmpty
+                            ? '공기가 나빠지면 언제든 먼저 알려드릴게요.\n$name, 저만 믿으세요.'
+                            : '공기가 나빠지면 언제든 먼저 알려드릴게요.',
                         style: TextStyle(
                           fontSize: 14,
                           color: AppColors.textSecondary.withValues(alpha: 0.8),

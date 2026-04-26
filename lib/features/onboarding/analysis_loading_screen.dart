@@ -103,7 +103,7 @@ class _AnalysisLoadingScreenState
 
                 // ── 헤드라인 ────────────────────────────────────
                 Text(
-                  '$name만을 위한\n맞춤형 알고리즘을\n설계 중입니다',
+                  name.isNotEmpty ? '$name만을 위한\n맞춤형 알고리즘을\n설계 중입니다' : '맞춤형 알고리즘을\n설계 중입니다',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 24,

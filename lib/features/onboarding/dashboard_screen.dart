@@ -144,7 +144,7 @@ class _EmotionSection extends StatelessWidget {
 
         // ── 헤드라인 ──────────────────────────────────────
         Text(
-          '$name의 기준이\n만들어졌어요.',
+          name.isNotEmpty ? '$name의 기준이\n만들어졌어요.' : '내 기준이\n만들어졌어요.',
           style: const TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.bold,
@@ -227,7 +227,7 @@ class _DashboardHeader extends StatelessWidget {
 
         // 이름
         Text(
-          '${profile.displayName},',
+          profile.displayName.isNotEmpty ? '${profile.displayName},' : '',
           style: const TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.bold,

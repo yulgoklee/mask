@@ -49,7 +49,7 @@ void main() {
       expect(content.title, contains('오늘 공기가 맑아요'));
     });
 
-    test('이름 없을 때 제목에 님 포함', () {
+    test('이름 없을 때 제목에 님 미포함 (빈 문자열 fallback)', () {
       final content = NotificationService.morningContent(
         profile: _profile(),
         pm25: 45,
@@ -57,7 +57,8 @@ void main() {
         maskRequired: true,
         maskType: 'KF80',
       );
-      expect(content.title, contains('님'));
+      expect(content.title, isNot(contains('님')));
+      expect(content.title, contains('KF80'));
       expect(content.body, contains('KF80'));
     });
 

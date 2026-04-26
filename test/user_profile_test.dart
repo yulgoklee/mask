@@ -67,8 +67,8 @@ void main() {
       );
       expect(p.displayName, '지수님');
     });
-    test('닉네임 없으면 "님"', () {
-      expect(UserProfile.defaultProfile().displayName, '사용자님');
+    test('닉네임 없으면 빈 문자열', () {
+      expect(UserProfile.defaultProfile().displayName, '');
     });
   });
 

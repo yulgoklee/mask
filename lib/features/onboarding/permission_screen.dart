@@ -46,7 +46,7 @@ class PermissionScreen extends ConsumerWidget {
               const SizedBox(height: 32),
 
               Text(
-                '$name 하루를\n챙기려면 알림 권한이 필요해요',
+                name.isNotEmpty ? '$name 하루를\n챙기려면 알림 권한이 필요해요' : '하루를\n챙기려면 알림 권한이 필요해요',
                 style: const TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
