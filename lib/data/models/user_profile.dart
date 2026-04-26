@@ -55,7 +55,7 @@ class UserProfile {
   /// 취약 연령 여부 (18세 미만 or 60세 이상)
   bool get isVulnerableAge => age < 18 || age >= 60;
 
-  /// 알림/홈 화면 호칭 ("율곡님" or "사용자님")
+  /// 알림/홈 화면 호칭 ("지수님" or "사용자님")
   /// 닉네임 미입력 시 '님'만 남는 어색한 표현 방지
   String get displayName => nickname.isNotEmpty ? '$nickname님' : '사용자님';
 

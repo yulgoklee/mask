@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/design_tokens.dart';
 import '../../core/constants/location_stations.dart';
 import '../../data/models/user_profile.dart';
 
@@ -51,7 +52,7 @@ class _DiagQ1NicknameState extends State<DiagQ1Nickname> {
           const SizedBox(height: 14),
           _qTitle(context, '어떻게 불러드릴까요?'),
           const SizedBox(height: 8),
-          _qSubtitle(context, '알림 메시지에 이름이 표시돼요. "민수님, 지금 마스크를 쓰세요!"처럼요.'),
+          _qSubtitle(context, '알림 메시지에 이름이 표시돼요. "지수님, 지금 마스크를 쓰세요!"처럼요.'),
           const SizedBox(height: 36),
           _fieldLabel('이름'),
           const SizedBox(height: 10),
@@ -59,11 +60,11 @@ class _DiagQ1NicknameState extends State<DiagQ1Nickname> {
             controller: _ctrl,
             maxLength: 10,
             textInputAction: TextInputAction.done,
-            decoration: _inputDecoration('예: 율곡'),
+            decoration: _inputDecoration('예: 지수'),
             onChanged: (v) => widget.onChanged(v.trim().isEmpty ? null : v.trim()),
           ),
           const SizedBox(height: 32),
-          _insightBox('이름을 입력하면 "율곡님, 오늘 미세먼지가 높아요" 처럼 알림이 개인화돼요.'),
+          _insightBox('이름을 입력하면 "지수님, 오늘 미세먼지가 높아요" 처럼 알림이 개인화돼요.'),
           const SizedBox(height: 32),
         ],
       ),
@@ -191,13 +192,14 @@ class _DiagQ2BirthYearState extends State<DiagQ2BirthYear> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
             ],
           ),
         ),
 
-        // ── 스크롤 피커 (남은 공간 채우기) ──────────────────
-        Expanded(
+        // ── 스크롤 피커 (itemExtent 44 × 5개 = 220px) ──────────
+        SizedBox(
+          height: 220,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Container(
@@ -255,7 +257,7 @@ class _DiagQ2BirthYearState extends State<DiagQ2BirthYear> {
 
         // ── 인사이트 박스 ────────────────────────────────────
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 14, 24, 16),
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
           child: _insightBox(
             '취약 연령(18세 미만 · 60세 이상)은 미세먼지 영향이 더 커요. '
             '기준치를 자동으로 조정해드릴게요.',
@@ -719,7 +721,7 @@ class DiagQ6Pregnancy extends StatelessWidget {
             noLabel: '해당 없어요',
             onYes: () => onChanged(true),
             onNo: () => onChanged(false),
-            yesColor: AppColors.coral,
+            yesColor: DT.purple,
             noColor: AppColors.success,
           ),
           const SizedBox(height: 32),

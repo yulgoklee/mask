@@ -67,7 +67,7 @@ UserProfile _p({
   int sensitivity = 0,
   bool pregnant = false,
   bool skinTreatment = false,
-  String nickname = '율곡',
+  String nickname = '지수',
 }) =>
     UserProfile(
       nickname: nickname,
@@ -120,12 +120,12 @@ group('a: 기본 렌더링', () {
   });
 
   testWidgets('닉네임 표시', (tester) async {
-    final (container, widget) = _build(_p(nickname: '율곡'));
+    final (container, widget) = _build(_p(nickname: '지수'));
     addTearDown(container.dispose);
     await tester.pumpWidget(widget);
     await tester.pump();
 
-    expect(find.text('율곡님'), findsOneWidget);
+    expect(find.text('지수님'), findsOneWidget);
   });
 
   testWidgets('내 기준치 레이블 표시', (tester) async {

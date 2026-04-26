@@ -21,7 +21,7 @@ void main() {
   group('UserProfile.toJson / fromJson 왕복', () {
     test('직렬화 후 역직렬화 동일', () {
       const profile = UserProfile(
-        nickname: '율곡',
+        nickname: '지수',
         birthYear: 1988,
         gender: 'female',
         respiratoryStatus: 2,
@@ -50,8 +50,8 @@ void main() {
   group('UserProfile.copyWith', () {
     test('일부 값만 변경', () {
       final base = UserProfile.defaultProfile();
-      final updated = base.copyWith(nickname: '율곡', respiratoryStatus: 2);
-      expect(updated.nickname, '율곡');
+      final updated = base.copyWith(nickname: '지수', respiratoryStatus: 2);
+      expect(updated.nickname, '지수');
       expect(updated.respiratoryStatus, 2);
       expect(updated.sensitivityLevel, base.sensitivityLevel);
     });
@@ -60,12 +60,12 @@ void main() {
   group('displayName', () {
     test('닉네임 있으면 "이름님"', () {
       const p = UserProfile(
-        nickname: '율곡', birthYear: 1990, gender: 'male',
+        nickname: '지수', birthYear: 1990, gender: 'male',
         respiratoryStatus: 0, sensitivityLevel: 1,
         isPregnant: false, recentSkinTreatment: false,
         outdoorMinutes: 1, activityTags: [], discomfortLevel: 1,
       );
-      expect(p.displayName, '율곡님');
+      expect(p.displayName, '지수님');
     });
     test('닉네임 없으면 "님"', () {
       expect(UserProfile.defaultProfile().displayName, '사용자님');

@@ -61,7 +61,7 @@ class _FakeProfileRepo extends Fake implements ProfileRepository {
 // ── 기본 테스트 프로필 ─────────────────────────────────────
 
 const _base = UserProfile(
-  nickname: '율곡',
+  nickname: '지수',
   birthYear: 1990,
   gender: 'male',
   respiratoryStatus: 0,
@@ -138,7 +138,7 @@ void main() {
     testWidgets('닉네임 표시', (tester) async {
       await tester.pumpWidget(_buildApp());
       await tester.pump();
-      expect(find.text('율곡'), findsOneWidget);
+      expect(find.text('지수'), findsOneWidget);
     });
 
     testWidgets('닉네임 미입력 시 "미입력" 표시', (tester) async {

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
-// import '../../widgets/ad_banner_widget.dart'; // P4: AdMob 비활성화
 
 class InfoScreen extends StatelessWidget {
   const InfoScreen({super.key});

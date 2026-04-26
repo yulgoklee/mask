@@ -289,67 +289,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         child: Column(
           children: [
             // ── 상단 진행 표시 ─────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // 뒤로 버튼 (첫 페이지 제외)
-                  if (_currentPage > 0) ...[
-                    GestureDetector(
-                      onTap: _prevPage,
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceVariant,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back_ios_new,
-                          size: 15,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                  ],
-                  // 진행 바
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: (_currentPage + 1) / _totalPages,
-                        backgroundColor: AppColors.divider,
-                        color: AppColors.primary,
-                        minHeight: 5,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  // 페이지 카운터
-                  Text(
-                    '${_currentPage + 1} / $_totalPages',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const Spacer(),
-                  // 건너뛰기
-                  GestureDetector(
-                    onTap: _skipOnboarding,
-                    child: const Text(
-                      '건너뛰기',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            OnboardingProgressRow(
+              currentPage: _currentPage,
+              totalPages: _totalPages,
+              onBack: _prevPage,
+              onSkip: _skipOnboarding,
             ),
 
             // ── PageView ───────────────────────────────────────
@@ -376,5 +320,90 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       ),
     ),   // Scaffold
     );   // PopScope
+  }
+}
+
+// ── 진행 표시 Row ─────────────────────────────────────────────
+//
+// 조건부 규칙:
+//   뒤로 버튼  : page > 0
+//   카운터     : page >= 3  (Q4+, 성별 결정 후 분모 확정)
+//   건너뛰기   : page >= 2  (Q3+, Q1·Q2 는 진단 핵심 정보)
+
+class OnboardingProgressRow extends StatelessWidget {
+  final int currentPage;
+  final int totalPages;
+  final VoidCallback onBack;
+  final VoidCallback onSkip;
+
+  const OnboardingProgressRow({
+    required this.currentPage,
+    required this.totalPages,
+    required this.onBack,
+    required this.onSkip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          if (currentPage > 0) ...[
+            GestureDetector(
+              onTap: onBack,
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.arrow_back_ios_new,
+                  size: 15,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+          ],
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: (currentPage + 1) / totalPages,
+                backgroundColor: AppColors.divider,
+                color: AppColors.primary,
+                minHeight: 5,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          if (currentPage >= 3)
+            Text(
+              '${currentPage + 1} / $totalPages',
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          const Spacer(),
+          if (currentPage >= 2)
+            GestureDetector(
+              onTap: onSkip,
+              child: const Text(
+                '건너뛰기',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }

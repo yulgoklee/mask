@@ -15,7 +15,7 @@ Future<ProfileRepository> _buildRepo([
 }
 
 const _sampleProfile = UserProfile(
-  nickname: '율곡',
+  nickname: '지수',
   birthYear: 1990,
   gender: 'female',
   respiratoryStatus: 2,
