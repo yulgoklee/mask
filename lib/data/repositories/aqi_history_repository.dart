@@ -1,7 +1,5 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_profile.dart';
-import '../models/protection_chart_data.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/database/local_database.dart';
 import '../../core/engine/aqi_grade_converter.dart';
@@ -76,57 +74,6 @@ class AqiHistoryRepository {
   String? get currentStation =>
       _prefs.getString(AppConstants.prefStationName);
 
-  // ── ProtectionChart (미래 12h) ────────────────────────────
-
-  /// Care 탭 ProtectionAreaChart용 데이터 — 미래 12h Spline 보간
-  ///
-  /// [forecastGrade] : 향후 예보 등급
-  /// [filterRate]    : 마스크 필터율 (KF94=0.94 / KF80=0.80)
-  /// [horizonHours]  : 미래 예측 범위 (기본 12h)
-  Future<ProtectionChartData> getProtectionChartData({
-    required String forecastGrade,
-    double filterRate = 0.94,
-    String maskType = 'KF94',
-    UserProfile? profile,
-    int horizonHours = 12,
-  }) async {
-    try {
-      final station = _polling.resolveStation(_prefs, profile);
-      if (station == null) return ProtectionChartData.noStation();
-
-      final records = await _db.getRecentAqiRecords(
-        stationName: station,
-        hours: 1,
-      );
-      final currentPm25 = records.isNotEmpty
-          ? records.last.pm25Value?.toDouble()
-          : null;
-
-      final airRaw = AqiGradeConverter.buildFutureSpots(
-        currentPm25: currentPm25 ?? AqiGradeConverter.gradeToMidvalue(forecastGrade),
-        forecastGrade: forecastGrade,
-        horizonHours: horizonHours,
-      );
-      final maskRaw = AqiGradeConverter.buildMaskSpotsFromFuture(airRaw, filterRate);
-
-      // fl_chart FlSpot 변환
-      final airSpots  = airRaw.map((s)  => FlSpot(s.x, s.y)).toList();
-      final maskSpots = maskRaw.map((s) => FlSpot(s.x, s.y)).toList();
-
-      return ProtectionChartData(
-        airSpots: airSpots,
-        maskSpots: maskSpots,
-        tFinal: profile?.tFinal ?? 35.0,
-        filterRate: filterRate,
-        maskType: maskType,
-        currentPm25: currentPm25,
-        hasForecastData: true,
-        generatedAt: DateTime.now(),
-      );
-    } catch (_) {
-      return ProtectionChartData.noStation();
-    }
-  }
 }
 
 // ── 차트 데이터 모델 ──────────────────────────────────────

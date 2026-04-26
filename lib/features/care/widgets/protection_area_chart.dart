@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../../core/constants/design_tokens.dart';
+import '../../../core/constants/dust_standards.dart';
 import '../models/care_models.dart';
 import '../providers/care_providers.dart';
 
@@ -50,6 +51,8 @@ class _ProtectionAreaChartState extends ConsumerState<ProtectionAreaChart> {
   }
 }
 
+// ── 차트 카드 ─────────────────────────────────────────────
+
 class _ChartCard extends StatelessWidget {
   final ProtectionChartData data;
   final bool gridExpanded;
@@ -61,11 +64,23 @@ class _ChartCard extends StatelessWidget {
     required this.onTap,
   });
 
+  // ── ChartPoint → FlSpot 변환 (fl_chart용) ────────────
+
+  List<FlSpot> get _airFlSpots =>
+      data.chartPoints.map((p) => FlSpot(p.hour, p.finalRatio)).toList();
+
+  List<FlSpot> get _maskFlSpots => data.chartPoints
+      .map((p) => FlSpot(p.hour, p.finalRatio * (1 - data.filterRate)))
+      .toList();
+
+  // ── Y축 상한: 최대 ratio의 1.2배, 최소 2.0 ─────────────
+
   double get _yMax {
-    final spots = data.airSpots;
-    if (spots.isEmpty) return data.tFinal * 2;
-    final maxVal = spots.map((s) => s.y).reduce((a, b) => a > b ? a : b);
-    return (maxVal * 1.2).clamp(data.tFinal * 2, 200);
+    if (data.chartPoints.isEmpty) return 2.0;
+    final maxRatio = data.chartPoints
+        .map((p) => p.finalRatio)
+        .reduce((a, b) => a > b ? a : b);
+    return (maxRatio * 1.2).clamp(2.0, 4.0);
   }
 
   @override
@@ -74,8 +89,8 @@ class _ChartCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: DT.white,
-          borderRadius: BorderRadius.circular(20),
+          color:        DT.white,
+          borderRadius: BorderRadius.circular(16),
           boxShadow: const [
             BoxShadow(offset: Offset(0, 4), blurRadius: 16, color: Color(0x0A000000)),
           ],
@@ -87,7 +102,7 @@ class _ChartCard extends StatelessWidget {
             _buildChart(),
             AnimatedSize(
               duration: const Duration(milliseconds: 350),
-              curve: Curves.easeOutCubic,
+              curve:    Curves.easeOutCubic,
               child: gridExpanded ? _buildGrid() : const SizedBox.shrink(),
             ),
             _buildCta(context),
@@ -97,29 +112,41 @@ class _ChartCard extends StatelessWidget {
     );
   }
 
+  // ── 헤더: 카드 제목 + verdict 한 줄 ─────────────────────
+
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      child: Row(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            '12시간 예보',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: DT.text),
+            '앞으로 12시간',
+            style: TextStyle(
+              fontSize:   16,
+              fontWeight: FontWeight.bold,
+              color:      DT.text,
+            ),
           ),
-          const Spacer(),
-          _LegendItem(color: DT.primary, label: '현재 대기', isDot: false),
-          const SizedBox(width: 12),
-          _LegendItem(color: DT.teal, label: 'KF94 착용 시', isDot: true),
-          const SizedBox(width: 12),
-          _LegendItem(color: DT.purple, label: '내 기준', isDot: false, isDashed: true),
+          const SizedBox(height: 8),
+          Text(
+            verdictText(data.verdict),
+            style: const TextStyle(
+              fontSize: 14,
+              color:    DT.gray,
+              height:   1.4,
+            ),
+          ),
         ],
       ),
     );
   }
 
+  // ── 차트 본체 ─────────────────────────────────────────
+
   Widget _buildChart() {
+    const threshold = 1.0; // final_ratio 기준선 (§2.9 v4)
     final yMax = _yMax;
-    final tFinal = data.tFinal;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
@@ -134,65 +161,78 @@ class _ChartCard extends StatelessWidget {
               maxX: 12,
               minY: 0,
               maxY: yMax,
-              clipData: const FlClipData.all(),
-              gridData: const FlGridData(show: false),
-              borderData: FlBorderData(show: false),
-              titlesData: _buildTitles(tFinal, yMax),
-              extraLinesData: _buildExtraLines(tFinal),
+              clipData:        const FlClipData.all(),
+              gridData:        const FlGridData(show: false),
+              borderData:      FlBorderData(show: false),
+              titlesData:      _buildTitles(threshold, yMax),
+              extraLinesData:  _buildExtraLines(threshold),
               lineBarsData: [
-                _buildAirLine(tFinal),
-                _buildMaskLine(tFinal),
+                _buildAirLine(),
+                _buildMaskLine(),
               ],
               lineTouchData: _buildTouchData(),
             ),
             duration: const Duration(milliseconds: 800),
-            curve: Curves.easeOut,
+            curve:    Curves.easeOut,
           ),
         ),
       ),
     );
   }
 
-  FlTitlesData _buildTitles(double tFinal, double yMax) {
+  // ── Y축: 0 / 1.0(보라) / yMax  X축: 시간대 라벨 ────────
+
+  FlTitlesData _buildTitles(double threshold, double yMax) {
+    // X축 라벨: 현재 시각 기준 상대 시간대
+    final now = DateTime.now();
+    String _xLabel(int h) {
+      if (h == 0) return '지금';
+      final target = now.add(Duration(hours: h));
+      final hr = target.hour;
+      if (hr >= 5  && hr < 12) return '오전';
+      if (hr >= 12 && hr < 18) return '낮';
+      if (hr >= 18 && hr < 22) return '저녁';
+      return '밤';
+    }
+
     return FlTitlesData(
       rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      topTitles:   const AxisTitles(sideTitles: SideTitles(showTitles: false)),
       bottomTitles: AxisTitles(
         sideTitles: SideTitles(
           showTitles: true,
-          interval: 4,
+          interval:   4,
           getTitlesWidget: (val, meta) {
-            final label = switch (val.toInt()) {
-              0  => '지금',
-              4  => '+4시간',
-              8  => '+8시간',
-              12 => '+12시간',
-              _  => '',
-            };
-            if (label.isEmpty) return const SizedBox.shrink();
+            final h = val.toInt();
+            if (h != 0 && h != 4 && h != 8 && h != 12) {
+              return const SizedBox.shrink();
+            }
             return Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Text(label, style: const TextStyle(fontSize: 10, color: DT.gray)),
+              child: Text(
+                _xLabel(h),
+                style: const TextStyle(fontSize: 10, color: DT.gray),
+              ),
             );
           },
         ),
       ),
       leftTitles: AxisTitles(
         sideTitles: SideTitles(
-          showTitles: true,
-          reservedSize: 40,
+          showTitles:   true,
+          reservedSize: 28,
           getTitlesWidget: (val, meta) {
-            final isZero = val == 0;
-            final isTFinal = (val - tFinal).abs() < 1;
-            final isMax = (val - yMax).abs() < 1;
-            if (!isZero && !isTFinal && !isMax) return const SizedBox.shrink();
+            final isZero      = val == 0;
+            final isThreshold = (val - threshold).abs() < 0.05;
+            final isMax       = (val - yMax).abs() < 0.05;
+            if (!isZero && !isThreshold && !isMax) return const SizedBox.shrink();
             return Text(
-              val.toInt().toString(),
+              isThreshold ? '1.0' : val.toInt().toString(),
               style: TextStyle(
                 fontFamily: 'monospace',
-                fontSize: 10,
-                color: isTFinal ? DT.purple : DT.gray,
-                fontWeight: isTFinal ? FontWeight.bold : FontWeight.normal,
+                fontSize:   10,
+                color:      isThreshold ? DT.purple : DT.gray,
+                fontWeight: isThreshold ? FontWeight.bold : FontWeight.normal,
               ),
             );
           },
@@ -201,30 +241,32 @@ class _ChartCard extends StatelessWidget {
     );
   }
 
-  ExtraLinesData _buildExtraLines(double tFinal) {
+  // ── 기준선(y=1.0) + 현재 지점 수직선 ────────────────────
+
+  ExtraLinesData _buildExtraLines(double threshold) {
     return ExtraLinesData(
       horizontalLines: [
         HorizontalLine(
-          y: tFinal,
-          color: DT.purple,
+          y:           threshold,
+          color:       DT.purple,
           strokeWidth: 1.5,
-          dashArray: [8, 4],
+          dashArray:   [8, 4],
           label: HorizontalLineLabel(
-            show: true,
+            show:      true,
             alignment: Alignment.topRight,
             style: const TextStyle(color: DT.purple, fontSize: 11),
-            labelResolver: (line) => '내 기준 ${line.y.toInt()}µg',
+            labelResolver: (_) => '내 기준',
           ),
         ),
       ],
       verticalLines: [
         VerticalLine(
-          x: 0,
-          color: DT.gray,
+          x:           0,
+          color:       DT.gray,
           strokeWidth: 1,
-          dashArray: [4, 4],
+          dashArray:   [4, 4],
           label: VerticalLineLabel(
-            show: true,
+            show:      true,
             alignment: Alignment.topRight,
             style: const TextStyle(color: DT.gray, fontSize: 10),
             labelResolver: (_) => '▼ 지금',
@@ -234,39 +276,46 @@ class _ChartCard extends StatelessWidget {
     );
   }
 
-  LineChartBarData _buildAirLine(double tFinal) {
-    final overThreshold = data.isCurrentOverThreshold;
-    final lineColor = overThreshold ? DT.danger : DT.primary;
-    final areaAbove = overThreshold
-        ? const Color(0x99FEE2E2)
-        : const Color(0x66DBEAFE);
+  // ── 대기 곡선: 기준 초과 여부에 따라 색 분기 (§3.3 v4) ──
+
+  LineChartBarData _buildAirLine() {
+    final over      = data.isCurrentOverThreshold;
+    final lineColor = over ? DT.danger  : DT.primary;
+    final areaColor = over
+        ? const Color(0x33FEE2E2)  // dangerLt 20%
+        : const Color(0x33DBEAFE); // primaryLt 20%
+    final airFlSpots = _airFlSpots;
 
     return LineChartBarData(
-      spots: data.airSpots,
-      isCurved: true,
+      spots:                    airFlSpots,
+      isCurved:                 true,
       preventCurveOverShooting: true,
-      color: lineColor,
-      barWidth: 2.5,
-      dotData: const FlDotData(show: false),
-      belowBarData: BarAreaData(show: true, color: areaAbove),
-      dashArray: data.airSpots.isNotEmpty ? [6, 3] : null,
+      color:                    lineColor,
+      barWidth:                 2.5,
+      dotData:                  const FlDotData(show: false),
+      belowBarData:             BarAreaData(show: true, color: areaColor),
+      dashArray:                airFlSpots.isNotEmpty ? [6, 3] : null,
     );
   }
 
-  LineChartBarData _buildMaskLine(double tFinal) {
+  // ── KF94 마스크 곡선: 투명 선 + 틸 음영 ─────────────────
+
+  LineChartBarData _buildMaskLine() {
     return LineChartBarData(
-      spots: data.maskSpots,
-      isCurved: true,
+      spots:                    _maskFlSpots,
+      isCurved:                 true,
       preventCurveOverShooting: true,
-      color: Colors.transparent,
-      barWidth: 0,
-      dotData: const FlDotData(show: false),
-      belowBarData: BarAreaData(
-        show: true,
+      color:                    Colors.transparent,
+      barWidth:                 0,
+      dotData:                  const FlDotData(show: false),
+      belowBarData:             BarAreaData(
+        show:  true,
         color: const Color(0x590D9488),
       ),
     );
   }
+
+  // ── 터치 툴팁: ratio 값 (소수점 2자리) ──────────────────
 
   LineTouchData _buildTouchData() {
     return LineTouchData(
@@ -275,18 +324,20 @@ class _ChartCard extends StatelessWidget {
           final isAir = spot.barIndex == 0;
           return LineTooltipItem(
             isAir
-                ? '대기 ${spot.y.toInt()}µg'
-                : 'KF94 ${spot.y.toInt()}µg',
+                ? '대기 ×${spot.y.toStringAsFixed(2)}'
+                : 'KF94 ×${spot.y.toStringAsFixed(2)}',
             TextStyle(
               fontFamily: 'monospace',
-              fontSize: 12,
-              color: isAir ? DT.danger : DT.teal,
+              fontSize:   12,
+              color:      isAir ? DT.danger : DT.teal,
             ),
           );
         }).toList(),
       ),
     );
   }
+
+  // ── 시간별 그리드 (tap 토글) ──────────────────────────────
 
   Widget _buildGrid() {
     final now = DateTime.now();
@@ -295,24 +346,24 @@ class _ChartCard extends StatelessWidget {
         children: [
           const Divider(height: 1, color: DT.border),
           ...List.generate(12, (i) {
-            final hour = now.add(Duration(hours: i + 1));
-            final pm25 = data.airSpots.length > i + 1
-                ? data.airSpots[i + 1].y
+            final hour    = now.add(Duration(hours: i + 1));
+            final rawPm25 = data.chartPoints.length > i + 1
+                ? data.chartPoints[i + 1].rawPm25
                 : 0.0;
-            final grade = _gradeFromValue(pm25);
-            final isNow = i == 0;
+            final grade   = DustStandards.getPm25Grade(rawPm25.toInt()).label;
+            final isNow   = i == 0;
 
             return AnimationConfiguration.staggeredList(
               position: i,
               duration: const Duration(milliseconds: 200),
-              delay: Duration(milliseconds: i * 30),
+              delay:    Duration(milliseconds: i * 30),
               child: SlideAnimation(
                 verticalOffset: 20,
                 child: FadeInAnimation(
                   child: _HourlyRow(
-                    time: '+${i + 1}시간 (${hour.hour}시)',
-                    pm25: pm25.toInt(),
-                    grade: grade,
+                    time:          '+${i + 1}시간 (${hour.hour}시)',
+                    pm25:          rawPm25.toInt(),
+                    grade:         grade,
                     isHighlighted: isNow,
                   ),
                 ),
@@ -324,9 +375,11 @@ class _ChartCard extends StatelessWidget {
     );
   }
 
+  // ── 하단 링크 ─────────────────────────────────────────────
+
   Widget _buildCta(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 4, 16, 8),
+      padding: const EdgeInsets.fromLTRB(0, 4, 16, 12),
       child: Align(
         alignment: Alignment.centerRight,
         child: TextButton(
@@ -335,25 +388,23 @@ class _ChartCard extends StatelessWidget {
             foregroundColor: DT.primary,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           ),
-          child: const Text('지난 7일 평균과 비교하기 →', style: TextStyle(fontSize: 12)),
+          child: const Text(
+            '지난 7일 평균과 비교하기 ›',
+            style: TextStyle(fontSize: 12),
+          ),
         ),
       ),
     );
   }
-
-  String _gradeFromValue(double pm25) {
-    if (pm25 <= 15) return '좋음';
-    if (pm25 <= 35) return '보통';
-    if (pm25 <= 75) return '나쁨';
-    return '매우나쁨';
-  }
 }
+
+// ── 시간별 행 ──────────────────────────────────────────────
 
 class _HourlyRow extends StatelessWidget {
   final String time;
-  final int pm25;
+  final int    pm25;
   final String grade;
-  final bool isHighlighted;
+  final bool   isHighlighted;
 
   const _HourlyRow({
     required this.time,
@@ -365,8 +416,8 @@ class _HourlyRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 48,
-      color: isHighlighted ? DT.primaryLt : Colors.transparent,
+      height:  48,
+      color:   isHighlighted ? DT.primaryLt : Colors.transparent,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
@@ -376,58 +427,27 @@ class _HourlyRow extends StatelessWidget {
           ),
           Expanded(
             child: Text(
-              pm25.toString(),
+              '$pm25 µg',
               style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
             ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: DT.gradeBadgeBg(grade),
+              color:        DT.gradeBadgeBg(grade),
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(
               grade,
               style: TextStyle(
-                fontSize: 10,
+                fontSize:   10,
                 fontWeight: FontWeight.bold,
-                color: DT.gradeText(grade),
+                color:      DT.gradeText(grade),
               ),
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _LegendItem extends StatelessWidget {
-  final Color color;
-  final String label;
-  final bool isDot;
-  final bool isDashed;
-
-  const _LegendItem({
-    required this.color,
-    required this.label,
-    required this.isDot,
-    this.isDashed = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        isDot
-            ? Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              )
-            : Container(width: 16, height: 2, color: color),
-        const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 10, color: DT.gray)),
-      ],
     );
   }
 }

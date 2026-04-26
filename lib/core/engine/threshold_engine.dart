@@ -65,6 +65,14 @@ class ThresholdEngine {
     return raw.clamp(config.tFloor, config.tBase);
   }
 
+  /// 최종 PM10 알림 임계치 계산
+  ///
+  /// 환산 근거: 환경부 '보통' 상한 비율 (PM10 80 / PM2.5 35)
+  /// T_final_pm10 = T_final_pm25 × (80 / 35)
+  double computeTFinalPm10(UserProfile profile) {
+    return computeTFinal(profile) * (80.0 / 35.0);
+  }
+
   // ── 마스크 등급 추천 ─────────────────────────────────────────
 
   /// W_health 기반 권장 마스크 등급
