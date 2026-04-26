@@ -194,7 +194,7 @@ class _StatusCardContent extends StatelessWidget {
                 ),
                 Expanded(
                   child: _InfoColumn(
-                    label:      '내 기준',
+                    label:      data.dominantPollutant == DominantPollutant.pm10 ? 'PM10 기준' : 'PM2.5 기준',
                     value:      data.dominantTFinal.round(),
                     sub:        _thresholdLabel(data.dominantValue, data.dominantTFinal),
                     valueColor: DT.text,
@@ -306,7 +306,7 @@ class _StatusBottomSheet extends StatelessWidget {
                 padding: const EdgeInsets.all(24),
                 children: [
                   Text(
-                    '${data.nickname.isNotEmpty ? data.nickname : '사용자'}님의 기준치: ${data.tFinal.toInt()}µg/m³',
+                    data.nickname.isNotEmpty ? '${data.nickname}님의 기준치' : '내 기준치',
                     style: const TextStyle(
                       fontSize:   18,
                       fontWeight: FontWeight.bold,
@@ -318,12 +318,12 @@ class _StatusBottomSheet extends StatelessWidget {
                     children: [
                       _StatChip(
                         label: 'PM2.5',
-                        value: '${data.pm25Value.toInt()}µg/m³',
+                        value: '${data.tFinal.toInt()}µg/m³',
                       ),
                       const SizedBox(width: 12),
                       _StatChip(
-                        label: '기준 대비',
-                        value: '${data.overRatio.toStringAsFixed(1)}배',
+                        label: 'PM10',
+                        value: '${(data.tFinal * 80.0 / 35.0).round()}µg/m³',
                       ),
                     ],
                   ),

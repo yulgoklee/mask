@@ -182,18 +182,36 @@ class _ChartCard extends StatelessWidget {
 
   // ── Y축: 0 / 1.0(보라) / yMax  X축: 시간대 라벨 ────────
 
-  FlTitlesData _buildTitles(double threshold, double yMax) {
-    // X축 라벨: 현재 시각 기준 상대 시간대
-    final now = DateTime.now();
-    String _xLabel(int h) {
-      if (h == 0) return '지금';
-      final target = now.add(Duration(hours: h));
-      final hr = target.hour;
-      if (hr >= 5  && hr < 12) return '오전';
-      if (hr >= 12 && hr < 18) return '낮';
-      if (hr >= 18 && hr < 22) return '저녁';
-      return '밤';
+  static Map<int, String> _buildXLabels(DateTime now) {
+    final result = <int, String>{};
+    final used   = <String>{};
+    for (final h in [0, 4, 8, 12]) {
+      if (h == 0) { result[h] = '지금'; continue; }
+      final hr = now.add(Duration(hours: h)).hour;
+      String label;
+      if (hr < 5) {
+        label = '새벽';
+      } else if (hr < 12) {
+        label = '오전';
+      } else if (hr < 18) {
+        label = '낮';
+      } else if (hr < 22) {
+        label = '저녁';
+      } else {
+        label = '밤';
+      }
+      if (used.contains(label)) {
+        label = '${hr}시';
+      } else {
+        used.add(label);
+      }
+      result[h] = label;
     }
+    return result;
+  }
+
+  FlTitlesData _buildTitles(double threshold, double yMax) {
+    final xLabels = _buildXLabels(DateTime.now());
 
     return FlTitlesData(
       rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -210,7 +228,7 @@ class _ChartCard extends StatelessWidget {
             return Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
-                _xLabel(h),
+                xLabels[h] ?? '',
                 style: const TextStyle(fontSize: 10, color: DT.gray),
               ),
             );
@@ -253,7 +271,7 @@ class _ChartCard extends StatelessWidget {
           dashArray:   [8, 4],
           label: HorizontalLineLabel(
             show:      true,
-            alignment: Alignment.topRight,
+            alignment: Alignment.topLeft,
             style: const TextStyle(color: DT.purple, fontSize: 11),
             labelResolver: (_) => '내 기준',
           ),
