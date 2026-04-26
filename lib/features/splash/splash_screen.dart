@@ -76,7 +76,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       if (!mounted) return;
 
       if (!tutorialSeen || !onboardingDone) {
-        context.go('/welcome');
+        final prefs = ref.read(sharedPreferencesProvider);
+        final disclaimerAgreed = prefs.getString(AppConstants.prefDisclaimerAgreedAt);
+        context.go(disclaimerAgreed == null ? '/disclaimer' : '/welcome');
       } else {
         final prefs = ref.read(sharedPreferencesProvider);
         final savedStation = prefs.getString(AppConstants.prefStationName);

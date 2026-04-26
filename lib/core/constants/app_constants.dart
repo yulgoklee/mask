@@ -81,4 +81,8 @@ class AppConstants {
 
   // ── 기타 ──────────────────────────────────────────────────
   static const String prefAnonymousUserId       = 'anonymous_user_id';
+
+  // ── 면책 동의 ─────────────────────────────────────────────
+  /// 의료 면책 동의 일시 (ISO 8601 문자열, null이면 미동의)
+  static const String prefDisclaimerAgreedAt    = 'disclaimer_agreed_at';
 }
