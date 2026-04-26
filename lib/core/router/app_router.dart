@@ -11,6 +11,7 @@ import '../../features/onboarding/notification_time_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/onboarding/permission_screen.dart';
 import '../../features/onboarding/roadmap_screen.dart';
+import '../../features/onboarding/disclaimer_screen.dart';
 import '../../features/onboarding/welcome_screen.dart';
 import '../../features/profile_tab/profile_tab.dart';
 import '../../features/my_body_info/my_body_info_screen.dart';
@@ -85,6 +86,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/splash',
       pageBuilder: (_, state) => _fadePage(state, const SplashScreen()),
+    ),
+    GoRoute(
+      path: '/disclaimer',
+      pageBuilder: (_, state) => _fadePage(state, const DisclaimerScreen()),
     ),
     GoRoute(
       path: '/welcome',

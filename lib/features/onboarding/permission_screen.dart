@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -84,6 +85,27 @@ class PermissionScreen extends ConsumerWidget {
                 style: TextStyle(fontSize: 13, color: AppColors.textHint),
               ),
 
+              // 배터리 최적화 카드 (Android 전용)
+              if (Platform.isAndroid) ...[
+                const SizedBox(height: 20),
+                AppCard(
+                  padding: const EdgeInsets.all(AppTokens.cardMd),
+                  child: const Column(
+                    children: [
+                      _ExampleRow(
+                        icon: Icons.battery_saver_outlined,
+                        text: '배터리 최적화 예외로 설정하면 알림이 더 안정적이에요',
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  '삼성·샤오미 등 일부 기기는 배터리 최적화로 알림이 늦을 수 있어요.',
+                  style: TextStyle(fontSize: 13, color: AppColors.textHint),
+                ),
+              ],
+
               const Spacer(),
 
               // 권한 허용 버튼
@@ -137,6 +159,16 @@ class PermissionScreen extends ConsumerWidget {
                     if (!context.mounted) return;
                   }
 
+                  // 배터리 최적화 예외 요청 (Android 전용, 거부해도 계속 진행)
+                  if (Platform.isAndroid) {
+                    final batteryStatus =
+                        await Permission.ignoreBatteryOptimizations.status;
+                    if (!batteryStatus.isGranted) {
+                      await Permission.ignoreBatteryOptimizations.request();
+                    }
+                  }
+
+                  if (!context.mounted) return;
                   context.go('/onboarding_complete');
                 },
               ),
