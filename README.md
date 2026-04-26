@@ -1,8 +1,14 @@
 # 마스크 알림 (Mask Alert)
 
-> 내 건강 상태에 맞는 개인화 미세먼지 알림 앱
+> 내 몸에 맞는 미세먼지 알림
 
-한국환경공단 에어코리아 실시간 데이터를 기반으로, 나이·기저질환·활동량에 따라 미세먼지 위험도와 마스크 착용 여부를 알려주는 Flutter 앱입니다.
+같은 공기도 사람마다 다르게 영향을 줘요.
+호흡기 상태, 활동량, 민감도 — 9가지 요소로 개인 임계치(T_final)를 계산해,
+"오늘 보통이에요"가 아니라 "지수님 기준으로 마스크 챙기세요"라고 알려드립니다.
+
+▸ 한국환경공단 에어코리아 실시간 데이터 (PM2.5 + PM10 종합 판단)  
+▸ 6종 페르소나로 본인의 위험 프로파일 진단  
+▸ 외출 시각·민감도·기저질환 반영한 개인 알림 기준치
 
 ---
 
@@ -10,12 +16,12 @@
 
 | 기능 | 설명 |
 |------|------|
-| 🌍 실시간 미세먼지 | PM10 / PM2.5 실시간 측정값 (에어코리아 API) |
-| 👤 개인화 위험도 | 나이·기저질환·활동량 기반 맞춤 위험등급 |
-| 😷 마스크 추천 | 위험도에 따라 KF80 / KF94 / 착용 불필요 안내 |
-| 🔔 스마트 알림 | 외출 전 / 귀가 / 전날 예보 / 실시간 경보 (4종) |
-| 📊 24시간 현황 | 현재 기준 +24시간 예보 |
-| 📅 단기 예보 | 에어코리아 3일 예보 (오늘·내일·모레) |
+| 🌍 실시간 종합 판단 | PM2.5 + PM10 final_ratio = max(pm25/T, pm10/T_pm10) 기반 5단계 위험도 |
+| 🧬 6종 페르소나 진단 | 호흡기·활동량·민감도 등 9개 요소로 개인 프로파일 분석 |
+| 🎯 개인 임계치 T_final | 35µg/m³ 일반 기준이 아닌, 내 몸 기준으로 알림 (예: 21µg/m³) |
+| 😷 마스크 추천 | 위험도에 따라 KF80 / KF94 / 착용 불필요 자동 안내 |
+| 🔔 4종 알림 | 외출 전 / 전날 예보 / 귀가 후 / 실시간 경보 |
+| 📊 12시간 추세 차트 | verdict 한 줄 요약 + final_ratio 영역 음영 |
 | 📍 위치 자동 감지 | GPS 기반 가장 가까운 측정소 자동 선택 |
 
 ---
@@ -147,7 +153,6 @@ flutter run --release
 | 알림 | flutter_local_notifications ^17.2.2 |
 | 백그라운드 | workmanager ^0.9.0 |
 | 위치 | geolocator ^13.0.1 |
-| 광고 | google_mobile_ads ^5.1.0 |
 | 권한 | permission_handler ^11.3.1 |
 | 분석 | firebase_analytics ^12.2.0 |
 | 오류 수집 | firebase_crashlytics ^5.1.0 |
@@ -188,12 +193,28 @@ mask/
     │   ├── models/              # DustData, UserProfile, NotificationSetting 등
     │   └── repositories/        # DustRepository, ProfileRepository
     ├── features/
-    │   ├── home/                # 홈 화면, 위험도 카드
-    │   ├── onboarding/          # 5단계 온보딩
+    │   ├── home/                # 홈 탭 — 위험도 카드, 상세 화면
+    │   ├── care/                # 케어 탭 — 12시간 추세 차트 + 상태 카드
+    │   │   ├── models/
+    │   │   ├── providers/
+    │   │   └── widgets/
+    │   ├── profile_tab/         # 프로필 탭 — 페르소나 카드, 설정 진입
+    │   │   └── widgets/
+    │   ├── report_tab/          # 리포트 탭
+    │   │   ├── models/
+    │   │   └── providers/
+    │   ├── onboarding/          # 8단계 신규 유저 흐름
+    │   │                        # splash → welcome → 진단(Q1~Q8) → 분석
+    │   │                        # → 진단 결과 → 위치 → 알림 → 완료
+    │   ├── diagnosis/           # 재진단 화면
     │   ├── profile/             # 건강 프로필 편집
+    │   ├── my_body_info/        # 신체 정보 편집
+    │   ├── my_state/            # 현재 상태 편집
     │   ├── notification_setting/ # 알림 시간·종류 설정
-    │   ├── info/                # 미세먼지 정보 (AdMob)
+    │   ├── settings/            # 앱 설정
+    │   ├── info/                # 미세먼지 정보
     │   ├── location_setup/      # GPS 기반 측정소 선택
+    │   ├── tutorial/            # 튜토리얼
     │   └── splash/              # 스플래시 화면
     ├── providers/               # Riverpod 프로바이더
     └── widgets/                 # DustGaugeWidget, GradeBadge 등
@@ -218,15 +239,6 @@ mask/
 
 > 배터리 절약 모드나 제조사별 백그라운드 제한으로 알림이 지연될 수 있습니다.  
 > Android 설정 → 배터리 → 앱별 최적화에서 **"제한 없음"** 으로 설정하면 더 안정적입니다.
-
----
-
-## AdMob 설정
-
-광고 코드는 현재 **비활성화** 상태입니다. 출시 전 아래 순서로 활성화하세요.
-
-1. `android/app/src/main/AndroidManifest.xml` → `com.google.android.gms.ads.APPLICATION_ID` 실제 ID로 교체
-2. `lib/widgets/ad_banner_widget.dart` → 주석 해제 후 배너 Unit ID 입력
 
 ---
 
