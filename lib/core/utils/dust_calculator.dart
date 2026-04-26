@@ -33,30 +33,23 @@ class DustCalculator {
       );
     }
 
-    // ── Tier 1: T_final 비율 기반 등급 ─────────────────────
-    final tFinal = profile.tFinal;
-    final ratio  = pm25 / tFinal;
+    // ── Tier 1: final_ratio = max(PM2.5/T_pm25, PM10/T_pm10) ──
+    final tFinalPm25 = profile.tFinal;
+    final pm10       = dust.pm10Value;
+    final ratio      = _computeFinalRatio(pm25: pm25, pm10: pm10, tFinalPm25: tFinalPm25);
+    final dominant   = _computeDominantPollutant(pm25: pm25, pm10: pm10, tFinalPm25: tFinalPm25);
 
     final RiskLevel riskLevel;
-    if (ratio < 0.5)      riskLevel = RiskLevel.low;
-    else if (ratio < 1.0) riskLevel = RiskLevel.normal;
-    else if (ratio < 1.5) riskLevel = RiskLevel.warning;
-    else if (ratio < 2.0) riskLevel = RiskLevel.danger;
-    else                  riskLevel = RiskLevel.critical;
+    if (ratio < 0.5)      { riskLevel = RiskLevel.low; }
+    else if (ratio < 1.0) { riskLevel = RiskLevel.normal; }
+    else if (ratio < 1.5) { riskLevel = RiskLevel.warning; }
+    else if (ratio < 2.0) { riskLevel = RiskLevel.danger; }
+    else                  { riskLevel = RiskLevel.critical; }
 
-    bool maskRequired = ratio >= 1.0;
-    String? maskType = ratio >= 1.5 ? 'KF94' : ratio >= 1.0 ? 'KF80' : null;
+    var maskRequired = ratio >= 1.0;
+    var maskType     = ratio >= 1.5 ? 'KF94' : ratio >= 1.0 ? 'KF80' : null;
 
-    // ── PM10 안전망 ──────────────────────────────────────────
-    // PM10 매우나쁨(>150μg/m³)이면 PM2.5 기준 미달이어도 마스크 권고
-    final pm10 = dust.pm10Value;
-    final pm10Emergency = pm10 != null && pm10 > DustStandards.pm10Bad;
-    if (pm10Emergency) {
-      maskRequired = true;
-      maskType = _stricterMaskType(maskType, 'KF80');
-    }
-
-    final shouldSendRealtime = ratio >= 2.0 || pm10Emergency;
+    final shouldSendRealtime = ratio >= 1.5;
 
     // ── Tier 2: 기간 상태 ────────────────────────────────────
     final actualGrade = DustStandards.getPm25Grade(pm25);
@@ -98,14 +91,50 @@ class DustCalculator {
       shouldSendRealtime: shouldSendRealtime,
       message: _buildMessage(riskLevel, pm25, profile),
       heroText: heroText,
-      reason: pm10Emergency
-          ? 'PM10 ${pm10}μg/m³ · 매우나쁨 / PM2.5 ${pm25}μg/m³ · ${actualGrade.label}'
-          : '초미세먼지 ${pm25}μg/m³ · ${actualGrade.label}',
+      reason: _buildReason(dominant: dominant, pm25: pm25, pm10: pm10, pm25Grade: actualGrade.label),
       personalNote: personalNote,
       maskRequired: maskRequired,
       maskType: maskType,
-      tFinal: tFinal,
+      tFinal: tFinalPm25,
+      dominantPollutant: dominant,
     );
+  }
+
+  // ── final_ratio 계산 헬퍼 ────────────────────────────────────
+
+  static double _computeFinalRatio({
+    required int pm25,
+    required int? pm10,
+    required double tFinalPm25,
+  }) {
+    final ratioPm25  = pm25 / tFinalPm25;
+    final tFinalPm10 = tFinalPm25 * (80.0 / 35.0);
+    final ratioPm10  = pm10 != null ? pm10 / tFinalPm10 : 0.0;
+    return ratioPm25 > ratioPm10 ? ratioPm25 : ratioPm10;
+  }
+
+  static DominantPollutant _computeDominantPollutant({
+    required int pm25,
+    required int? pm10,
+    required double tFinalPm25,
+  }) {
+    if (pm10 == null) return DominantPollutant.pm25;
+    final ratioPm25  = pm25 / tFinalPm25;
+    final tFinalPm10 = tFinalPm25 * (80.0 / 35.0);
+    final ratioPm10  = pm10 / tFinalPm10;
+    return ratioPm10 > ratioPm25 ? DominantPollutant.pm10 : DominantPollutant.pm25;
+  }
+
+  static String _buildReason({
+    required DominantPollutant dominant,
+    required int pm25,
+    required int? pm10,
+    required String pm25Grade,
+  }) {
+    if (dominant == DominantPollutant.pm10 && pm10 != null) {
+      return 'PM10 $pm10μg/m³ · 지배 / PM2.5 $pm25μg/m³ · $pm25Grade';
+    }
+    return '초미세먼지 $pm25μg/m³ · $pm25Grade';
   }
 
   // ── 예보 등급 기반 마스크 판단 (내일 예보 알림용) ────────────
@@ -194,11 +223,11 @@ class DustCalculator {
       case RiskLevel.normal:
         return '오늘은 보통 수준이에요.\n장시간 야외라면 마스크를 고려해보세요.';
       case RiskLevel.warning:
-        return '$display, 오늘 마스크 챙겨가세요.\nPM2.5 ${pm25}μg/m³, 조금 나빠요.';
+        return '$display, 오늘 마스크 챙겨가세요.\nPM2.5 $pm25μg/m³, 조금 나빠요.';
       case RiskLevel.danger:
-        return '$display, 지금 마스크 필수예요.\nPM2.5 ${pm25}μg/m³, 매우 나빠요.';
+        return '$display, 지금 마스크 필수예요.\nPM2.5 $pm25μg/m³, 매우 나빠요.';
       case RiskLevel.critical:
-        return '$display, 오늘은 외출을 줄여주세요.\nPM2.5 ${pm25}μg/m³, 심각한 수준이에요.';
+        return '$display, 오늘은 외출을 줄여주세요.\nPM2.5 $pm25μg/m³, 심각한 수준이에요.';
       case RiskLevel.unknown:
         return '미세먼지 정보를 가져오고 있어요.';
     }
@@ -220,13 +249,14 @@ class DustCalculator {
 class DustCalculationResult {
   final RiskLevel riskLevel;
   final bool shouldSendRealtime;
-  final String message;       // 기존 하위 호환용 (알림 fallback)
-  final String heroText;      // 홈 카드 행동 결론: "오늘 마스크 필요해요"
-  final String reason;        // 데이터 근거: "PM2.5 45μg/m³ · 나쁨"
-  final String? personalNote; // 개인화 맥락: "임신 중" (null이면 숨김)
+  final String message;                  // 기존 하위 호환용 (알림 fallback)
+  final String heroText;                 // 홈 카드 행동 결론: "오늘 마스크 필요해요"
+  final String reason;                   // 데이터 근거: "PM2.5 45μg/m³ · 나쁨"
+  final String? personalNote;            // 개인화 맥락: "임신 중" (null이면 숨김)
   final bool maskRequired;
-  final String? maskType;     // 'KF80' or 'KF94' or null
-  final double tFinal;        // 개인 임계치
+  final String? maskType;                // 'KF80' or 'KF94' or null
+  final double tFinal;                   // 개인 PM2.5 임계치
+  final DominantPollutant dominantPollutant; // 위험도 결정 오염원
 
   const DustCalculationResult({
     required this.riskLevel,
@@ -238,8 +268,13 @@ class DustCalculationResult {
     required this.maskRequired,
     this.maskType,
     required this.tFinal,
+    this.dominantPollutant = DominantPollutant.pm25,
   });
 }
+
+// ── DominantPollutant ─────────────────────────────────────
+
+enum DominantPollutant { pm25, pm10 }
 
 // ── RiskLevel ─────────────────────────────────────────────
 
