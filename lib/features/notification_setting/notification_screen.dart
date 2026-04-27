@@ -8,6 +8,7 @@ import '../../core/services/background_service.dart';
 import '../../core/services/notification_scheduler.dart';
 import '../../core/services/notification_service.dart';
 import '../../providers/providers.dart';
+import '../../widgets/notif_card.dart';
 
 class NotificationScreen extends ConsumerStatefulWidget {
   const NotificationScreen({super.key});
@@ -77,32 +78,33 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
           ],
 
           // 알림 작동 방식 안내
-          _InfoBox(
+          const _InfoBox(
             text: '알림은 설정 시간 ±30분 내에 발송돼요.\n'
                 '앱을 설치한 기기에서 실시간 미세먼지 데이터를 가져와 개인 프로필 기준으로 안내해요.',
           ),
           const SizedBox(height: 20),
 
-          _SectionLabel('매일 알림'),
+          const _SectionLabel('매일 알림'),
           const SizedBox(height: 10),
 
-          // 오전 알림
-          _NotifCard(
-            icon: Icons.wb_sunny_outlined,
+          // 외출 전 알림
+          NotifCard(
+            emoji: '🌅',
             title: '외출 전 알림',
             subtitle: '매일 아침 오늘 미세먼지 상태 안내',
-            example: '예) "현재 PM2.5 32µg/m³로 내 기준을 넘어요. 외출 시 KF80 이상 권장이에요."',
+            accentColor: AppColors.notifMorning,
             enabled: setting.morningAlertEnabled,
-            timeLabel: _timeLabel(
-                setting.morningAlertHour, setting.morningAlertMinute),
+            hour: setting.morningAlertHour,
+            minute: setting.morningAlertMinute,
+            exampleText: '예) "현재 PM2.5 32µg/m³로 내 기준을 넘어요. 외출 시 KF80 이상 권장이에요."',
             onToggle: (v) =>
                 notifier.update(setting.copyWith(morningAlertEnabled: v)),
             onTimeTap: () async {
-              final picked = await showTimePicker(
-                context: context,
-                initialTime: TimeOfDay(
-                    hour: setting.morningAlertHour,
-                    minute: setting.morningAlertMinute),
+              final picked = await showCupertinoTimePicker(
+                context,
+                hour: setting.morningAlertHour,
+                minute: setting.morningAlertMinute,
+                accentColor: AppColors.notifMorning,
               );
               if (picked != null) {
                 notifier.update(setting.copyWith(
@@ -115,22 +117,23 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
           const SizedBox(height: 12),
 
           // 전날 예보
-          _NotifCard(
-            icon: Icons.nights_stay_outlined,
+          NotifCard(
+            emoji: '🌙',
             title: '전날 예보 알림',
             subtitle: '내일 미세먼지 예보 안내',
-            example: '예) "내일 예보: 나쁨. 출근 시 마스크를 챙겨두세요."',
+            accentColor: AppColors.notifEvening,
             enabled: setting.eveningForecastEnabled,
-            timeLabel: _timeLabel(
-                setting.eveningForecastHour, setting.eveningForecastMinute),
+            hour: setting.eveningForecastHour,
+            minute: setting.eveningForecastMinute,
+            exampleText: '예) "내일 예보: 나쁨. 출근 시 마스크를 챙겨두세요."',
             onToggle: (v) =>
                 notifier.update(setting.copyWith(eveningForecastEnabled: v)),
             onTimeTap: () async {
-              final picked = await showTimePicker(
-                context: context,
-                initialTime: TimeOfDay(
-                    hour: setting.eveningForecastHour,
-                    minute: setting.eveningForecastMinute),
+              final picked = await showCupertinoTimePicker(
+                context,
+                hour: setting.eveningForecastHour,
+                minute: setting.eveningForecastMinute,
+                accentColor: AppColors.notifEvening,
               );
               if (picked != null) {
                 notifier.update(setting.copyWith(
@@ -143,22 +146,23 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
           const SizedBox(height: 12),
 
           // 귀가 알림
-          _NotifCard(
-            icon: Icons.home_outlined,
+          NotifCard(
+            emoji: '🏠',
             title: '귀가 후 알림',
             subtitle: '퇴근 시간 미세먼지 확인 안내',
-            example: '예) "퇴근 시간 나쁨이에요. 마스크 챙기셨나요?"',
+            accentColor: AppColors.notifReturn,
             enabled: setting.eveningReturnEnabled,
-            timeLabel: _timeLabel(
-                setting.eveningReturnHour, setting.eveningReturnMinute),
+            hour: setting.eveningReturnHour,
+            minute: setting.eveningReturnMinute,
+            exampleText: '예) "퇴근 시간 나쁨이에요. 마스크 챙기셨나요?"',
             onToggle: (v) =>
                 notifier.update(setting.copyWith(eveningReturnEnabled: v)),
             onTimeTap: () async {
-              final picked = await showTimePicker(
-                context: context,
-                initialTime: TimeOfDay(
-                    hour: setting.eveningReturnHour,
-                    minute: setting.eveningReturnMinute),
+              final picked = await showCupertinoTimePicker(
+                context,
+                hour: setting.eveningReturnHour,
+                minute: setting.eveningReturnMinute,
+                accentColor: AppColors.notifReturn,
               );
               if (picked != null) {
                 notifier.update(setting.copyWith(
@@ -170,69 +174,34 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
           ),
           const SizedBox(height: 24),
 
-          _SectionLabel('실시간 경보'),
+          const _SectionLabel('실시간 경보'),
           const SizedBox(height: 10),
 
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.divider),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.warning_amber_rounded,
-                    color: AppColors.dustBad, size: 28),
-                const SizedBox(width: 14),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '실시간 경보',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        '미세먼지 급등 시 즉시 알림',
-                        style: TextStyle(
-                            fontSize: 13, color: AppColors.textSecondary),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        '예) "⚠️ 미세먼지가 급격히 나빠졌어요. 외출 시 KF94 이상 권장이에요."',
-                        style: TextStyle(
-                            fontSize: 12, color: AppColors.textHint),
-                      ),
-                    ],
-                  ),
-                ),
-                Switch(
-                  value: setting.realtimeAlertEnabled,
-                  onChanged: (v) =>
-                      notifier.update(setting.copyWith(realtimeAlertEnabled: v)),
-                  activeColor: AppColors.primary,
-                ),
-              ],
-            ),
+          // 실시간 경보 (시간 선택 없음)
+          NotifCard(
+            emoji: '⚠️',
+            title: '실시간 경보',
+            subtitle: '미세먼지 급등 시 즉시 알림',
+            accentColor: AppColors.dustBad,
+            enabled: setting.realtimeAlertEnabled,
+            hour: 0,
+            minute: 0,
+            exampleText: '예) "⚠️ 미세먼지가 급격히 나빠졌어요. 외출 시 KF94 이상 권장이에요."',
+            onToggle: (v) =>
+                notifier.update(setting.copyWith(realtimeAlertEnabled: v)),
           ),
 
           const SizedBox(height: 24),
 
           // 알림 미리 받아보기
-          _SectionLabel('알림 미리 받아보기'),
+          const _SectionLabel('알림 미리 받아보기'),
           const SizedBox(height: 10),
           _NotifTestCard(),
           const SizedBox(height: 24),
 
           // 백그라운드 테스트 (디버그 빌드에서만 표시)
           if (kDebugMode) ...[
-            _SectionLabel('백그라운드 테스트 (개발용)'),
+            const _SectionLabel('백그라운드 테스트 (개발용)'),
             const SizedBox(height: 10),
             _BgTestCard(),
             const SizedBox(height: 24),
@@ -247,9 +216,6 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
       ),
     );
   }
-
-  String _timeLabel(int hour, int minute) =>
-      '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
 }
 
 class _NotifTestCard extends ConsumerStatefulWidget {
@@ -533,7 +499,7 @@ class _InfoBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.08),
+        color: AppColors.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -567,124 +533,6 @@ class _SectionLabel extends StatelessWidget {
         fontWeight: FontWeight.w600,
         color: AppColors.textSecondary,
         letterSpacing: 0.5,
-      ),
-    );
-  }
-}
-
-class _NotifCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final String example;
-  final bool enabled;
-  final String timeLabel;
-  final ValueChanged<bool> onToggle;
-  final VoidCallback onTimeTap;
-
-  const _NotifCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.example,
-    required this.enabled,
-    required this.timeLabel,
-    required this.onToggle,
-    required this.onTimeTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: enabled ? AppColors.primary.withOpacity(0.3) : AppColors.divider,
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Icon(icon,
-                  color: enabled ? AppColors.primary : AppColors.textHint,
-                  size: 26),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: enabled
-                            ? AppColors.textPrimary
-                            : AppColors.textHint,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(subtitle,
-                        style: const TextStyle(
-                            fontSize: 13, color: AppColors.textSecondary)),
-                  ],
-                ),
-              ),
-              Switch(
-                value: enabled,
-                onChanged: onToggle,
-                activeColor: AppColors.primary,
-              ),
-            ],
-          ),
-          if (enabled) ...[
-            const SizedBox(height: 12),
-            const Divider(height: 1),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const Icon(Icons.access_time,
-                    size: 16, color: AppColors.textSecondary),
-                const SizedBox(width: 6),
-                const Text('알림 시간',
-                    style: TextStyle(
-                        fontSize: 13, color: AppColors.textSecondary)),
-                const Spacer(),
-                GestureDetector(
-                  onTap: onTimeTap,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      timeLabel,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                example,
-                style: const TextStyle(
-                    fontSize: 12, color: AppColors.textHint, height: 1.4),
-              ),
-            ),
-          ],
-        ],
       ),
     );
   }
