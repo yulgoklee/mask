@@ -216,6 +216,47 @@ class _StatusCardContent extends StatelessWidget {
               ],
             ),
 
+            // ── 게이지 바 (PM2.5 + PM10) ─────────────
+            const SizedBox(height: 16),
+            Builder(builder: (context) {
+              final isDominantPm25 =
+                  data.dominantPollutant == DominantPollutant.pm25;
+              final accentColor = _badgeText(data.status);
+
+              final pm25Fg = isDominantPm25 ? accentColor : DT.gray;
+              final pm10Fg = !isDominantPm25 ? accentColor : DT.gray;
+
+              final ratioPm25 = data.tFinal > 0
+                  ? data.pm25Value / data.tFinal
+                  : 0.0;
+              final tFinalPm10 = data.tFinal * (80.0 / 35.0);
+              final ratioPm10 = data.pm10Value != null && tFinalPm10 > 0
+                  ? data.pm10Value! / tFinalPm10
+                  : null;
+
+              return Column(
+                children: [
+                  _GaugeRow(
+                    label:      'PM2.5',
+                    valueMicro: '${data.pm25Value.round()}µg',
+                    ratio:      ratioPm25,
+                    foreground: pm25Fg,
+                    background: pm25Fg.withValues(alpha: 0.12),
+                  ),
+                  if (ratioPm10 != null) ...[
+                    const SizedBox(height: 8),
+                    _GaugeRow(
+                      label:      'PM10',
+                      valueMicro: '${data.pm10Value!.round()}µg',
+                      ratio:      ratioPm10,
+                      foreground: pm10Fg,
+                      background: pm10Fg.withValues(alpha: 0.12),
+                    ),
+                  ],
+                ],
+              );
+            }),
+
             // ── X% 메시지 (주의 이상) ──────────────────
             Builder(builder: (context) {
               final msg = _ratioMessage(data.status, data.finalRatio);
@@ -309,6 +350,98 @@ class _PollutantRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── 게이지 행 ────────────────────────────────────────────
+
+class _GaugeRow extends StatelessWidget {
+  final String label;
+  final String valueMicro;
+  final double ratio;
+  final Color  foreground;
+  final Color  background;
+
+  const _GaugeRow({
+    required this.label,
+    required this.valueMicro,
+    required this.ratio,
+    required this.foreground,
+    required this.background,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final pct = (ratio.clamp(0.0, 1.0) * 100).round();
+    return Row(
+      children: [
+        SizedBox(
+          width: 44,
+          child: Text(
+            label,
+            style: TextStyle(
+              color:      foreground,
+              fontSize:   11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        SizedBox(
+          width: 40,
+          child: Text(
+            valueMicro,
+            style: TextStyle(color: foreground, fontSize: 11),
+          ),
+        ),
+        Expanded(
+          child: _LinearGaugeBar(
+            ratio:      ratio,
+            foreground: foreground,
+            background: background,
+          ),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 32,
+          child: Text(
+            '$pct%',
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              color:      foreground,
+              fontSize:   11,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── 선형 게이지 바 ──────────────────────────────────────
+
+class _LinearGaugeBar extends StatelessWidget {
+  final double ratio;
+  final Color  foreground;
+  final Color  background;
+
+  const _LinearGaugeBar({
+    required this.ratio,
+    required this.foreground,
+    required this.background,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: LinearProgressIndicator(
+        value:           ratio.clamp(0.0, 1.0),
+        color:           foreground,
+        backgroundColor: background,
+        minHeight:       8,
+      ),
     );
   }
 }
