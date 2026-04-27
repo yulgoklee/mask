@@ -68,38 +68,6 @@ void main() {
     });
   });
 
-  // ── 2. verdictText (§3.3 v4 카피 매트릭스) ───────────
-  group('verdictText (§3.3 v4)', () {
-    test('safe → 하루 종일 편하게', () {
-      expect(verdictText(ChartVerdict.safe), '🟢 하루 종일 편하게 지내실 수 있어요');
-    });
-
-    test('partialIncreasing → 점차 나빠질 수 있으니', () {
-      expect(verdictText(ChartVerdict.partialIncreasing),
-          '🟡 점차 나빠질 수 있으니 마스크를 챙기세요');
-    });
-
-    test('partialDecreasing → 지금은 주의', () {
-      expect(verdictText(ChartVerdict.partialDecreasing),
-          '🟢 지금은 주의, 시간이 지나면 좋아져요');
-    });
-
-    test('fullDay → 종일 마스크', () {
-      expect(verdictText(ChartVerdict.fullDay), '🔴 오늘은 종일 마스크가 필요해요');
-    });
-
-    test('unknown → 데이터 불러오는 중', () {
-      expect(verdictText(ChartVerdict.unknown), '예보 데이터를 불러오는 중이에요');
-    });
-
-    test('카피에 \\n 없음 (단문 강제)', () {
-      for (final v in ChartVerdict.values) {
-        expect(verdictText(v).contains('\n'), false,
-            reason: 'ChartVerdict.$v 카피에 줄바꿈이 있으면 안 됩니다');
-      }
-    });
-  });
-
   // ── 3. buildChartPoints (§2.9 v4) ────────────────────
   group('buildChartPoints (§2.9 v4)', () {
     const tFinalPm25 = 35.0;

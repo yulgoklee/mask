@@ -104,7 +104,7 @@ String _title(RiskLevel s) => switch (s) {
   RiskLevel.low      => '오늘은 마스크 안 챙겨도 돼요',
   RiskLevel.normal   => '장시간 외출이라면 마스크를 챙기세요',
   RiskLevel.warning  => '마스크를 챙기세요',
-  RiskLevel.danger   => 'KF94 마스크가 필요해요',
+  RiskLevel.danger   => 'KF94 마스크를 꼭 착용하세요',
   RiskLevel.critical => '외출을 자제해주세요',
   RiskLevel.unknown  => '데이터를 불러오는 중',
 };

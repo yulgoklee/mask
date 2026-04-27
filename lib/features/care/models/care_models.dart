@@ -56,7 +56,7 @@ class StatusCardData {
     required this.respiratoryStatus,
   });
 
-  factory StatusCardData.placeholder() => StatusCardData(
+  factory StatusCardData.placeholder() => const StatusCardData(
     status:              RiskLevel.unknown,
     emoji:               '⏳',
     title:               '데이터를 불러오는 중',
@@ -253,15 +253,6 @@ ChartVerdict buildChartVerdict(List<ChartPoint> points) {
       ? ChartVerdict.partialIncreasing
       : ChartVerdict.partialDecreasing;
 }
-
-/// ChartVerdict → 결론 카피 (§3.3 v4 매트릭스)
-String verdictText(ChartVerdict verdict) => switch (verdict) {
-  ChartVerdict.safe              => '🟢 하루 종일 편하게 지내실 수 있어요',
-  ChartVerdict.partialIncreasing => '🟡 점차 나빠질 수 있으니 마스크를 챙기세요',
-  ChartVerdict.partialDecreasing => '🟢 지금은 주의, 시간이 지나면 좋아져요',
-  ChartVerdict.fullDay           => '🔴 오늘은 종일 마스크가 필요해요',
-  ChartVerdict.unknown           => '예보 데이터를 불러오는 중이에요',
-};
 
 /// final_ratio 기반 ChartPoint 리스트 생성 (13개, h=0~12)
 ///

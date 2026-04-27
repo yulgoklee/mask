@@ -47,12 +47,12 @@ BoxBorder? _border(RiskLevel s) =>
         : null;
 
 Color _badgeBg(RiskLevel s) => switch (s) {
-  RiskLevel.low      => DT.safe.withOpacity(0.15),
-  RiskLevel.normal   => DT.primary.withOpacity(0.15),
-  RiskLevel.warning  => DT.caution.withOpacity(0.15),
-  RiskLevel.danger   => DT.danger.withOpacity(0.12),
-  RiskLevel.critical => DT.danger.withOpacity(0.18),
-  RiskLevel.unknown  => DT.gray.withOpacity(0.12),
+  RiskLevel.low      => DT.safe.withValues(alpha: 0.15),
+  RiskLevel.normal   => DT.primary.withValues(alpha: 0.15),
+  RiskLevel.warning  => DT.caution.withValues(alpha: 0.15),
+  RiskLevel.danger   => DT.danger.withValues(alpha: 0.12),
+  RiskLevel.critical => DT.danger.withValues(alpha: 0.18),
+  RiskLevel.unknown  => DT.gray.withValues(alpha: 0.12),
 };
 
 Color _badgeText(RiskLevel s) => switch (s) {
@@ -182,7 +182,7 @@ class _StatusCardContent extends StatelessWidget {
             Divider(
               height:    1,
               thickness: 1,
-              color:     _badgeText(data.status).withOpacity(0.08),
+              color:     _badgeText(data.status).withValues(alpha: 0.08),
             ),
             const SizedBox(height: 20),
 
