@@ -10,7 +10,7 @@ import '../../providers/providers.dart';
 
 /// 스플래시 화면 — Phase 1 리디자인
 ///
-/// 배경색: #A2D2FF (AppColors.primaryLight)
+/// 배경색: #E8F1FB (AppColors.splashBackground)
 /// 헤드라인: "당신의 기관지는 남들과 다릅니다."
 /// 서브: "당신만을 위한 마스크 타이밍."
 class SplashScreen extends ConsumerStatefulWidget {
@@ -104,7 +104,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primaryLight,
+      backgroundColor: AppColors.splashBackground,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 36),

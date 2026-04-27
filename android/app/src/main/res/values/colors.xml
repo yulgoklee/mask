@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="brand_light">#A2D2FF</color>
+    <!-- 스플래시 배경 - 아이콘 배경과 통일 -->
+    <color name="brand_light">#E8F1FB</color>
 	<color name="ic_launcher_background">#E8F1FB</color>
 </resources>

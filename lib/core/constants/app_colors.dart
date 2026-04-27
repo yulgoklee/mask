@@ -4,6 +4,7 @@ class AppColors {
   // 브랜드 색상 — Sky Blue + Coral 테마
   static const Color primary      = Color(0xFF42A5F5);  // Sky Blue (버튼·포인트용)
   static const Color primaryLight = Color(0xFFA2D2FF);  // Sky Blue Light (틴트 배경)
+  static const Color splashBackground = Color(0xFFE8F1FB); // 스플래시 배경 - 아이콘 배경과 통일
   static const Color secondary    = Color(0xFFFF865E);  // Coral (강조·배지)
   static const Color coral        = Color(0xFFFF865E);  // Coral (별칭)
 
