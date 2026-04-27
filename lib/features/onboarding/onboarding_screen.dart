@@ -44,6 +44,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // ── Q2: 출생연도 ─────────────────────────────────────────────
   int? _birthYear;
+  bool _birthYearEdited = false; // 사용자가 picker를 한 번이라도 조작했는지
 
   // ── Q3: 성별 ─────────────────────────────────────────────────
   String? _genderStr; // 'male'|'female'|null
@@ -91,7 +92,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         DiagQ2BirthYear(
           questionNumber: 2,
           initialValue: _birthYear,
-          onChanged: (v) => setState(() => _birthYear = v),
+          onChanged: (v) => setState(() {
+            _birthYear = v;
+            _birthYearEdited = true;
+          }),
         ),
         DiagQ3Gender(
           questionNumber: 3,
@@ -222,6 +226,38 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Future<void> _skipOnboarding() async {
     if (_saving) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTokens.radiusLg)),
+        title: const Text('지금 건너뛰시겠어요?',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+        content: const Text(
+          '이후 질문들을 모두 건너뜁니다.\n'
+          '입력하지 않은 항목은 일반 기준으로 설정되며,\n'
+          '나중에 \'내 몸 정보\'에서 언제든 수정할 수 있어요.\n\n'
+          '※ 진단 정확도가 낮아질 수 있어요.',
+          style: TextStyle(fontSize: 14, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('계속 진행',
+                style: TextStyle(color: AppColors.textSecondary)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+    if (!mounted) return;
+
     setState(() => _saving = true);
 
     await _analytics.logEvent(name: 'onboarding_skipped');
@@ -311,7 +347,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 AppTokens.screenH, 8, AppTokens.screenH, 24),
               child: AppButton.primary(
                 label: _currentPage == _totalPages - 1 ? '분석 시작하기  →' : '다음',
-                onTap: (_saving || (_currentPage == 0 && !(_nickname?.trim().isNotEmpty ?? false)))
+                onTap: (_saving ||
+                        (_currentPage == 0 && !(_nickname?.trim().isNotEmpty ?? false)) ||
+                        (_currentPage == 1 && !_birthYearEdited))
                     ? null
                     : _nextPage,
                 isLoading: _saving,
@@ -329,7 +367,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 //
 // 조건부 규칙:
 //   뒤로 버튼  : page > 0
-//   카운터     : page >= 3  (Q4+, 성별 결정 후 분모 확정)
+//   카운터     : page 0~2 → "Q1"/"Q2"/"Q3" 라벨, page >= 3 → "X/Y"
 //   건너뛰기   : page >= 2  (Q3+, Q1·Q2 는 진단 핵심 정보)
 
 class OnboardingProgressRow extends StatelessWidget {
@@ -383,21 +421,22 @@ class OnboardingProgressRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          if (currentPage >= 3)
-            Text(
-              '${currentPage + 1} / $totalPages',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
+          Text(
+            currentPage < 3
+                ? 'Q${currentPage + 1}'
+                : '${currentPage + 1} / $totalPages',
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
             ),
+          ),
           const Spacer(),
           if (currentPage >= 2)
             GestureDetector(
               onTap: onSkip,
               child: const Text(
-                '건너뛰기',
+                '(선택 항목) 건너뛰기',
                 style: TextStyle(
                   fontSize: 13,
                   color: AppColors.textSecondary,
