@@ -191,12 +191,7 @@ class NotificationTimeScreen extends ConsumerWidget {
                         AppLogger.error(e, st, reason: 'onboarding_complete_save');
                       }
                       if (!context.mounted) return;
-                      final permStatus =
-                          await Permission.notification.status;
-                      if (!context.mounted) return;
-                      context.go(permStatus.isGranted
-                          ? '/onboarding_complete'
-                          : '/permission');
+                      context.go('/permission');
                     },
                   ),
                 ],
@@ -290,7 +285,7 @@ class _SimulationButtonState extends ConsumerState<_SimulationButton> {
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('알림 권한이 필요해요. 설정 앱에서 허용해주세요.'),
+          content: const Text('알림 권한이 필요해요. 다음 화면에서 받을 수 있어요.'),
           action: permStatus.isPermanentlyDenied
               ? const SnackBarAction(
                   label: '설정 열기',
