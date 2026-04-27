@@ -245,4 +245,57 @@ void main() {
       expect(data.isCurrentOverThreshold, false);
     });
   });
+
+  // ── 6. buildFlowText (§4 v1) ─────────────────────────
+
+  // 13포인트(h=0~12) 생성: splitAt 이전/이후로 ratio 분기
+  List<ChartPoint> _pts13({required int splitAt, required bool startSafe}) =>
+      List.generate(13, (h) => _pt(
+            h.toDouble(),
+            (startSafe ? h < splitAt : h >= splitAt) ? 0.3 : 0.9,
+          ));
+
+  group('buildFlowText (§4 v1)', () {
+    // ── Case 1: 전체 안전 ────────────────────────────────
+    test('전체 안전 (모든 ratio < 0.7) → 12시간 동안 안전해요', () {
+      final points = List.generate(13, (h) => _pt(h.toDouble(), 0.5));
+      final result = buildFlowText(points, DateTime(2024, 1, 1, 9, 0));
+      expect(result, '12시간 동안 안전해요');
+    });
+
+    // ── Case 2: 전체 주의 ────────────────────────────────
+    test('전체 주의 (모든 ratio >= 0.7) → 오늘 종일 주의가 필요해요', () {
+      final points = List.generate(13, (h) => _pt(h.toDouble(), 0.9));
+      final result = buildFlowText(points, DateTime(2024, 1, 1, 9, 0));
+      expect(result, '오늘 종일 주의가 필요해요');
+    });
+
+    // ── Case 3: 안전 → 주의 전환, 다른 시간대 ────────────
+    // now=오전9시: h=2→오전11시(오전), h=3→낮12시(낮) — 전환 시 시간대 달라짐
+    test('안전→주의 전환, 다른 시간대 → {A}까지 안전 → {B}부터 주의', () {
+      // h=0~2: safe(0.3), h=3~12: warn(0.9) — i=3에서 전환
+      final points = _pts13(splitAt: 3, startSafe: true);
+      final result = buildFlowText(points, DateTime(2024, 1, 1, 9, 0));
+      expect(result, '오전까지 안전 → 낮부터 주의');
+    });
+
+    // ── Case 4: 주의 → 안전 전환, 다른 시간대 ────────────
+    // now=오전9시: 동일 기준 — i=3 전환
+    test('주의→안전 전환, 다른 시간대 → {A}까지 주의 → {B}부터 안전', () {
+      // h=0~2: warn(0.9), h=3~12: safe(0.3) — i=3에서 전환
+      final points = _pts13(splitAt: 3, startSafe: false);
+      final result = buildFlowText(points, DateTime(2024, 1, 1, 9, 0));
+      expect(result, '오전까지 주의 → 낮부터 안전');
+    });
+
+    // ── Case 5: 동일 시간대 중복 fallback ────────────────
+    // now=오후1시(낮): h=3→낮(16시), h=4→낮(17시) — 전환 전후 모두 "낮"
+    // _nextDifferentLabel('낮'): h=4→낮(동일), h=8→저녁(다름) → '저녁'
+    test('동일 시간대 중복 — nextDifferentLabel fallback → 지금은 안전, 저녁부터 주의 😷', () {
+      // h=0~3: safe(0.3), h=4~12: warn(0.9) — i=4에서 전환
+      final points = _pts13(splitAt: 4, startSafe: true);
+      final result = buildFlowText(points, DateTime(2024, 1, 1, 13, 0));
+      expect(result, '지금은 안전, 저녁부터 주의 😷');
+    });
+  });
 }

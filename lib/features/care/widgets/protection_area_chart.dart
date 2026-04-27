@@ -100,6 +100,7 @@ class _ChartCard extends StatelessWidget {
           children: [
             _buildHeader(),
             _buildChart(),
+            _buildMarkerRow(data.chartPoints, DateTime.now()),
             AnimatedSize(
               duration: const Duration(milliseconds: 350),
               curve:    Curves.easeOutCubic,
@@ -130,7 +131,7 @@ class _ChartCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            verdictText(data.verdict),
+            buildFlowText(data.chartPoints, DateTime.now()),
             style: const TextStyle(
               fontSize: 14,
               color:    DT.gray,
@@ -201,7 +202,7 @@ class _ChartCard extends StatelessWidget {
         label = '밤';
       }
       if (used.contains(label)) {
-        label = '${hr}시';
+        label = '$hr시';
       } else {
         used.add(label);
       }
@@ -351,6 +352,33 @@ class _ChartCard extends StatelessWidget {
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+
+  // ── 시간 마커 행: 차트 아래 h=0,4,8,12 위험도 표시 ──────
+
+  Widget _buildMarkerRow(List<ChartPoint> points, DateTime now) {
+    if (points.isEmpty) return const SizedBox.shrink();
+
+    Widget marker(int h) {
+      final idx    = h.clamp(0, points.length - 1);
+      final isSafe = points[idx].finalRatio < 0.7;
+      return Text(
+        isSafe ? '✓' : '😷',
+        style: TextStyle(
+          fontSize:   11,
+          color:      isSafe ? DT.safe : DT.danger,
+          fontWeight: FontWeight.bold,
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(36, 0, 16, 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [marker(0), marker(4), marker(8), marker(12)],
       ),
     );
   }

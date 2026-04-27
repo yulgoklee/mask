@@ -307,3 +307,77 @@ List<ChartPoint> buildChartPoints({
     );
   });
 }
+
+// ── 시간대 라벨 / 흐름 텍스트 (§4 v1) ────────────────────
+
+/// h번째 시간의 시간대 라벨 반환 (h=0 → '지금')
+String hourLabel(int h, DateTime now) {
+  if (h == 0) return '지금';
+  final hr = now.add(Duration(hours: h)).hour;
+  if (hr < 5)  return '새벽';
+  if (hr < 12) return '오전';
+  if (hr < 18) return '낮';
+  if (hr < 22) return '저녁';
+  return '밤';
+}
+
+/// baseLabel과 다른 첫 번째 시간대 라벨 반환 (h=4 → h=8 → h=12 순서)
+/// 12시간 내 다른 시간대 없으면 null
+String? _nextDifferentLabel(String baseLabel, DateTime now) {
+  for (final h in [4, 8, 12]) {
+    final label = hourLabel(h, now);
+    if (label != baseLabel) return label;
+  }
+  return null;
+}
+
+/// 12시간 예보 흐름 텍스트 생성 (헤더 서브카피)
+///
+/// 패턴:
+///   전체 안전 → "12시간 동안 안전해요"
+///   전체 주의 → "오늘 종일 주의가 필요해요"
+///   전환 (동일 시간대) → "지금은 안전, {다음 다른 시간대}부터 주의 😷"
+///   전환 (다른 시간대) → "{A}까지 안전 → {B}부터 주의"
+String buildFlowText(List<ChartPoint> points, DateTime now) {
+  if (points.isEmpty) return '예보 데이터를 불러오는 중이에요';
+
+  const kThreshold = 0.7;
+  final allSafe = points.every((p) => p.finalRatio < kThreshold);
+  final allWarn = points.every((p) => p.finalRatio >= kThreshold);
+
+  if (allSafe) return '12시간 동안 안전해요';
+  if (allWarn) return '오늘 종일 주의가 필요해요';
+
+  for (int i = 1; i < points.length; i++) {
+    final prev = points[i - 1].finalRatio;
+    final curr = points[i].finalRatio;
+
+    if (prev < kThreshold && curr >= kThreshold) {
+      final before = hourLabel(i - 1, now);
+      final after  = hourLabel(i, now);
+      if (i == 1) return '$after부터 주의가 필요해요';
+      if (before == after) {
+        final next = _nextDifferentLabel(after, now);
+        return next != null
+            ? '지금은 안전, $next부터 주의 😷'
+            : '오늘 종일 주의가 필요해요';
+      }
+      return '$before까지 안전 → $after부터 주의';
+    }
+
+    if (prev >= kThreshold && curr < kThreshold) {
+      final before = hourLabel(i - 1, now);
+      final after  = hourLabel(i, now);
+      if (i == 1) return '$after부터 나아질 거예요';
+      if (before == after) {
+        final next = _nextDifferentLabel(after, now);
+        return next != null
+            ? '지금은 주의, $next부터 안전'
+            : '12시간 동안 안전해요';
+      }
+      return '$before까지 주의 → $after부터 안전';
+    }
+  }
+
+  return '12시간 동안 안전해요';
+}
