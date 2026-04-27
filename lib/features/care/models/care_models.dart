@@ -25,15 +25,18 @@ class StatusCardData {
   /// 지배 오염물질의 등급 라벨
   final DustGrade dominantGrade;
 
-  // ── 참조용 수치 (바텀시트 등) ─────────────────────────
+  // ── 참조용 수치 ───────────────────────────────────────
   final double pm25Value;
+  final double? pm10Value;
   final double tFinal;
+
+  /// max(pm25/T_pm25, pm10/T_pm10) — 정보 바 X% 메시지용
+  final double finalRatio;
 
   /// sensitivity_multiplier — 위젯 표시 안 함, 하위 호환 유지
   final double sensitivityMultiplier;
   final String nickname;
   final int respiratoryStatus;
-  final double overRatio;
 
   const StatusCardData({
     required this.status,
@@ -45,11 +48,12 @@ class StatusCardData {
     required this.dominantTFinal,
     required this.dominantGrade,
     required this.pm25Value,
+    required this.pm10Value,
     required this.tFinal,
+    required this.finalRatio,
     required this.sensitivityMultiplier,
     required this.nickname,
     required this.respiratoryStatus,
-    required this.overRatio,
   });
 
   factory StatusCardData.placeholder() => StatusCardData(
@@ -62,11 +66,12 @@ class StatusCardData {
     dominantTFinal:      35.0,
     dominantGrade:       DustGrade.good,
     pm25Value:           0,
+    pm10Value:           null,
     tFinal:              35,
+    finalRatio:          0,
     sensitivityMultiplier: 1.0,
     nickname:            '',
     respiratoryStatus:   0,
-    overRatio:           0,
   );
 }
 

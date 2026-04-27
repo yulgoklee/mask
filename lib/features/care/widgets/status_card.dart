@@ -73,13 +73,20 @@ String _badgeLabel(RiskLevel s) => switch (s) {
   RiskLevel.unknown  => '-',
 };
 
-// ── 정보 바 오른쪽 부가정보 (§3.2 v3 삼분법) ─────────────
+// ── X% 메시지 (주의 이상) ────────────────────────────────
 
-String _thresholdLabel(int dominantValue, double dominantTFinal) {
-  final diff = dominantValue - dominantTFinal.round();
-  if (diff < 0)  return '기준 이하';
-  if (diff == 0) return '기준 도달';
-  return '+${diff}µg 초과';
+String? _ratioMessage(RiskLevel status, double finalRatio) {
+  switch (status) {
+    case RiskLevel.warning:
+      return '내 기준의 ${(finalRatio * 100).round()}%까지 왔어요';
+    case RiskLevel.danger:
+      final excess = ((finalRatio - 1.0) * 100).round();
+      return '내 기준을 $excess% 넘었어요';
+    case RiskLevel.critical:
+      return '내 기준의 ${finalRatio.toStringAsFixed(1)}배예요';
+    default:
+      return null;
+  }
 }
 
 // ── 카드 위젯 ────────────────────────────────────────────
@@ -179,29 +186,52 @@ class _StatusCardContent extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // ── 정보 바 ──────────────────────────────────
+            // ── 오염물질 수치 (PM2.5 + PM10) ────────────
             Row(
               children: [
                 Expanded(
-                  child: _InfoColumn(
-                    label: data.dominantPollutant == DominantPollutant.pm10
-                        ? 'PM10'
-                        : 'PM2.5',
-                    value:      data.dominantValue,
-                    sub:        data.dominantGrade.label,
-                    valueColor: _badgeText(data.status),
+                  child: _PollutantRow(
+                    label:      'PM2.5',
+                    value:      data.pm25Value.round(),
+                    grade:      data.dominantPollutant == DominantPollutant.pm25
+                        ? data.dominantGrade.label
+                        : null,
+                    valueColor: data.dominantPollutant == DominantPollutant.pm25
+                        ? _badgeText(data.status)
+                        : DT.text,
                   ),
                 ),
                 Expanded(
-                  child: _InfoColumn(
-                    label:      data.dominantPollutant == DominantPollutant.pm10 ? 'PM10 기준' : 'PM2.5 기준',
-                    value:      data.dominantTFinal.round(),
-                    sub:        _thresholdLabel(data.dominantValue, data.dominantTFinal),
-                    valueColor: DT.text,
+                  child: _PollutantRow(
+                    label:      'PM10',
+                    value:      data.pm10Value?.round(),
+                    grade:      data.dominantPollutant == DominantPollutant.pm10
+                        ? data.dominantGrade.label
+                        : null,
+                    valueColor: data.dominantPollutant == DominantPollutant.pm10
+                        ? _badgeText(data.status)
+                        : DT.text,
                   ),
                 ),
               ],
             ),
+
+            // ── X% 메시지 (주의 이상) ──────────────────
+            Builder(builder: (context) {
+              final msg = _ratioMessage(data.status, data.finalRatio);
+              if (msg == null) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  msg,
+                  style: TextStyle(
+                    color:      _badgeText(data.status),
+                    fontSize:   13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              );
+            }),
           ],
         ),
       ),
@@ -218,18 +248,18 @@ class _StatusCardContent extends StatelessWidget {
   }
 }
 
-// ── 정보 컬럼 ────────────────────────────────────────────
+// ── 오염물질 행 ──────────────────────────────────────────
 
-class _InfoColumn extends StatelessWidget {
-  final String label;
-  final int    value;
-  final String sub;
-  final Color  valueColor;
+class _PollutantRow extends StatelessWidget {
+  final String  label;
+  final int?    value;
+  final String? grade;
+  final Color   valueColor;
 
-  const _InfoColumn({
+  const _PollutantRow({
     required this.label,
     required this.value,
-    required this.sub,
+    required this.grade,
     required this.valueColor,
   });
 
@@ -247,21 +277,32 @@ class _InfoColumn extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 2),
-        AnimatedDigitWidget(
-          value:    value,
-          duration: const Duration(milliseconds: 600),
-          curve:    Curves.easeOut,
-          textStyle: TextStyle(
-            fontFamily:    'monospace',
-            fontSize:      28,
-            fontWeight:    FontWeight.bold,
-            color:         valueColor,
-            letterSpacing: -0.5,
-          ),
-        ),
+        value != null
+            ? AnimatedDigitWidget(
+                value:    value!,
+                duration: const Duration(milliseconds: 600),
+                curve:    Curves.easeOut,
+                textStyle: TextStyle(
+                  fontFamily:    'monospace',
+                  fontSize:      28,
+                  fontWeight:    FontWeight.bold,
+                  color:         valueColor,
+                  letterSpacing: -0.5,
+                ),
+              )
+            : const Text(
+                '—',
+                style: TextStyle(
+                  fontFamily:    'monospace',
+                  fontSize:      28,
+                  fontWeight:    FontWeight.bold,
+                  color:         DT.gray,
+                  letterSpacing: -0.5,
+                ),
+              ),
         const SizedBox(height: 2),
         Text(
-          sub,
+          grade ?? '',
           style: const TextStyle(
             color:    DT.gray,
             fontSize: 12,

@@ -18,14 +18,15 @@ final statusCardProvider = Provider<StatusCardData>((ref) {
 
   return dustAsync.when(
     data: (dust) {
-      final pm25       = dust?.pm25Value ?? 0;
-      final pm10       = dust?.pm10Value;
-      final tFinal     = profile.tFinal;
-      final multiplier = (35.0 / tFinal).clamp(1.0, 3.0);
-      final overRatio  = tFinal > 0
-          ? double.parse((pm25 / tFinal).toStringAsFixed(1))
-          : 0.0;
-      final nickname   = profile.nickname.isNotEmpty ? profile.nickname : '사용자';
+      final pm25        = dust?.pm25Value ?? 0;
+      final pm10        = dust?.pm10Value;
+      final tFinal      = profile.tFinal;
+      final tFinalPm10  = tFinal * (80.0 / 35.0);
+      final multiplier  = (35.0 / tFinal).clamp(1.0, 3.0);
+      final ratioPm25   = tFinal > 0 ? pm25 / tFinal : 0.0;
+      final ratioPm10   = (pm10 != null && tFinalPm10 > 0) ? pm10 / tFinalPm10 : 0.0;
+      final finalRatio  = ratioPm25 > ratioPm10 ? ratioPm25 : ratioPm10;
+      final nickname    = profile.nickname.isNotEmpty ? profile.nickname : '사용자';
 
       // RiskLevel: dustCalculationProvider 우선 (final_ratio 기반),
       // dust null 또는 provider null 시 PM2.5 단독 fallback
@@ -63,11 +64,12 @@ final statusCardProvider = Provider<StatusCardData>((ref) {
         dominantTFinal:      dominantTFinal,
         dominantGrade:       dominantGrade,
         pm25Value:           pm25.toDouble(),
+        pm10Value:           pm10?.toDouble(),
         tFinal:              tFinal,
+        finalRatio:          finalRatio,
         sensitivityMultiplier: multiplier,
         nickname:            nickname,
         respiratoryStatus:   profile.respiratoryStatus,
-        overRatio:           overRatio,
       );
     },
     loading: () => StatusCardData.placeholder(),
@@ -99,10 +101,10 @@ String _emoji(RiskLevel s) => switch (s) {
 };
 
 String _title(RiskLevel s) => switch (s) {
-  RiskLevel.low      => '오늘은 안전해요',
-  RiskLevel.normal   => '오늘은 괜찮아요',
+  RiskLevel.low      => '오늘은 마스크 안 챙겨도 돼요',
+  RiskLevel.normal   => '장시간 외출이라면 마스크를 챙기세요',
   RiskLevel.warning  => '마스크를 챙기세요',
-  RiskLevel.danger   => '마스크 필수예요',
+  RiskLevel.danger   => 'KF94 마스크가 필요해요',
   RiskLevel.critical => '외출을 자제해주세요',
   RiskLevel.unknown  => '데이터를 불러오는 중',
 };
@@ -119,10 +121,10 @@ String _buildSubCopy(RiskLevel status, Persona persona) {
 }
 
 String _defaultSubCopy(RiskLevel s) => switch (s) {
-  RiskLevel.low      => '편하게 외출하셔도 돼요.',
-  RiskLevel.normal   => '장시간 야외라면 마스크를 챙기세요.',
-  RiskLevel.warning  => '외출 시 KF80 이상 권장이에요.',
-  RiskLevel.danger   => 'KF94 마스크를 착용하세요.',
+  RiskLevel.low      => '공기가 맑아요.',
+  RiskLevel.normal   => '지금은 괜찮지만 오래 밖에 있을 땐 KF80을 권장해요.',
+  RiskLevel.warning  => '외출 시 KF80 이상이 필요해요.',
+  RiskLevel.danger   => '가급적 외출을 줄여주세요.',
   RiskLevel.critical => '가능하면 실내에서 지내세요.',
   RiskLevel.unknown  => '',
 };
