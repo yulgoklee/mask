@@ -33,10 +33,10 @@ class StatusCard extends ConsumerWidget {
 
 Color _bgColor(RiskLevel s) => switch (s) {
   RiskLevel.low      => DT.safeLt,
-  RiskLevel.normal   => DT.primaryLt,
-  RiskLevel.warning  => DT.cautionLt,
+  RiskLevel.normal   => DT.cautionBg,
+  RiskLevel.warning  => const Color(0xFFFFF0E6),
   RiskLevel.danger   => DT.dangerLt,
-  RiskLevel.critical => DT.dangerLt,
+  RiskLevel.critical => const Color(0xFFFFCDD2),
   RiskLevel.unknown  => DT.grayLt,
 };
 

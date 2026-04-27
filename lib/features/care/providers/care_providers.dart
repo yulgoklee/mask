@@ -95,8 +95,8 @@ String _emoji(RiskLevel s) => switch (s) {
   RiskLevel.low      => '😊',
   RiskLevel.normal   => '🙂',
   RiskLevel.warning  => '😷',
-  RiskLevel.danger   => '😷',
-  RiskLevel.critical => '🚨',
+  RiskLevel.danger   => '😨',
+  RiskLevel.critical => '🆘',
   RiskLevel.unknown  => '⏳',
 };
 
