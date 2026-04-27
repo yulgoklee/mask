@@ -22,38 +22,41 @@ void main() {
   group('OnboardingProgressRow — 건너뛰기 버튼 조건부 표시', () {
     testWidgets('Q1 (page=0): 건너뛰기 보이지 않음', (tester) async {
       await tester.pumpWidget(_buildRow(currentPage: 0));
-      expect(find.text('건너뛰기'), findsNothing);
+      expect(find.text('(선택 항목) 건너뛰기'), findsNothing);
     });
 
     testWidgets('Q2 (page=1): 건너뛰기 보이지 않음', (tester) async {
       await tester.pumpWidget(_buildRow(currentPage: 1));
-      expect(find.text('건너뛰기'), findsNothing);
+      expect(find.text('(선택 항목) 건너뛰기'), findsNothing);
     });
 
     testWidgets('Q3 (page=2): 건너뛰기 보임', (tester) async {
       await tester.pumpWidget(_buildRow(currentPage: 2));
-      expect(find.text('건너뛰기'), findsOneWidget);
+      expect(find.text('(선택 항목) 건너뛰기'), findsOneWidget);
     });
 
     testWidgets('Q4 (page=3): 건너뛰기 보임', (tester) async {
       await tester.pumpWidget(_buildRow(currentPage: 3));
-      expect(find.text('건너뛰기'), findsOneWidget);
+      expect(find.text('(선택 항목) 건너뛰기'), findsOneWidget);
     });
   });
 
   group('OnboardingProgressRow — 카운터 조건부 표시', () {
-    testWidgets('Q1 (page=0): 카운터 보이지 않음', (tester) async {
+    testWidgets('Q1 (page=0): "Q1" 라벨 표시', (tester) async {
       await tester.pumpWidget(_buildRow(currentPage: 0));
+      expect(find.text('Q1'), findsOneWidget);
       expect(find.textContaining('/ 9'), findsNothing);
     });
 
-    testWidgets('Q2 (page=1): 카운터 보이지 않음', (tester) async {
+    testWidgets('Q2 (page=1): "Q2" 라벨 표시', (tester) async {
       await tester.pumpWidget(_buildRow(currentPage: 1));
+      expect(find.text('Q2'), findsOneWidget);
       expect(find.textContaining('/ 9'), findsNothing);
     });
 
-    testWidgets('Q3 (page=2): 카운터 보이지 않음', (tester) async {
+    testWidgets('Q3 (page=2): "Q3" 라벨 표시', (tester) async {
       await tester.pumpWidget(_buildRow(currentPage: 2));
+      expect(find.text('Q3'), findsOneWidget);
       expect(find.textContaining('/ 9'), findsNothing);
     });
 
