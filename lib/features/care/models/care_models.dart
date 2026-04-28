@@ -322,6 +322,26 @@ String? _nextDifferentLabel(String baseLabel, DateTime now) {
   return null;
 }
 
+/// 오염물질 ratio → 5단계 카피 (ALL 위험도에서 표시)
+String pollutantCopy(double ratio) {
+  if (ratio < 0.5) return '여유롭게 숨 쉴 수 있어요';
+  if (ratio < 0.7) return '괜찮은 편이에요';
+  if (ratio < 1.0) return '조금 신경 써야 할 정도예요';
+  if (ratio < 1.5) return '마스크가 필요해요';
+  return '꼭 마스크를 착용하세요';
+}
+
+/// 오염물질 ratio → 5단계 표정 (ALL 위험도에서 표시)
+String pollutantEmoji(double ratio) {
+  if (ratio < 0.5) return '😊';
+  if (ratio < 0.7) return '🙂';
+  if (ratio < 1.0) return '😐';
+  if (ratio < 1.5) return '😷';
+  return '😨';
+}
+
+// ── 시간대 라벨 / 흐름 텍스트 (§4 v1) ────────────────────
+
 /// 12시간 예보 흐름 텍스트 생성 (헤더 서브카피)
 ///
 /// 패턴:

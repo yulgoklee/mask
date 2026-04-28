@@ -266,4 +266,27 @@ void main() {
       expect(result, '지금은 안전, 저녁부터 주의 😷');
     });
   });
+
+  // ── 7. pollutantCopy ─────────────────────────────────
+  group('pollutantCopy', () {
+    test('ratio=0.3 → 여유롭게 숨 쉴 수 있어요',
+        () => expect(pollutantCopy(0.3), '여유롭게 숨 쉴 수 있어요'));
+    test('ratio=0.6 → 괜찮은 편이에요',
+        () => expect(pollutantCopy(0.6), '괜찮은 편이에요'));
+    test('ratio=0.85 → 조금 신경 써야 할 정도예요',
+        () => expect(pollutantCopy(0.85), '조금 신경 써야 할 정도예요'));
+    test('ratio=1.2 → 마스크가 필요해요',
+        () => expect(pollutantCopy(1.2), '마스크가 필요해요'));
+    test('ratio=2.0 → 꼭 마스크를 착용하세요',
+        () => expect(pollutantCopy(2.0), '꼭 마스크를 착용하세요'));
+  });
+
+  // ── 8. pollutantEmoji ────────────────────────────────
+  group('pollutantEmoji', () {
+    test('ratio=0.3 → 😊', () => expect(pollutantEmoji(0.3), '😊'));
+    test('ratio=0.6 → 🙂', () => expect(pollutantEmoji(0.6), '🙂'));
+    test('ratio=0.85 → 😐', () => expect(pollutantEmoji(0.85), '😐'));
+    test('ratio=1.2 → 😷', () => expect(pollutantEmoji(1.2), '😷'));
+    test('ratio=2.0 → 😨', () => expect(pollutantEmoji(2.0), '😨'));
+  });
 }

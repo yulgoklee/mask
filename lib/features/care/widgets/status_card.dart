@@ -34,9 +34,9 @@ class StatusCard extends ConsumerWidget {
 Color _bgColor(RiskLevel s) => switch (s) {
   RiskLevel.low      => DT.safeLt,
   RiskLevel.normal   => DT.cautionBg,
-  RiskLevel.warning  => const Color(0xFFFFF0E6),
+  RiskLevel.warning  => const Color(0xFFFED7AA),
   RiskLevel.danger   => DT.dangerLt,
-  RiskLevel.critical => const Color(0xFFFFCDD2),
+  RiskLevel.critical => DT.dangerLt,
   RiskLevel.unknown  => DT.grayLt,
 };
 
@@ -73,22 +73,6 @@ String _badgeLabel(RiskLevel s) => switch (s) {
   RiskLevel.unknown  => '-',
 };
 
-// ── X% 메시지 (주의 이상) ────────────────────────────────
-
-String? _ratioMessage(RiskLevel status, double finalRatio) {
-  switch (status) {
-    case RiskLevel.warning:
-      return '내 기준의 ${(finalRatio * 100).round()}%까지 왔어요';
-    case RiskLevel.danger:
-      final excess = ((finalRatio - 1.0) * 100).round();
-      return '내 기준을 $excess% 넘었어요';
-    case RiskLevel.critical:
-      return '내 기준의 ${finalRatio.toStringAsFixed(1)}배예요';
-    default:
-      return null;
-  }
-}
-
 // ── 카드 위젯 ────────────────────────────────────────────
 
 class _StatusCardContent extends StatelessWidget {
@@ -118,33 +102,10 @@ class _StatusCardContent extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── 상단 행: 이모지 + 제목 + 배지 ──────────────
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+            // ── 상단: 배지 + (이모지 + 제목) ──────────────
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  data.emoji,
-                  style: const TextStyle(fontSize: 48),
-                ).animate(key: ValueKey(data.status))
-                    .scale(
-                      begin: const Offset(0.8, 0.8),
-                      curve: Curves.elasticOut,
-                      duration: 200.ms,
-                    )
-                    .rotate(begin: -0.05, end: 0, duration: 200.ms),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    data.title,
-                    style: const TextStyle(
-                      color:      DT.text,
-                      fontSize:   24,
-                      fontWeight: FontWeight.w600,
-                      height:     1.2,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                   decoration: BoxDecoration(
@@ -160,6 +121,34 @@ class _StatusCardContent extends StatelessWidget {
                       letterSpacing: 0.2,
                     ),
                   ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      data.emoji,
+                      style: const TextStyle(fontSize: 48),
+                    ).animate(key: ValueKey(data.status))
+                        .scale(
+                          begin: const Offset(0.8, 0.8),
+                          curve: Curves.elasticOut,
+                          duration: 200.ms,
+                        )
+                        .rotate(begin: -0.05, end: 0, duration: 200.ms),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        data.title,
+                        style: const TextStyle(
+                          color:      DT.text,
+                          fontSize:   24,
+                          fontWeight: FontWeight.w600,
+                          height:     1.2,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -191,7 +180,7 @@ class _StatusCardContent extends StatelessWidget {
               children: [
                 Expanded(
                   child: _PollutantRow(
-                    label:      'PM2.5',
+                    label:      '초미세먼지',
                     value:      data.pm25Value.round(),
                     grade:      data.dominantPollutant == DominantPollutant.pm25
                         ? data.dominantGrade.label
@@ -203,7 +192,7 @@ class _StatusCardContent extends StatelessWidget {
                 ),
                 Expanded(
                   child: _PollutantRow(
-                    label:      'PM10',
+                    label:      '미세먼지',
                     value:      data.pm10Value?.round(),
                     grade:      data.dominantPollutant == DominantPollutant.pm10
                         ? data.dominantGrade.label
@@ -216,16 +205,9 @@ class _StatusCardContent extends StatelessWidget {
               ],
             ),
 
-            // ── 게이지 바 (PM2.5 + PM10) ─────────────
-            const SizedBox(height: 16),
+            // ── 오염물질 카피 (PM2.5 + PM10) ─────────
+            const SizedBox(height: 8),
             Builder(builder: (context) {
-              final isDominantPm25 =
-                  data.dominantPollutant == DominantPollutant.pm25;
-              final accentColor = _badgeText(data.status);
-
-              final pm25Fg = isDominantPm25 ? accentColor : DT.gray;
-              final pm10Fg = !isDominantPm25 ? accentColor : DT.gray;
-
               final ratioPm25 = data.tFinal > 0
                   ? data.pm25Value / data.tFinal
                   : 0.0;
@@ -233,44 +215,15 @@ class _StatusCardContent extends StatelessWidget {
               final ratioPm10 = data.pm10Value != null && tFinalPm10 > 0
                   ? data.pm10Value! / tFinalPm10
                   : null;
-
-              return Column(
+              return Row(
                 children: [
-                  _GaugeRow(
-                    label:      'PM2.5',
-                    valueMicro: '${data.pm25Value.round()}µg',
-                    ratio:      ratioPm25,
-                    foreground: pm25Fg,
-                    background: pm25Fg.withValues(alpha: 0.12),
+                  Expanded(child: _PollutantCopy(ratio: ratioPm25)),
+                  Expanded(
+                    child: ratioPm10 != null
+                        ? _PollutantCopy(ratio: ratioPm10)
+                        : const SizedBox.shrink(),
                   ),
-                  if (ratioPm10 != null) ...[
-                    const SizedBox(height: 8),
-                    _GaugeRow(
-                      label:      'PM10',
-                      valueMicro: '${data.pm10Value!.round()}µg',
-                      ratio:      ratioPm10,
-                      foreground: pm10Fg,
-                      background: pm10Fg.withValues(alpha: 0.12),
-                    ),
-                  ],
                 ],
-              );
-            }),
-
-            // ── X% 메시지 (주의 이상) ──────────────────
-            Builder(builder: (context) {
-              final msg = _ratioMessage(data.status, data.finalRatio);
-              if (msg == null) return const SizedBox.shrink();
-              return Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text(
-                  msg,
-                  style: TextStyle(
-                    color:      _badgeText(data.status),
-                    fontSize:   13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
               );
             }),
           ],
@@ -354,94 +307,25 @@ class _PollutantRow extends StatelessWidget {
   }
 }
 
-// ── 게이지 행 ────────────────────────────────────────────
+// ── 오염물질 카피 행 ─────────────────────────────────────
 
-class _GaugeRow extends StatelessWidget {
-  final String label;
-  final String valueMicro;
+class _PollutantCopy extends StatelessWidget {
   final double ratio;
-  final Color  foreground;
-  final Color  background;
-
-  const _GaugeRow({
-    required this.label,
-    required this.valueMicro,
-    required this.ratio,
-    required this.foreground,
-    required this.background,
-  });
+  const _PollutantCopy({required this.ratio});
 
   @override
   Widget build(BuildContext context) {
-    final pct = (ratio.clamp(0.0, 1.0) * 100).round();
     return Row(
       children: [
-        SizedBox(
-          width: 44,
-          child: Text(
-            label,
-            style: TextStyle(
-              color:      foreground,
-              fontSize:   11,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        SizedBox(
-          width: 40,
-          child: Text(
-            valueMicro,
-            style: TextStyle(color: foreground, fontSize: 11),
-          ),
-        ),
+        Text(pollutantEmoji(ratio), style: const TextStyle(fontSize: 14)),
+        const SizedBox(width: 6),
         Expanded(
-          child: _LinearGaugeBar(
-            ratio:      ratio,
-            foreground: foreground,
-            background: background,
-          ),
-        ),
-        const SizedBox(width: 8),
-        SizedBox(
-          width: 32,
           child: Text(
-            '$pct%',
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              color:      foreground,
-              fontSize:   11,
-              fontWeight: FontWeight.w500,
-            ),
+            pollutantCopy(ratio),
+            style: const TextStyle(fontSize: 13, color: DT.text),
           ),
         ),
       ],
-    );
-  }
-}
-
-// ── 선형 게이지 바 ──────────────────────────────────────
-
-class _LinearGaugeBar extends StatelessWidget {
-  final double ratio;
-  final Color  foreground;
-  final Color  background;
-
-  const _LinearGaugeBar({
-    required this.ratio,
-    required this.foreground,
-    required this.background,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(4),
-      child: LinearProgressIndicator(
-        value:           ratio.clamp(0.0, 1.0),
-        color:           foreground,
-        backgroundColor: background,
-        minHeight:       8,
-      ),
     );
   }
 }
@@ -491,12 +375,12 @@ class _StatusBottomSheet extends StatelessWidget {
                   Row(
                     children: [
                       _StatChip(
-                        label: 'PM2.5',
+                        label: '초미세먼지',
                         value: '${data.tFinal.toInt()}µg/m³',
                       ),
                       const SizedBox(width: 12),
                       _StatChip(
-                        label: 'PM10',
+                        label: '미세먼지',
                         value: '${(data.tFinal * 80.0 / 35.0).round()}µg/m³',
                       ),
                     ],
