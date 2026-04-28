@@ -7,15 +7,12 @@ import 'widgets/status_card.dart';
 import 'widgets/protection_area_chart.dart';
 import 'widgets/pollutant_detail_card.dart';
 
-// ── 갱신 시각 자연어 변환 ─────────────────────────────────
-// 1곳에서만 사용 → care_tab.dart 내 top-level 함수로 유지.
-// @visibleForTesting 없이도 테스트에서 import 가능 (public 함수).
-String relativeTimeLabel(DateTime dt) {
-  final diff = DateTime.now().difference(dt);
-  if (diff.inMinutes < 1)  return '방금 전';
-  if (diff.inMinutes < 60) return '${diff.inMinutes}분 전';
-  if (diff.inHours < 24)   return '${diff.inHours}시간 전';
-  return '${diff.inDays}일 전';
+// ── 갱신 시각 표시 ───────────────────────────────────────
+// dataTime.hour를 "HH:00 기준" 형식으로 반환 (24시간제).
+// 에어코리아 API가 정시(분=0) 단위로 데이터를 제공하므로 hour만 사용.
+String dataTimeLabel(DateTime dt) {
+  final hh = dt.hour.toString().padLeft(2, '0');
+  return '$hh:00 기준';
 }
 
 // ── 예보 오류 배너 ────────────────────────────────────────
@@ -106,7 +103,7 @@ class CareTab extends ConsumerWidget {
                       dustAsync.when(
                         data: (dust) => dust != null
                             ? Text(
-                                '${dust.stationName} · ${relativeTimeLabel(dust.dataTime)}',
+                                '${dust.stationName} · ${dataTimeLabel(dust.dataTime)}',
                                 style: const TextStyle(
                                   fontSize:   12,
                                   fontWeight: FontWeight.w500,

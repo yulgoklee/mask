@@ -1,104 +1,53 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mask_alert/features/care/care_tab.dart';
 
-// ── relativeTimeLabel 단위 테스트 ─────────────────────────
+// ── dataTimeLabel 단위 테스트 ──────────────────────────────
 //
-// 검증 대상: care_tab.dart 의 relativeTimeLabel(DateTime)
-//   '방금 전' / 'N분 전' / 'N시간 전' / 'N일 전'
-//
-// 주의: DateTime.now() 기반 계산이라 테스트 실행 시점에 따라
-//   경계값에서 ±1분 오차가 생길 수 있음.
-//   따라서 경계 정확값보다 내부 범위 값으로 검증.
+// 검증 대상: care_tab.dart 의 dataTimeLabel(DateTime)
+//   에어코리아 측정 시각(정시)을 "HH:00 기준" 형식으로 반환.
 
 void main() {
-  group('relativeTimeLabel (care_tab.dart)', () {
-    // ── '방금 전' ─────────────────────────────────────────
-    test('0초 전 → 방금 전', () {
-      final now = DateTime.now();
-      expect(relativeTimeLabel(now), '방금 전');
-    });
+  group('dataTimeLabel (care_tab.dart)', () {
+    // ── 시간대별 24시간제 표기 ──────────────────────────────
+    test('자정(0시) → 00:00 기준',
+        () => expect(dataTimeLabel(DateTime(2024, 1, 1, 0)), '00:00 기준'));
 
-    test('30초 전 → 방금 전', () {
-      final dt = DateTime.now().subtract(const Duration(seconds: 30));
-      expect(relativeTimeLabel(dt), '방금 전');
-    });
+    test('오전 1시 → 01:00 기준 (한 자리 시간 0-패딩)',
+        () => expect(dataTimeLabel(DateTime(2024, 1, 1, 1)), '01:00 기준'));
 
-    test('59초 전 → 방금 전 (1분 미만)', () {
-      final dt = DateTime.now().subtract(const Duration(seconds: 59));
-      expect(relativeTimeLabel(dt), '방금 전');
-    });
+    test('오전 7시 → 07:00 기준',
+        () => expect(dataTimeLabel(DateTime(2024, 1, 1, 7)), '07:00 기준'));
 
-    // ── 'N분 전' ──────────────────────────────────────────
-    test('1분 전 → 1분 전', () {
-      final dt = DateTime.now().subtract(const Duration(minutes: 1));
-      expect(relativeTimeLabel(dt), '1분 전');
-    });
+    test('정오(12시) → 12:00 기준',
+        () => expect(dataTimeLabel(DateTime(2024, 1, 1, 12)), '12:00 기준'));
 
-    test('30분 전 → 30분 전', () {
-      final dt = DateTime.now().subtract(const Duration(minutes: 30));
-      expect(relativeTimeLabel(dt), '30분 전');
-    });
+    test('오후 1시 → 13:00 기준 (24시간제)',
+        () => expect(dataTimeLabel(DateTime(2024, 1, 1, 13)), '13:00 기준'));
 
-    test('59분 전 → 59분 전 (1시간 미만)', () {
-      final dt = DateTime.now().subtract(const Duration(minutes: 59));
-      expect(relativeTimeLabel(dt), '59분 전');
-    });
+    test('오후 11시 → 23:00 기준',
+        () => expect(dataTimeLabel(DateTime(2024, 1, 1, 23)), '23:00 기준'));
 
-    // ── 'N시간 전' ────────────────────────────────────────
-    test('1시간 전 → 1시간 전', () {
-      final dt = DateTime.now().subtract(const Duration(hours: 1));
-      expect(relativeTimeLabel(dt), '1시간 전');
-    });
-
-    test('12시간 전 → 12시간 전', () {
-      final dt = DateTime.now().subtract(const Duration(hours: 12));
-      expect(relativeTimeLabel(dt), '12시간 전');
-    });
-
-    test('23시간 전 → 23시간 전 (24시간 미만)', () {
-      final dt = DateTime.now().subtract(const Duration(hours: 23));
-      expect(relativeTimeLabel(dt), '23시간 전');
-    });
-
-    // ── 'N일 전' ──────────────────────────────────────────
-    test('1일 전 → 1일 전', () {
-      final dt = DateTime.now().subtract(const Duration(days: 1));
-      expect(relativeTimeLabel(dt), '1일 전');
-    });
-
-    test('3일 전 → 3일 전', () {
-      final dt = DateTime.now().subtract(const Duration(days: 3));
-      expect(relativeTimeLabel(dt), '3일 전');
-    });
-
-    test('7일 전 → 7일 전', () {
-      final dt = DateTime.now().subtract(const Duration(days: 7));
-      expect(relativeTimeLabel(dt), '7일 전');
-    });
-
-    // ── 반환값 형식 검증 ───────────────────────────────────
+    // ── 반환값 형식 검증 ────────────────────────────────────
     test('반환값에 \\n 없음 (단문 강제)', () {
-      final cases = [
-        DateTime.now(),
-        DateTime.now().subtract(const Duration(minutes: 5)),
-        DateTime.now().subtract(const Duration(hours: 2)),
-        DateTime.now().subtract(const Duration(days: 2)),
-      ];
-      for (final dt in cases) {
-        expect(relativeTimeLabel(dt).contains('\n'), false,
-            reason: '$dt 의 반환값에 줄바꿈이 있으면 안 됩니다');
+      for (var h = 0; h < 24; h++) {
+        final result = dataTimeLabel(DateTime(2024, 1, 1, h));
+        expect(result.contains('\n'), false,
+            reason: '$h시의 반환값에 줄바꿈이 있으면 안 됩니다');
       }
     });
 
-    test('반환값이 비어있지 않음', () {
-      final cases = [
-        DateTime.now(),
-        DateTime.now().subtract(const Duration(minutes: 10)),
-        DateTime.now().subtract(const Duration(hours: 5)),
-        DateTime.now().subtract(const Duration(days: 1)),
-      ];
-      for (final dt in cases) {
-        expect(relativeTimeLabel(dt).isNotEmpty, true);
+    test('반환값이 항상 "기준"으로 끝남', () {
+      for (var h = 0; h < 24; h++) {
+        expect(dataTimeLabel(DateTime(2024, 1, 1, h)).endsWith('기준'), true,
+            reason: '$h시의 반환값이 "기준"으로 끝나야 합니다');
+      }
+    });
+
+    test('HH 부분이 항상 두 자리', () {
+      for (var h = 0; h < 10; h++) {
+        final result = dataTimeLabel(DateTime(2024, 1, 1, h));
+        expect(result.startsWith('0'), true,
+            reason: '$h시는 0-패딩되어야 합니다: $result');
       }
     });
   });

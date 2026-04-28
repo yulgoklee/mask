@@ -166,36 +166,38 @@ class _StatusCardContent extends StatelessWidget {
               ),
             ],
 
-            // ── 구분선 ───────────────────────────────────
-            const SizedBox(height: 20),
-            Divider(
-              height:    1,
-              thickness: 1,
-              color:     _badgeText(data.status).withValues(alpha: 0.08),
-            ),
-            const SizedBox(height: 20),
+            // ── 구분선 + 수치 + 카피 (데이터 없으면 숨김) ──
+            if (data.status != RiskLevel.unknown) ...[
+              const SizedBox(height: 20),
+              Divider(
+                height:    1,
+                thickness: 1,
+                color:     _badgeText(data.status).withValues(alpha: 0.08),
+              ),
+              const SizedBox(height: 20),
 
-            // ── 오염물질 수치 (PM2.5 + PM10) ────────────
-            Row(
-              children: [
-                Expanded(
-                  child: _PollutantRow(
-                    label: '초미세먼지',
-                    value: data.pm25Value.round(),
+              // ── 오염물질 수치 (PM2.5 + PM10) ────────────
+              Row(
+                children: [
+                  Expanded(
+                    child: _PollutantRow(
+                      label: '초미세먼지',
+                      value: data.pm25Value.round(),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _PollutantRow(
-                    label: '미세먼지',
-                    value: data.pm10Value?.round(),
+                  Expanded(
+                    child: _PollutantRow(
+                      label: '미세먼지',
+                      value: data.pm10Value?.round(),
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
 
-            // ── 오염물질 카피 (finalRatio 기반 단일 행) ──
-            const SizedBox(height: 8),
-            _PollutantCopy(ratio: data.finalRatio),
+              // ── 오염물질 카피 (finalRatio 기반 단일 행) ──
+              const SizedBox(height: 8),
+              _PollutantCopy(ratio: data.finalRatio),
+            ],
           ],
         ),
       ),
