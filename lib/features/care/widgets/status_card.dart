@@ -180,26 +180,14 @@ class _StatusCardContent extends StatelessWidget {
               children: [
                 Expanded(
                   child: _PollutantRow(
-                    label:      '초미세먼지',
-                    value:      data.pm25Value.round(),
-                    grade:      data.dominantPollutant == DominantPollutant.pm25
-                        ? data.dominantGrade.label
-                        : null,
-                    valueColor: data.dominantPollutant == DominantPollutant.pm25
-                        ? _badgeText(data.status)
-                        : DT.text,
+                    label: '초미세먼지',
+                    value: data.pm25Value.round(),
                   ),
                 ),
                 Expanded(
                   child: _PollutantRow(
-                    label:      '미세먼지',
-                    value:      data.pm10Value?.round(),
-                    grade:      data.dominantPollutant == DominantPollutant.pm10
-                        ? data.dominantGrade.label
-                        : null,
-                    valueColor: data.dominantPollutant == DominantPollutant.pm10
-                        ? _badgeText(data.status)
-                        : DT.text,
+                    label: '미세먼지',
+                    value: data.pm10Value?.round(),
                   ),
                 ),
               ],
@@ -245,16 +233,12 @@ class _StatusCardContent extends StatelessWidget {
 // ── 오염물질 행 ──────────────────────────────────────────
 
 class _PollutantRow extends StatelessWidget {
-  final String  label;
-  final int?    value;
-  final String? grade;
-  final Color   valueColor;
+  final String label;
+  final int?   value;
 
   const _PollutantRow({
     required this.label,
     required this.value,
-    required this.grade,
-    required this.valueColor,
   });
 
   @override
@@ -272,17 +256,30 @@ class _PollutantRow extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         value != null
-            ? AnimatedDigitWidget(
-                value:    value!,
-                duration: const Duration(milliseconds: 600),
-                curve:    Curves.easeOut,
-                textStyle: TextStyle(
-                  fontFamily:    'monospace',
-                  fontSize:      28,
-                  fontWeight:    FontWeight.bold,
-                  color:         valueColor,
-                  letterSpacing: -0.5,
-                ),
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  AnimatedDigitWidget(
+                    value:    value!,
+                    duration: const Duration(milliseconds: 600),
+                    curve:    Curves.easeOut,
+                    textStyle: const TextStyle(
+                      fontFamily:    'monospace',
+                      fontSize:      28,
+                      fontWeight:    FontWeight.bold,
+                      color:         DT.text,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      'µg/m³',
+                      style: TextStyle(fontSize: 11, color: DT.gray),
+                    ),
+                  ),
+                ],
               )
             : const Text(
                 '—',
@@ -294,14 +291,6 @@ class _PollutantRow extends StatelessWidget {
                   letterSpacing: -0.5,
                 ),
               ),
-        const SizedBox(height: 2),
-        Text(
-          grade ?? '',
-          style: const TextStyle(
-            color:    DT.gray,
-            fontSize: 12,
-          ),
-        ),
       ],
     );
   }
