@@ -71,7 +71,10 @@ class AirKoreaService implements DustDataSource {
       final items = data['response']?['body']?['items'] as List?;
       if (items == null || items.isEmpty) return null;
 
-      final dustData = DustData.fromJson(items.first as Map<String, dynamic>);
+      final dustData = DustData.fromJson(
+        items.first as Map<String, dynamic>,
+        fallbackStationName: stationName,
+      );
       _saveCache(stationName, dustData);
       return dustData;
     } on DioException catch (_) {

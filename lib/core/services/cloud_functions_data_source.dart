@@ -54,7 +54,10 @@ class CloudFunctionsDataSource implements DustDataSource {
       final items = data['response']?['body']?['items'] as List?;
       if (items == null || items.isEmpty) return null;
 
-      return DustData.fromJson(items.first as Map<String, dynamic>);
+      return DustData.fromJson(
+        items.first as Map<String, dynamic>,
+        fallbackStationName: stationName,
+      );
     } on DioException catch (_) {
       throw const NetworkException();
     } catch (e, st) {

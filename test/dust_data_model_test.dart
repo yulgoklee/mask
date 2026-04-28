@@ -52,7 +52,7 @@ void main() {
       expect(d.pm10Value, null);
     });
 
-    test('stationName 누락 → 빈 문자열', () {
+    test('stationName 누락 → 빈 문자열 (fallback 없음)', () {
       final json = {
         'pm25Value': '10',
         'pm10Value': '20',
@@ -61,6 +61,49 @@ void main() {
         'dataTime': '2026-03-30 20:00',
       };
       final d = DustData.fromJson(json);
+      expect(d.stationName, '');
+    });
+  });
+
+  // ── fallbackStationName ────────────────────────────────────
+
+  group('DustData.fromJson — fallbackStationName', () {
+    final baseJson = {
+      'pm25Value': '10',
+      'pm10Value': '20',
+      'pm25Grade': '1',
+      'pm10Grade': '1',
+      'dataTime': '2026-03-30 20:00',
+    };
+
+    test('API stationName 정상 → API 값 사용 (fallback 무시)', () {
+      final d = DustData.fromJson(
+        {...baseJson, 'stationName': '강남구'},
+        fallbackStationName: '쿼리측정소',
+      );
+      expect(d.stationName, '강남구');
+    });
+
+    test('API stationName null → fallback 사용', () {
+      final d = DustData.fromJson(
+        {...baseJson, 'stationName': null},
+        fallbackStationName: '서초구',
+      );
+      expect(d.stationName, '서초구');
+    });
+
+    test('API stationName 빈 문자열 → fallback 사용', () {
+      final d = DustData.fromJson(
+        {...baseJson, 'stationName': ''},
+        fallbackStationName: '종로구',
+      );
+      expect(d.stationName, '종로구');
+    });
+
+    test('API stationName null + fallback도 null → 빈 문자열', () {
+      final d = DustData.fromJson(
+        {...baseJson},
+      );
       expect(d.stationName, '');
     });
   });

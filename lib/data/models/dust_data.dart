@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../../../core/constants/app_constants.dart';
 
 /// 에어코리아 API 응답 미세먼지 데이터 모델
@@ -36,9 +37,19 @@ class DustData {
     required this.fetchedAt,
   });
 
-  factory DustData.fromJson(Map<String, dynamic> json) {
+  factory DustData.fromJson(
+    Map<String, dynamic> json, {
+    String? fallbackStationName,
+  }) {
+    final apiStationName = json['stationName'] as String? ?? '';
+    final stationName = apiStationName.isNotEmpty
+        ? apiStationName
+        : (fallbackStationName ?? '');
+    if (apiStationName.isEmpty && fallbackStationName != null) {
+      debugPrint('[DustData] stationName 누락, fallback 적용: "$fallbackStationName"');
+    }
     return DustData(
-      stationName: json['stationName'] as String? ?? '',
+      stationName: stationName,
       pm25Value: _parseIntOrNull(json['pm25Value']),
       pm10Value: _parseIntOrNull(json['pm10Value']),
       pm25Grade: _gradeLabel(json['pm25Grade']),
