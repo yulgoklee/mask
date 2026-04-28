@@ -193,27 +193,9 @@ class _StatusCardContent extends StatelessWidget {
               ],
             ),
 
-            // ── 오염물질 카피 (PM2.5 + PM10) ─────────
+            // ── 오염물질 카피 (finalRatio 기반 단일 행) ──
             const SizedBox(height: 8),
-            Builder(builder: (context) {
-              final ratioPm25 = data.tFinal > 0
-                  ? data.pm25Value / data.tFinal
-                  : 0.0;
-              final tFinalPm10 = data.tFinal * (80.0 / 35.0);
-              final ratioPm10 = data.pm10Value != null && tFinalPm10 > 0
-                  ? data.pm10Value! / tFinalPm10
-                  : null;
-              return Row(
-                children: [
-                  Expanded(child: _PollutantCopy(ratio: ratioPm25)),
-                  Expanded(
-                    child: ratioPm10 != null
-                        ? _PollutantCopy(ratio: ratioPm10)
-                        : const SizedBox.shrink(),
-                  ),
-                ],
-              );
-            }),
+            _PollutantCopy(ratio: data.finalRatio),
           ],
         ),
       ),
