@@ -119,7 +119,7 @@ class _DiagnosisBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = profile.sensitivityIndex;
+    final s = SensitivityCalculator.compute(profile);
     final levelLabel = SensitivityCalculator.label(s);
     final tFinal = profile.tFinal;
 
@@ -195,8 +195,8 @@ class _DiagnosisBanner extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       tFinal <= 15.0
-                          ? '최고 수준의 민감도 적용 중  ·  S = ${s.toStringAsFixed(2)}'
-                          : 'PM2.5 ${tFinal.toStringAsFixed(0)} μg/m³ 이상 시 알림  ·  S = ${s.toStringAsFixed(2)}',
+                          ? '최고 수준의 민감도 적용 중'
+                          : 'PM2.5 ${tFinal.toStringAsFixed(0)} μg/m³ 이상 시 알림',
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,

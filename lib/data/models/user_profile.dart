@@ -78,32 +78,10 @@ class UserProfile {
     return '건강함';
   }
 
-  /// 민감도 계수 S ([0.1, 0.6] clamp) — ThresholdEngine 위임
-  ///
-  /// W_health(우선순위-max) + W_lifestyle 합산
-  double get sensitivityIndex {
-    const engine = ThresholdEngine();
-    final w = engine.computeWHealth(this) + engine.computeWLifestyle(this);
-    return w.clamp(0.1, 0.6);
-  }
-
   /// 최종 PM2.5 알림 임계치 (μg/m³) — ThresholdEngine v2
   ///
-  /// 공식: T_base × (1 - W_health - W_lifestyle), 하한 15
-  /// W_health  : 건강 상태 최댓값 1개 (임신 0.35 > 시술 0.30 > 천식 0.25 > 비염 0.20)
-  /// W_lifestyle: 야외 활동 시간 (3h+ 0.15, 1~3h 0.05)
+  /// 공식: clamp(35 × (1 − W_age − W_health − W_sensitivity − W_lifestyle), 15, 35)
   double get tFinal => const ThresholdEngine().computeTFinal(this);
-
-  /// 페르소나 레이블
-  String get personaLabel {
-    final s = sensitivityIndex;
-    if (s >= 0.5)                          return '복합 고위험군';
-    if (s >= 0.35 && respiratoryStatus & 2 != 0) return '호흡기 취약형';
-    if (s >= 0.35 && isPregnant)           return '임산부 보호형';
-    if (s >= 0.3)                          return '민감형 관리자';
-    if (outdoorMinutes == 2)               return '활동형 아웃도어';
-    return '기본 관리형';
-  }
 
   // ── 팩토리 ────────────────────────────────────────────────
 

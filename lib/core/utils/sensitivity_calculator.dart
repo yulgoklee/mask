@@ -24,8 +24,13 @@ class SensitivityCalculator {
 
   // ── 메인 API ──────────────────────────────────────────────
 
-  /// 프로필로부터 민감도 계수(S) 반환 (UserProfile.sensitivityIndex 위임)
-  static double compute(UserProfile profile) => profile.sensitivityIndex;
+  /// 프로필로부터 민감도 계수(S) 반환
+  // W_health + W_lifestyle 합산, [0.1, 0.6] clamp — Phase 3에서 전체 재설계 예정
+  static double compute(UserProfile profile) {
+    const engine = ThresholdEngine();
+    final w = engine.computeWHealth(profile) + engine.computeWLifestyle(profile);
+    return w.clamp(0.1, 0.6);
+  }
 
   /// S → 최종 PM2.5 알림 임계치 (μg/m³)
   static double threshold(double s) => tStandard * (1.0 - s);
