@@ -1,11 +1,7 @@
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/models/user_profile.dart';
 import '../engine/threshold_engine.dart';
 
 /// 민감도 계수(S) 관련 유틸리티 — UserProfile v2 기반 경량 래퍼
-///
-/// 핵심 계산은 UserProfile.sensitivityIndex / UserProfile.tFinal 에 내장됨.
-/// 이 클래스는 외부 API (prefs 저장, 마스크 타입, 레이블) + 공개 가중치 헬퍼만 제공.
 class SensitivityCalculator {
   SensitivityCalculator._();
 
@@ -17,10 +13,6 @@ class SensitivityCalculator {
 
   /// S-based 조기 알림 최소 임계
   static const double sThreshold = 0.3;
-
-  // ── SharedPreferences 키 ───────────────────────────────────
-  static const String _prefKeyS         = 'sensitivity_score_s';
-  static const String _prefKeyThreshold = 'sensitivity_threshold';
 
   // ── 메인 API ──────────────────────────────────────────────
 
@@ -35,13 +27,6 @@ class SensitivityCalculator {
   /// S → 최종 PM2.5 알림 임계치 (μg/m³)
   static double threshold(double s) => tStandard * (1.0 - s);
 
-  /// S → 마스크 권장 등급 문자열 ('KF80' / 'KF94' / null)
-  static String? maskType(double s) {
-    if (s >= 0.4) return 'KF94';
-    if (s >= sThreshold) return 'KF80';
-    return null;
-  }
-
   /// S → 민감도 레이블 (UI 표시용)
   static String label(double s) {
     if (s >= 0.5) return '매우 높음';
@@ -50,43 +35,12 @@ class SensitivityCalculator {
     return '낮음';
   }
 
-  /// S → "일반인 대비 X.X배 민감" 배율
-  static double sensitivityMultiplier(double s) {
-    if (s >= 1.0) return double.infinity;
-    return 1.0 / (1.0 - s);
-  }
-
-  // ── SharedPreferences 저장 / 로드 ─────────────────────────
-
-  /// 프로필로부터 S·T_final 계산 후 prefs에 저장
-  static Future<void> saveToPrefs(
-      SharedPreferences prefs, UserProfile profile) async {
-    final s = compute(profile);
-    await prefs.setDouble(_prefKeyS, s);
-    await prefs.setDouble(_prefKeyThreshold, threshold(s));
-  }
-
-  static double? loadS(SharedPreferences prefs) =>
-      prefs.getDouble(_prefKeyS);
-
-  static double? loadThreshold(SharedPreferences prefs) =>
-      prefs.getDouble(_prefKeyThreshold);
-
   // ── 공개 가중치 헬퍼 (v2 필드 기반) ──────────────────────
-  // onboarding_result_screen, result_screen 등에서 사용
+  // result_screen 등에서 사용
 
   /// 호흡기·건강 상태 가중치 — ThresholdEngine 위임 (우선순위-max)
   static double conditionWeight(UserProfile p) =>
       const ThresholdEngine().computeWHealth(p);
-
-  /// Q9 활동 태그 가중치 (최대 0.10)
-  static double activityTagWeight(UserProfile p) {
-    double w = 0.0;
-    for (final tag in p.activityTags) {
-      w += (tag == 'exercise' || tag == 'delivery') ? 0.05 : 0.03;
-    }
-    return w.clamp(0.0, 0.10);
-  }
 
   /// 야외 활동량 가중치 — ThresholdEngine 위임
   static double activityWeight(UserProfile p) =>
