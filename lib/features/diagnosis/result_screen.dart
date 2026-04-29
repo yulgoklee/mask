@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/engine/threshold_engine.dart';
 import '../../core/utils/persona_generator.dart';
 import '../../core/utils/sensitivity_calculator.dart';
 import '../../data/models/user_profile.dart';
@@ -21,7 +22,7 @@ class ResultScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(profileProvider);
     final persona = PersonaGenerator.generate(profile);
-    final s = profile.sensitivityIndex;
+    final s = SensitivityCalculator.compute(profile);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -79,7 +80,7 @@ class ResultScreen extends ConsumerWidget {
           // ── 3. 마스크 기준 카드 ─────────────────────────────
           _SectionTitle('나만의 마스크 기준'),
           const SizedBox(height: 12),
-          _ThresholdCard(s: s),
+          _ThresholdCard(profile: profile),
           const SizedBox(height: 20),
 
           // ── 4. 행동 가이드 ───────────────────────────────────
@@ -392,15 +393,13 @@ class _BreakdownRow extends StatelessWidget {
 // ─────────────────────────────────────────────────────────
 
 class _ThresholdCard extends StatelessWidget {
-  final double s;
-  const _ThresholdCard({required this.s});
+  final UserProfile profile;
+  const _ThresholdCard({required this.profile});
 
   @override
   Widget build(BuildContext context) {
-    final usesFinal = s >= SensitivityCalculator.sThreshold;
-    final tFinal = usesFinal ? SensitivityCalculator.threshold(s) : 36.0;
-    final diff = 36.0 - tFinal;
-    final maskType = s >= 0.4 ? 'KF94' : 'KF80';
+    final tFinal = profile.tFinal;
+    final maskType = const ThresholdEngine().recommendedMaskType(profile);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -409,61 +408,29 @@ class _ThresholdCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.divider),
       ),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: _CompareColumn(
-                  label: '일반인 기준',
-                  value: '36 μg/m³',
-                  subValue: 'KF80',
-                  highlight: false,
-                ),
-              ),
-              Container(
-                width: 1,
-                height: 60,
-                color: AppColors.divider,
-              ),
-              Expanded(
-                child: _CompareColumn(
-                  label: '내 기준',
-                  value: '${tFinal.toStringAsFixed(0)} μg/m³',
-                  subValue: usesFinal ? maskType : 'KF80',
-                  highlight: true,
-                ),
-              ),
-            ],
-          ),
-          if (usesFinal && diff > 0) ...[
-            const Divider(height: 24, color: AppColors.divider),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.arrow_downward,
-                    size: 14, color: AppColors.primary),
-                const SizedBox(width: 4),
-                RichText(
-                  text: TextSpan(
-                    style: const TextStyle(
-                        fontSize: 13, color: AppColors.textSecondary),
-                    children: [
-                      const TextSpan(text: '일반 기준보다 '),
-                      TextSpan(
-                        text: '${diff.toStringAsFixed(0)} μg/m³ 낮은',
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const TextSpan(text: ' 수치에서 알림을 드려요'),
-                    ],
-                  ),
-                ),
-              ],
+          Expanded(
+            child: _CompareColumn(
+              label: '일반인 기준',
+              value: '36 μg/m³',
+              subValue: 'KF80',
+              highlight: false,
             ),
-          ],
+          ),
+          Container(
+            width: 1,
+            height: 60,
+            color: AppColors.divider,
+          ),
+          Expanded(
+            child: _CompareColumn(
+              label: '내 기준',
+              value: '${tFinal.toStringAsFixed(0)} μg/m³',
+              subValue: maskType,
+              highlight: true,
+            ),
+          ),
         ],
       ),
     );

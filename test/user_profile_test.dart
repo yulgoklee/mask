@@ -96,66 +96,34 @@ void main() {
     });
   });
 
-  group('sensitivityIndex', () {
-    test('아무 가중치 없어도 clamp 최솟값 0.1', () {
-      expect(UserProfile.defaultProfile().sensitivityIndex, 0.1);
+  group('tFinal — ThresholdEngine v2', () {
+    test('기본 프로필(level=1, outdoorMinutes=1) → W_total=0.05 → 33.25', () {
+      // W_age=0.0, W_health=0.0, W_sensitivity=0.02, W_lifestyle=0.03
+      expect(UserProfile.defaultProfile().tFinal, closeTo(33.25, 0.01));
     });
-    test('임신+피부시술+천식 → 임신 W_health=0.35 우선, S ≈ 0.40', () {
-      const p = UserProfile(
-        nickname: '', birthYear: 1990, gender: 'female',
-        respiratoryStatus: 2, sensitivityLevel: 1,
-        isPregnant: true, recentSkinTreatment: true,
-        outdoorMinutes: 1, activityTags: [], discomfortLevel: 1,
-      );
-      expect(p.sensitivityIndex, closeTo(0.40, 0.001));
-    });
-    test('비염(W_health=0.20) + 야외1~3h(0.05) → S ≈ 0.25', () {
-      const p = UserProfile(
-        nickname: '', birthYear: 1990, gender: 'male',
-        respiratoryStatus: 1, sensitivityLevel: 1,
-        isPregnant: false, recentSkinTreatment: false,
-        outdoorMinutes: 1, activityTags: [], discomfortLevel: 1,
-      );
-      expect(p.sensitivityIndex, closeTo(0.25, 0.001));
-    });
-  });
 
-  group('tFinal', () {
-    test('기본 프로필(W_lifestyle=0.05) → tFinal ≈ 33.25', () {
-      expect(UserProfile.defaultProfile().tFinal, closeTo(33.25, 0.1));
-    });
-    test('임신+야외3h+(W_health=0.35,W_lifestyle=0.15) → tFinal ≈ 17.5', () {
+    test('천식+임신+시술+매우예민+3h+(1990년생) → clamp(15)', () {
+      // W_age=0.0, W_health=asthma(0.20)+pregnancy(0.20)+skin(0.10)=0.50
+      // W_sensitivity=0.05, W_lifestyle=0.07 → W_total=0.62
+      // raw=35×0.38=13.3 → clamp → 15.0
       const p = UserProfile(
         nickname: '', birthYear: 1990, gender: 'female',
         respiratoryStatus: 2, sensitivityLevel: 2,
         isPregnant: true, recentSkinTreatment: true,
         outdoorMinutes: 2, activityTags: [], discomfortLevel: 0,
       );
-      expect(p.tFinal, closeTo(17.5, 0.1));
+      expect(p.tFinal, closeTo(15.0, 0.01));
     });
-    test('tFinal = 35*(1-S) 검증', () {
+
+    test('비염+조금예민+1~3h(1990년생) → W_total=0.20 → 28.0', () {
+      // W_age=0.0, W_health=rhinitis(0.15), W_sensitivity=0.02, W_lifestyle=0.03
       const p = UserProfile(
         nickname: '', birthYear: 1990, gender: 'male',
         respiratoryStatus: 1, sensitivityLevel: 1,
         isPregnant: false, recentSkinTreatment: false,
         outdoorMinutes: 1, activityTags: [], discomfortLevel: 1,
       );
-      expect(p.tFinal, closeTo(35.0 * (1.0 - p.sensitivityIndex), 0.001));
-    });
-  });
-
-  group('personaLabel', () {
-    test('고위험(임신+야외3h+ → S=0.50) → 복합 고위험군', () {
-      const p = UserProfile(
-        nickname: '', birthYear: 1990, gender: 'female',
-        respiratoryStatus: 2, sensitivityLevel: 2,
-        isPregnant: true, recentSkinTreatment: false,
-        outdoorMinutes: 2, activityTags: [], discomfortLevel: 1,
-      );
-      expect(p.personaLabel, '복합 고위험군');
-    });
-    test('기본 → 기본 관리형', () {
-      expect(UserProfile.defaultProfile().personaLabel, '기본 관리형');
+      expect(p.tFinal, closeTo(28.0, 0.001));
     });
   });
 

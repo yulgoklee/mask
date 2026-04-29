@@ -125,7 +125,7 @@ class _TFinalInfoCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'PM2.5 ${profile.tFinal.toStringAsFixed(1)} μg/m³ 이상 시 알림  ·  S = ${profile.sensitivityIndex.toStringAsFixed(2)}',
+                  'PM2.5 ${profile.tFinal.toStringAsFixed(1)} μg/m³ 이상 시 알림',
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/persona_generator.dart';
 import '../../core/utils/sensitivity_calculator.dart';
 import '../../data/models/user_profile.dart';
 import '../../providers/providers.dart';
@@ -10,7 +11,7 @@ import '../../widgets/app_button.dart';
 
 /// 온보딩 완료 후 개인 민감도 대시보드 (Step 3)
 ///
-///  ① 헤더 — personaLabel 배지 + displayName + tFinal 수치
+///  ① 헤더 — 페르소나 배지 + displayName + tFinal 수치
 ///  ② CustomPainter Area Chart — 5단계 위험도 구간 (ratio 기반)
 ///  ③ 민감도 기여 항목 카드 목록
 ///  ④ 알림 시뮬레이션 미리보기
@@ -171,7 +172,7 @@ class _EmotionSection extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  ① 헤더 — personaLabel + displayName + tFinal
+//  ① 헤더 — 페르소나 배지 + displayName + tFinal
 // ══════════════════════════════════════════════════════════════
 
 class _DashboardHeader extends StatelessWidget {
@@ -187,7 +188,7 @@ class _DashboardHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final persona = profile.personaLabel;
+    final persona = PersonaGenerator.generate(profile).name;
     // s=0.10 클램프 최솟값에서는 "1.1배" 표시가 어색 — 의미 있는 수준(s>0.15)부터만 표시
     final multiplier = (1.0 - s) > 0 ? (1.0 / (1.0 - s)) : double.infinity;
     final multiplierText =
