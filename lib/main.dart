@@ -37,6 +37,13 @@ void main() async {
 
   final prefs = await SharedPreferences.getInstance();
 
+  // 옛 prefs 키 정리 (분할 C 마이그레이션 — Phase 3)
+  await prefs.remove('adaptive_s_offset');
+  await prefs.remove('adaptive_last_eval');
+  await prefs.remove('adaptive_eval_count');
+  await prefs.remove('sensitivity_score_s');   // Phase 3-A 이전 saveToPrefs 잔존
+  await prefs.remove('threshold_value');       // Phase 3-A 이전 saveToPrefs 잔존
+
   if (firebaseReady) {
     // Flutter 에러 → Crashlytics로 전송
     FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;

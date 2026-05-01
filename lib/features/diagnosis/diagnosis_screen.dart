@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/engine/threshold_engine.dart';
 import '../../core/utils/sensitivity_calculator.dart';
 import '../../data/models/user_profile.dart';
 import '../../providers/profile_providers.dart';
@@ -332,14 +333,14 @@ class _ResultPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final levelLabel = SensitivityCalculator.label(s);
+    final bd = const ThresholdEngine().breakdown(profile);
+    final levelLabel = SensitivityCalculator.label(bd.wTotal);
     final levelColor = _levelColor(s);
 
-    final bool usesFinal = s >= SensitivityCalculator.sThreshold;
-    final double tFinal = usesFinal ? SensitivityCalculator.threshold(s) : 36.0;
-    final String compareText = usesFinal
-        ? '일반 기준(36 μg/m³)보다 ${(36 - tFinal).toStringAsFixed(0)} 낮아요'
-        : '일반 기준과 동일해요';
+    final double tFinal = profile.tFinal;
+    final String compareText = tFinal >= 35.0
+        ? '일반 기준과 동일해요'
+        : '일반 기준(36 μg/m³)보다 ${(36 - tFinal).toStringAsFixed(0)} 낮아요';
 
     final name = profile.nickname.isNotEmpty
         ? '${profile.nickname}님은'

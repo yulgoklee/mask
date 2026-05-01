@@ -74,11 +74,6 @@ class AppConstants {
   static const String prefTemporaryStates       = 'temporary_states';
   static const String prefTodaySituation        = 'today_situation';
 
-  // ── 학습 엔진 ─────────────────────────────────────────────
-  static const String prefAdaptiveSOffset       = 'adaptive_s_offset';
-  static const String prefAdaptiveLastEval      = 'adaptive_last_eval';
-  static const String prefAdaptiveEvalCount     = 'adaptive_eval_count';
-
   // ── 기타 ──────────────────────────────────────────────────
   static const String prefAnonymousUserId       = 'anonymous_user_id';
 

@@ -6,7 +6,6 @@ import '../models/temporary_state.dart';
 import '../models/today_situation.dart';
 import 'profile_data_source.dart';
 import '../../core/constants/app_constants.dart';
-import '../../core/utils/sensitivity_calculator.dart';
 
 /// SharedPreferences 기반 프로필 데이터 소스 (로컬 구현체)
 /// Firestore 등 서버 구현체로 교체 가능
@@ -38,8 +37,6 @@ class LocalProfileDataSource implements ProfileDataSource {
   @override
   Future<void> saveProfile(UserProfile profile) async {
     await _prefs.setString(_profileKey, jsonEncode(profile.toJson()));
-    // 민감도 계수(S)와 최종 임계치(T_final)를 함께 캐싱
-    await SensitivityCalculator.saveToPrefs(_prefs, profile);
   }
 
   // ── Tier 2 — 기간 상태 ───────────────────────────────────

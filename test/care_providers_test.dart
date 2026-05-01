@@ -18,7 +18,7 @@ UserProfile _profile({
   int respiratoryStatus = 0,
   bool isPregnant = false,
   int outdoorMinutes = 0,
-  int sensitivityLevel = 1,
+  int sensitivityLevel = 0,
   bool recentSkinTreatment = false,
 }) =>
     UserProfile(
@@ -82,23 +82,28 @@ String _thresholdLabel(int dominantValue, double dominantTFinal) {
 void main() {
   // ── 1. sensitivity_multiplier ─────────────────────────
   group('sensitivity_multiplier = 35 / tFinal (§2.6)', () {
-    test('일반인 (T_final=35) → multiplier=1.0', () {
+    // sensitivityLevel=0 기준: W_sensitivity=0, W_lifestyle=0 (outdoorMinutes=0 default)
+
+    test('일반인 (T_final=35.0) → multiplier=1.0', () {
       expect(_multiplierFor(_profile()), closeTo(1.0, 0.001));
     });
 
-    test('비염 (T_final=28) → multiplier≈1.25', () {
+    test('비염 (T_final=29.75) → multiplier≈1.176', () {
+      // W_health=rhinitis(0.15) → tFinal=35*(1-0.15)=29.75
       expect(_multiplierFor(_profile(respiratoryStatus: 1)),
+          closeTo(35.0 / 29.75, 0.001));
+    });
+
+    test('천식 (T_final=28.0) → multiplier=1.25', () {
+      // W_health=asthma(0.20) → tFinal=35*(1-0.20)=28.0
+      expect(_multiplierFor(_profile(respiratoryStatus: 2)),
           closeTo(35.0 / 28.0, 0.001));
     });
 
-    test('천식 (T_final=26.25) → multiplier≈1.33', () {
-      expect(_multiplierFor(_profile(respiratoryStatus: 2)),
-          closeTo(35.0 / 26.25, 0.001));
-    });
-
-    test('임신 (T_final=22.75) → multiplier≈1.54', () {
+    test('임신 (T_final=28.0) → multiplier=1.25', () {
+      // W_health=pregnancy(0.20, female only) → tFinal=28.0 — 천식과 동일, 의도된 설계
       expect(_multiplierFor(_profile(isPregnant: true)),
-          closeTo(35.0 / 22.75, 0.001));
+          closeTo(35.0 / 28.0, 0.001));
     });
 
     test('T_final=15 (하한) → multiplier≈2.33, clamp 미적용', () {

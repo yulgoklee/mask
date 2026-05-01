@@ -7,7 +7,6 @@ import '../../core/constants/app_tokens.dart';
 import '../../core/constants/dust_standards.dart';
 import '../../core/services/air_korea_service.dart' show AirKoreaService;
 import '../../core/utils/dust_calculator.dart';
-import '../../core/utils/sensitivity_calculator.dart';
 import '../../data/models/dust_data.dart';
 import '../../data/models/forecast_models.dart';
 import '../../data/models/today_situation.dart';
@@ -168,8 +167,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
               final pm25Grade = DustStandards.getPm25Grade(dust.pm25Value ?? 0);
               final pm10Grade = DustStandards.getPm10Grade(dust.pm10Value ?? 0);
-              final s = SensitivityCalculator.compute(profile);
-              final tFinal = SensitivityCalculator.threshold(s);
+              final tFinal = profile.tFinal;
 
               return SingleChildScrollView(
                 controller: _scrollController,

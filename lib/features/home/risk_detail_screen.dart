@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/dust_calculator.dart';
+import '../../core/utils/sensitivity_calculator.dart';
 import '../../data/models/dust_data.dart';
 import '../../data/models/user_profile.dart';
 import '../../providers/providers.dart';
@@ -409,7 +410,7 @@ class _SensitivityTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final labels = ['무던해요', '보통이에요', '매우 예민해요'];
+    final labels = List.generate(3, SensitivityCalculator.sensitivityLevelLabel);
     return _TableCard(
       child: Column(
         children: List.generate(labels.length, (i) {

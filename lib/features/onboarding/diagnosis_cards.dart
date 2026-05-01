@@ -523,7 +523,7 @@ class DiagQ4Respiratory extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════
 
 class DiagQ5Sensitivity extends StatelessWidget {
-  final int value; // 0=무던 1=보통 2=예민
+  final int value; // 0=무던함 1=조금 예민 2=매우 예민
   final ValueChanged<int> onChanged;
   final int questionNumber;
 
@@ -535,9 +535,9 @@ class DiagQ5Sensitivity extends StatelessWidget {
   });
 
   static const _options = [
-    (0, '😶', '무던해요',      '공기 변화를 잘 못 느껴요'),
-    (1, '😌', '보통이에요',    '가끔 느끼는 편이에요'),
-    (2, '😣', '매우 예민해요', '조금만 탁해도 바로 느껴요'),
+    (0, '😶', '무던함',    '공기 변화를 잘 못 느껴요'),
+    (1, '😌', '조금 예민', '가끔 느끼는 편이에요'),
+    (2, '😣', '매우 예민', '조금만 탁해도 바로 느껴요'),
   ];
 
   /// 옵션별 고정 색상 — 0=초록(안심), 1=노랑(보통), 2=코랄(높음)

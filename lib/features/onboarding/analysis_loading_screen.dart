@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/engine/threshold_engine.dart';
 import '../../core/utils/sensitivity_calculator.dart';
 import '../../providers/providers.dart';
 
@@ -73,8 +74,8 @@ class _AnalysisLoadingScreenState
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
-    final s = SensitivityCalculator.compute(profile);
-    final tFinal = SensitivityCalculator.threshold(s);
+    final bd = const ThresholdEngine().breakdown(profile);
+    final tFinal = profile.tFinal;
     final name = profile.displayName;
 
     return Scaffold(
@@ -140,7 +141,7 @@ class _AnalysisLoadingScreenState
                 const SizedBox(height: 56),
 
                 // ── 결과 미리보기 칩 ────────────────────────────
-                _ResultChip(s: s, tFinal: tFinal),
+                _ResultChip(wTotal: bd.wTotal, tFinal: tFinal),
               ],
             ),
           ),
@@ -152,14 +153,14 @@ class _AnalysisLoadingScreenState
 
 /// 분석 완료 예정 결과를 미리 보여주는 작은 카드
 class _ResultChip extends StatelessWidget {
-  final double s;
+  final double wTotal;
   final double tFinal;
 
-  const _ResultChip({required this.s, required this.tFinal});
+  const _ResultChip({required this.wTotal, required this.tFinal});
 
   @override
   Widget build(BuildContext context) {
-    final label = SensitivityCalculator.label(s);
+    final label = SensitivityCalculator.label(wTotal);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),

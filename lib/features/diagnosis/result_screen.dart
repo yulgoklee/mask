@@ -224,9 +224,7 @@ class _SensitivityBreakdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final w1 = SensitivityCalculator.conditionWeight(profile);
-    final w2 = SensitivityCalculator.activityWeight(profile);
-    final w3 = SensitivityCalculator.sensitivityWeightFromProfile(profile);
+    final bd = const ThresholdEngine().breakdown(profile);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -238,12 +236,24 @@ class _SensitivityBreakdown extends StatelessWidget {
       child: Column(
         children: [
           _BreakdownRow(
-            label: '호흡기 상태',
-            sublabel: profile.respiratoryLabel == '건강함'
-                ? '건강해요'
-                : profile.respiratoryLabel,
-            weight: w1,
-            maxWeight: 0.3,
+            label: '연령',
+            sublabel: '${profile.age}세 (${_ageGroupLabel(profile.age)})',
+            weight: bd.wAge,
+            maxWeight: 0.13,
+          ),
+          const SizedBox(height: 14),
+          _BreakdownRow(
+            label: '호흡기 · 특별 상태',
+            sublabel: _healthSublabel(profile),
+            weight: bd.wHealth,
+            maxWeight: 0.65,
+          ),
+          const SizedBox(height: 14),
+          _BreakdownRow(
+            label: '체감 민감도',
+            sublabel: SensitivityCalculator.sensitivityLevelLabel(profile.sensitivityLevel),
+            weight: bd.wSensitivity,
+            maxWeight: 0.05,
           ),
           const SizedBox(height: 14),
           _BreakdownRow(
@@ -253,19 +263,8 @@ class _SensitivityBreakdown extends StatelessWidget {
                 : profile.outdoorMinutes == 1
                     ? '1~3시간'
                     : '3시간 이상',
-            weight: w2,
-            maxWeight: 0.2,
-          ),
-          const SizedBox(height: 14),
-          _BreakdownRow(
-            label: '체감 민감도',
-            sublabel: profile.sensitivityLevel == 0
-                ? '무던해요'
-                : profile.sensitivityLevel == 1
-                    ? '보통이에요'
-                    : '매우 예민해요',
-            weight: w3,
-            maxWeight: 0.2,
+            weight: bd.wLifestyle,
+            maxWeight: 0.07,
           ),
           const Divider(height: 28, color: AppColors.divider),
 
@@ -305,7 +304,7 @@ class _SensitivityBreakdown extends StatelessWidget {
           Align(
             alignment: Alignment.centerRight,
             child: Text(
-              SensitivityCalculator.label(s),
+              SensitivityCalculator.label(bd.wTotal),
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -558,6 +557,28 @@ class _ActionGuideList extends StatelessWidget {
       ),
     );
   }
+}
+
+// ─────────────────────────────────────────────────────────
+// 헬퍼
+// ─────────────────────────────────────────────────────────
+
+String _ageGroupLabel(int age) {
+  if (age < 12) return '어린이';
+  if (age < 50) return '일반';
+  if (age < 60) return '50대';
+  if (age < 70) return '60대';
+  if (age < 80) return '70대';
+  return '80대 이상';
+}
+
+String _healthSublabel(UserProfile p) {
+  final parts = <String>[];
+  if (p.respiratoryStatus & 1 != 0) parts.add('비염');
+  if (p.respiratoryStatus & 2 != 0) parts.add('천식');
+  if (p.gender == 'female' && p.isPregnant) parts.add('임신');
+  if (p.isSkinTreatmentActive) parts.add('피부 시술');
+  return parts.isEmpty ? '건강해요' : parts.join(' · ');
 }
 
 // ─────────────────────────────────────────────────────────
