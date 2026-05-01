@@ -37,17 +37,17 @@ UserProfile _profile({
 String _resolveRiskLevel(double pm25, double tFinal) {
   final ratio = tFinal > 0 ? pm25 / tFinal : 0.0;
   if (ratio < 0.5) return 'low';
-  if (ratio < 1.0) return 'normal';
-  if (ratio < 1.5) return 'warning';
-  if (ratio < 2.0) return 'danger';
+  if (ratio < 0.7) return 'normal';
+  if (ratio < 1.0) return 'warning';
+  if (ratio < 1.5) return 'danger';
   return 'critical';
 }
 
 String _defaultSubCopy(RiskLevel s) => switch (s) {
-  RiskLevel.low      => '편하게 외출하셔도 돼요.',
-  RiskLevel.normal   => '장시간 야외라면 마스크를 챙기세요.',
-  RiskLevel.warning  => '외출 시 KF80 이상 권장이에요.',
-  RiskLevel.danger   => 'KF94 마스크를 착용하세요.',
+  RiskLevel.low      => '공기가 맑아요.',
+  RiskLevel.normal   => '오래 밖에 있을 때만 마스크 챙기세요.',
+  RiskLevel.warning  => '외출 시 마스크 챙기세요.',
+  RiskLevel.danger   => 'KF80 이상 마스크 권장이에요.',
   RiskLevel.critical => '가능하면 실내에서 지내세요.',
   RiskLevel.unknown  => '',
 };
@@ -126,20 +126,20 @@ void main() {
   // ── 2. RiskLevel fallback 계산 ─────────────────────────
   group('_resolveRiskLevel fallback (§2.4)', () {
     const tFinal = 35.0;
-    test('pm25=17 → low (ratio<0.5)',    () => expect(_resolveRiskLevel(17, tFinal), 'low'));
-    test('pm25=25 → normal (ratio<1.0)', () => expect(_resolveRiskLevel(25, tFinal), 'normal'));
-    test('pm25=40 → warning (ratio<1.5)',() => expect(_resolveRiskLevel(40, tFinal), 'warning'));
-    test('pm25=60 → danger (ratio<2.0)', () => expect(_resolveRiskLevel(60, tFinal), 'danger'));
-    test('pm25=80 → critical (ratio≥2.0)',()=> expect(_resolveRiskLevel(80, tFinal), 'critical'));
+    test('pm25=17 → low (ratio<0.5)',     () => expect(_resolveRiskLevel(17, tFinal), 'low'));
+    test('pm25=25 → warning (ratio<1.0)', () => expect(_resolveRiskLevel(25, tFinal), 'warning'));
+    test('pm25=40 → danger (ratio<1.5)',  () => expect(_resolveRiskLevel(40, tFinal), 'danger'));
+    test('pm25=60 → critical (ratio≥1.5)',() => expect(_resolveRiskLevel(60, tFinal), 'critical'));
+    test('pm25=80 → critical (ratio≥1.5)',()=> expect(_resolveRiskLevel(80, tFinal), 'critical'));
   });
 
   // ── 3. 카피 매트릭스 5단계 기본 카피 ─────────────────
   group('_defaultSubCopy 5단계 (§3.2)', () {
-    test('low     → 편하게 외출하셔도 돼요.',       () => expect(_defaultSubCopy(RiskLevel.low),      '편하게 외출하셔도 돼요.'));
-    test('normal  → 장시간 야외라면 마스크를 챙기세요.', () => expect(_defaultSubCopy(RiskLevel.normal),   '장시간 야외라면 마스크를 챙기세요.'));
-    test('warning → 외출 시 KF80 이상 권장이에요.',  () => expect(_defaultSubCopy(RiskLevel.warning),  '외출 시 KF80 이상 권장이에요.'));
-    test('danger  → KF94 마스크를 착용하세요.',     () => expect(_defaultSubCopy(RiskLevel.danger),   'KF94 마스크를 착용하세요.'));
-    test('critical→ 가능하면 실내에서 지내세요.',    () => expect(_defaultSubCopy(RiskLevel.critical), '가능하면 실내에서 지내세요.'));
+    test('low     → 공기가 맑아요.',                      () => expect(_defaultSubCopy(RiskLevel.low),      '공기가 맑아요.'));
+    test('normal  → 오래 밖에 있을 때만 마스크 챙기세요.', () => expect(_defaultSubCopy(RiskLevel.normal),   '오래 밖에 있을 때만 마스크 챙기세요.'));
+    test('warning → 외출 시 마스크 챙기세요.',             () => expect(_defaultSubCopy(RiskLevel.warning),  '외출 시 마스크 챙기세요.'));
+    test('danger  → KF80 이상 마스크 권장이에요.',         () => expect(_defaultSubCopy(RiskLevel.danger),   'KF80 이상 마스크 권장이에요.'));
+    test('critical→ 가능하면 실내에서 지내세요.',           () => expect(_defaultSubCopy(RiskLevel.critical), '가능하면 실내에서 지내세요.'));
     test('카피에 \\n 없음 (단문 강제)',             () {
       for (final s in RiskLevel.values) {
         expect(_defaultSubCopy(s).contains('\n'), false,

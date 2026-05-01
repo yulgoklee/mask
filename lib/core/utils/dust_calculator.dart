@@ -41,11 +41,13 @@ class DustCalculator {
 
     final RiskLevel riskLevel;
     if (ratio < 0.5)      { riskLevel = RiskLevel.low; }
-    else if (ratio < 1.0) { riskLevel = RiskLevel.normal; }
-    else if (ratio < 1.5) { riskLevel = RiskLevel.warning; }
-    else if (ratio < 2.0) { riskLevel = RiskLevel.danger; }
+    else if (ratio < 0.7) { riskLevel = RiskLevel.normal; }
+    else if (ratio < 1.0) { riskLevel = RiskLevel.warning; }
+    else if (ratio < 1.5) { riskLevel = RiskLevel.danger; }
     else                  { riskLevel = RiskLevel.critical; }
 
+    // maskRequired는 새 RiskLevel.danger 시작점(1.0)과 일치.
+    // 새 warning(0.7~1.0)은 "조심" 단계로 마스크 권장 아님.
     var maskRequired = ratio >= 1.0;
     var maskType     = ratio >= 1.5 ? 'KF94' : ratio >= 1.0 ? 'KF80' : null;
 
@@ -189,7 +191,7 @@ class DustCalculator {
     switch (risk) {
       case RiskLevel.low:      return '오늘은 마스크 없어도 돼요';
       case RiskLevel.normal:   return '오늘은 대체로 괜찮아요';
-      case RiskLevel.warning:  return '오늘 마스크 챙기세요';
+      case RiskLevel.warning:  return '오늘 마스크 챙기는 게 좋아요';
       case RiskLevel.danger:   return '오늘 마스크 필수예요';
       case RiskLevel.critical: return '오늘 외출을 자제해주세요';
       case RiskLevel.unknown:  return '데이터를 불러오는 중이에요';
@@ -200,6 +202,11 @@ class DustCalculator {
       risk == RiskLevel.warning ||
       risk == RiskLevel.danger ||
       risk == RiskLevel.critical;
+
+  /// 긴박 UI(펄스, 강조 등)가 필요한 등급 여부.
+  /// danger 이상에서만 true — warning(0.7~1.0)은 "조심" 수준으로 긴박 UI 제외.
+  static bool gradeRequiresUrgentUI(RiskLevel risk) =>
+      risk == RiskLevel.danger || risk == RiskLevel.critical;
 
   // ── 개인화 맥락 한 줄 ─────────────────────────────────────
 
