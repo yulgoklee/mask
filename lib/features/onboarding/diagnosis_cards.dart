@@ -358,28 +358,52 @@ class DiagQ3Gender extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════
 
 class DiagQ4Respiratory extends StatelessWidget {
-  /// 비트플래그: 0=건강, 1=비염(bit0), 2=천식(bit1), 3=둘다
-  final int value;
-  final ValueChanged<int> onChanged;
+  final bool rhinitis;
+  final bool asthma;
+  final bool copd;
+  final bool allergy;
+  final bool noneSelected;
+  final void Function(bool rhinitis, bool asthma, bool copd, bool allergy, bool noneSelected) onChanged;
   final int questionNumber;
 
   const DiagQ4Respiratory({
     super.key,
-    required this.value,
+    required this.rhinitis,
+    required this.asthma,
+    required this.copd,
+    required this.allergy,
+    required this.noneSelected,
     required this.onChanged,
     this.questionNumber = 4,
   });
 
-  // 체크박스형 조건 옵션 (bit, emoji, label, hint)
   static const _conditions = [
-    (1, '👃', '비염 있어요',   '코막힘·재채기가 자주 발생해요'),
-    (2, '🫁', '천식 등 질환',  '호흡기·심혈관 질환을 진단받았어요'),
+    ('rhinitis', '👃', '비염',            '코막힘·재채기가 자주 발생해요'),
+    ('asthma',   '🫁', '천식',            '기관지가 좁아져 숨이 가빠요'),
+    ('copd',     '🌬️', 'COPD',           '만성 폐쇄성 폐질환을 진단받았어요'),
+    ('allergy',  '🌸', '알레르기',        '꽃가루·먼지에 심하게 반응해요'),
   ];
+
+  bool _valueOf(String key) {
+    switch (key) {
+      case 'rhinitis': return rhinitis;
+      case 'asthma':   return asthma;
+      case 'copd':     return copd;
+      case 'allergy':  return allergy;
+      default:         return false;
+    }
+  }
+
+  void _toggle(String key) {
+    final newRhinitis = key == 'rhinitis' ? !rhinitis : rhinitis;
+    final newAsthma   = key == 'asthma'   ? !asthma   : asthma;
+    final newCopd     = key == 'copd'     ? !copd     : copd;
+    final newAllergy  = key == 'allergy'  ? !allergy  : allergy;
+    onChanged(newRhinitis, newAsthma, newCopd, newAllergy, false);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isHealthy = value == 0;
-
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -389,82 +413,29 @@ class DiagQ4Respiratory extends StatelessWidget {
           _qBadge('Q$questionNumber · 호흡기'),
           const SizedBox(height: 14),
           _qTitle(context, '호흡기 상태를 알려주세요'),
-          const SizedBox(height: 8),
-          _qSubtitle(context, '해당되는 항목을 모두 선택해주세요.'),
-          const SizedBox(height: 32),
+          const SizedBox(height: 6),
+          _qSubtitle(context, '호흡기 상태는 마스크 판단에 가장 중요해요'),
+          const SizedBox(height: 4),
+          _qSubtitle(context, '진단 받은 게 있다면 모두 선택해주세요'),
+          const SizedBox(height: 28),
 
-          // ── 건강해요 (해당 없음) ──────────────────────────────
-          GestureDetector(
-            onTap: () => onChanged(0),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: isHealthy
-                    ? AppColors.success.withValues(alpha: 0.08)
-                    : AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isHealthy ? AppColors.success : AppColors.divider,
-                  width: isHealthy ? 2 : 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Text('😊', style: TextStyle(fontSize: 28)),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '건강해요',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                            color: isHealthy
-                                ? AppColors.success
-                                : AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        const Text(
-                          '호흡기 관련 증상이 없어요',
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-
-          // ── 조건 체크박스 행들 ────────────────────────────────
+          // ── 체크박스 항목 (4개) ──────────────────────────────
           ..._conditions.map((opt) {
-            final (bit, emoji, label, hint) = opt;
-            final sel = value & bit != 0;
+            final (key, emoji, label, hint) = opt;
+            final sel = _valueOf(key);
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: GestureDetector(
-                onTap: () {
-                  // 해당 비트 토글
-                  final next = value ^ bit;
-                  onChanged(next);
-                },
+                onTap: () => _toggle(key),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
                   curve: Curves.easeOut,
-                  padding: const EdgeInsets.all(18),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: sel
                         ? AppColors.coral.withValues(alpha: 0.07)
                         : AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: sel ? AppColors.coral : AppColors.divider,
                       width: sel ? 2 : 1,
@@ -472,7 +443,7 @@ class DiagQ4Respiratory extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Text(emoji, style: const TextStyle(fontSize: 28)),
+                      Text(emoji, style: const TextStyle(fontSize: 26)),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
@@ -483,12 +454,10 @@ class DiagQ4Respiratory extends StatelessWidget {
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 15,
-                                color: sel
-                                    ? AppColors.coral
-                                    : AppColors.textPrimary,
+                                color: sel ? AppColors.coral : AppColors.textPrimary,
                               ),
                             ),
-                            const SizedBox(height: 3),
+                            const SizedBox(height: 2),
                             Text(
                               hint,
                               style: const TextStyle(
@@ -498,6 +467,11 @@ class DiagQ4Respiratory extends StatelessWidget {
                           ],
                         ),
                       ),
+                      Icon(
+                        sel ? Icons.check_box : Icons.check_box_outline_blank,
+                        color: sel ? AppColors.coral : AppColors.textHint,
+                        size: 22,
+                      ),
                     ],
                   ),
                 ),
@@ -505,11 +479,62 @@ class DiagQ4Respiratory extends StatelessWidget {
             );
           }),
 
+          // ── 구분선 ────────────────────────────────────────────
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 6),
+            child: Divider(color: AppColors.divider),
+          ),
+
+          // ── "진단 받은 게 없어요" 라디오 ─────────────────────
+          GestureDetector(
+            onTap: () => onChanged(false, false, false, false, true),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: noneSelected
+                    ? AppColors.success.withValues(alpha: 0.07)
+                    : AppColors.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: noneSelected ? AppColors.success : AppColors.divider,
+                  width: noneSelected ? 2 : 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Text('😊', style: TextStyle(fontSize: 26)),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(
+                      '진단 받은 게 없어요',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: noneSelected
+                            ? AppColors.success
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    noneSelected
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_off,
+                    color: noneSelected ? AppColors.success : AppColors.textHint,
+                    size: 22,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
           const SizedBox(height: 20),
           _insightBox(
-            '비염이 있으시면 코 점막이 먼지에 민감해요. '
-            '천식이 있으시면 적은 농도에도 기관지가 반응해요. '
-            '당신의 상태에 맞춰 더 일찍 알려드릴게요.',
+            '비염·천식이 있으면 미세먼지에 더 민감하게 반응해요. '
+            'COPD·알레르기가 있으면 더 일찍 마스크를 착용해야 해요. '
+            '입력한 정보를 바탕으로 마스크 타이밍을 개인화해드려요.',
           ),
           const SizedBox(height: 32),
         ],
@@ -1148,6 +1173,435 @@ class DiagQ9ActivityTags extends StatelessWidget {
           const SizedBox(height: 24),
           _insightBox(
             '당신의 활동 패턴에 맞춰 알림 기준을 더 정밀하게 조정해드릴게요.',
+          ),
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  Q5 — 심혈관
+// ══════════════════════════════════════════════════════════════
+
+class DiagQ5Cardiovascular extends StatelessWidget {
+  final bool hypertension;
+  final bool heartDisease;
+  final bool stroke;
+  final bool noneSelected;
+  final void Function(bool hypertension, bool heartDisease, bool stroke, bool noneSelected) onChanged;
+  final int questionNumber;
+
+  const DiagQ5Cardiovascular({
+    super.key,
+    required this.hypertension,
+    required this.heartDisease,
+    required this.stroke,
+    required this.noneSelected,
+    required this.onChanged,
+    this.questionNumber = 5,
+  });
+
+  static const _conditions = [
+    ('hypertension', '🩺', '고혈압',           '혈압이 높아 심혈관 부담이 있어요'),
+    ('heartDisease', '❤️', '심장 질환',         '심장 관련 질환을 진단받았어요'),
+    ('stroke',       '🧠', '뇌졸중 (중풍) 경험', '뇌혈관 질환을 경험한 적 있어요'),
+  ];
+
+  bool _valueOf(String key) {
+    switch (key) {
+      case 'hypertension': return hypertension;
+      case 'heartDisease': return heartDisease;
+      case 'stroke':       return stroke;
+      default:             return false;
+    }
+  }
+
+  void _toggle(String key) {
+    final newHypertension = key == 'hypertension' ? !hypertension : hypertension;
+    final newHeartDisease = key == 'heartDisease' ? !heartDisease : heartDisease;
+    final newStroke       = key == 'stroke'       ? !stroke       : stroke;
+    onChanged(newHypertension, newHeartDisease, newStroke, false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 32),
+          _qBadge('Q$questionNumber · 심혈관'),
+          const SizedBox(height: 14),
+          _qTitle(context, '혈관 건강을 알려주세요'),
+          const SizedBox(height: 6),
+          _qSubtitle(context, '혈관 건강도 미세먼지 영향을 받아요'),
+          const SizedBox(height: 4),
+          _qSubtitle(context, '진단 받은 게 있다면 모두 선택해주세요'),
+          const SizedBox(height: 28),
+
+          // ── 체크박스 항목 (3개) ──────────────────────────────
+          ..._conditions.map((opt) {
+            final (key, emoji, label, hint) = opt;
+            final sel = _valueOf(key);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: GestureDetector(
+                onTap: () => _toggle(key),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: sel
+                        ? AppColors.coral.withValues(alpha: 0.07)
+                        : AppColors.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: sel ? AppColors.coral : AppColors.divider,
+                      width: sel ? 2 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(emoji, style: const TextStyle(fontSize: 26)),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              label,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                                color: sel ? AppColors.coral : AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              hint,
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        sel ? Icons.check_box : Icons.check_box_outline_blank,
+                        color: sel ? AppColors.coral : AppColors.textHint,
+                        size: 22,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+
+          // ── 구분선 ────────────────────────────────────────────
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 6),
+            child: Divider(color: AppColors.divider),
+          ),
+
+          // ── "진단 받은 게 없어요" 라디오 ─────────────────────
+          GestureDetector(
+            onTap: () => onChanged(false, false, false, true),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: noneSelected
+                    ? AppColors.success.withValues(alpha: 0.07)
+                    : AppColors.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: noneSelected ? AppColors.success : AppColors.divider,
+                  width: noneSelected ? 2 : 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Text('💚', style: TextStyle(fontSize: 26)),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(
+                      '진단 받은 게 없어요',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: noneSelected
+                            ? AppColors.success
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    noneSelected
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_off,
+                    color: noneSelected ? AppColors.success : AppColors.textHint,
+                    size: 22,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+          _insightBox(
+            '고혈압·심장 질환이 있으면 미세먼지가 혈관에 더 큰 영향을 줘요. '
+            '뇌졸중 경험이 있으면 혈관이 더 예민한 상태예요. '
+            '입력한 정보를 바탕으로 마스크 타이밍을 개인화해드려요.',
+          ),
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  Q6 — 흡연 이력
+// ══════════════════════════════════════════════════════════════
+
+class DiagQ6Smoking extends StatelessWidget {
+  final SmokingStatus? value; // null = 아직 미선택
+  final ValueChanged<SmokingStatus> onChanged;
+  final int questionNumber;
+
+  const DiagQ6Smoking({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    this.questionNumber = 6,
+  });
+
+  static const _options = [
+    (SmokingStatus.current, '🚬', '현재 흡연 중',  '지금도 담배를 피워요'),
+    (SmokingStatus.former,  '🌱', '끊었어요',      '과거에 피웠지만 지금은 아니에요'),
+    (SmokingStatus.never,   '✅', '안 피워요',     '흡연 이력이 없어요'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 32),
+          _qBadge('Q$questionNumber · 흡연'),
+          const SizedBox(height: 14),
+          _qTitle(context, '흡연 이력을 알려주세요'),
+          const SizedBox(height: 8),
+          _qSubtitle(context, '흡연은 폐 민감도에 직접적인 영향을 줘요'),
+          const SizedBox(height: 28),
+
+          ..._options.map((opt) {
+            final (status, emoji, label, hint) = opt;
+            final sel = value == status;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: GestureDetector(
+                onTap: () => onChanged(status),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: sel
+                        ? AppColors.primary.withValues(alpha: 0.07)
+                        : AppColors.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: sel ? AppColors.primary : AppColors.divider,
+                      width: sel ? 2 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(emoji, style: const TextStyle(fontSize: 26)),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              label,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                                color: sel
+                                    ? AppColors.primary
+                                    : AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              hint,
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        sel
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_off,
+                        color: sel ? AppColors.primary : AppColors.textHint,
+                        size: 22,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+
+          const SizedBox(height: 20),
+          _insightBox(
+            '현재 흡연 중이면 폐 점막이 더 민감한 상태예요. '
+            '금연 후에도 수년간 영향이 남아요. '
+            '흡연 이력을 바탕으로 개인 기준을 더 정밀하게 계산해드려요.',
+          ),
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  Q6-1 — 흡연 종류 (현재 흡연 중인 경우만)
+// ══════════════════════════════════════════════════════════════
+
+class DiagQ6_1SmokingType extends StatelessWidget {
+  final bool cigarette;
+  final bool heated;
+  final bool vaping;
+  final void Function(bool cigarette, bool heated, bool vaping) onChanged;
+  final int questionNumber;
+
+  const DiagQ6_1SmokingType({
+    super.key,
+    required this.cigarette,
+    required this.heated,
+    required this.vaping,
+    required this.onChanged,
+    this.questionNumber = 7,
+  });
+
+  static const _options = [
+    ('cigarette', '🚬', '연초',    '일반 담배'),
+    ('heated',    '💨', '가열식',  'IQOS, glo, lil 등'),
+    ('vaping',    '☁️', '전자담배', '액상형'),
+  ];
+
+  bool _valueOf(String key) {
+    switch (key) {
+      case 'cigarette': return cigarette;
+      case 'heated':    return heated;
+      case 'vaping':    return vaping;
+      default:          return false;
+    }
+  }
+
+  void _toggle(String key) {
+    onChanged(
+      key == 'cigarette' ? !cigarette : cigarette,
+      key == 'heated'    ? !heated    : heated,
+      key == 'vaping'    ? !vaping    : vaping,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 32),
+          _qBadge('Q$questionNumber · 흡연 종류'),
+          const SizedBox(height: 14),
+          _qTitle(context, '피우시는 종류는?'),
+          const SizedBox(height: 8),
+          _qSubtitle(context, '모두 선택해주세요'),
+          const SizedBox(height: 28),
+
+          ..._options.map((opt) {
+            final (key, emoji, label, hint) = opt;
+            final sel = _valueOf(key);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: GestureDetector(
+                onTap: () => _toggle(key),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: sel
+                        ? AppColors.primary.withValues(alpha: 0.07)
+                        : AppColors.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: sel ? AppColors.primary : AppColors.divider,
+                      width: sel ? 2 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(emoji, style: const TextStyle(fontSize: 26)),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              label,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                                color: sel
+                                    ? AppColors.primary
+                                    : AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              hint,
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        sel ? Icons.check_box : Icons.check_box_outline_blank,
+                        color: sel ? AppColors.primary : AppColors.textHint,
+                        size: 22,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+
+          const SizedBox(height: 20),
+          _insightBox(
+            '담배 종류에 따라 폐에 미치는 영향이 달라요. '
+            '가열식·전자담배도 미세먼지와 결합하면 폐에 더 큰 자극을 줄 수 있어요.',
           ),
           const SizedBox(height: 32),
         ],

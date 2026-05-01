@@ -45,6 +45,11 @@ class UserProfile {
   final bool isPregnant;          // female only
   final SmokingStatus smokingStatus;
 
+  // ── 흡연 종류 (smokingStatus == current 일 때만 의미 있음) ──
+  final bool smokesCigarette; // 연초 (일반 담배)
+  final bool smokesHeated;    // 가열식 (IQOS, glo 등)
+  final bool smokesVaping;    // 전자담배 (액상형)
+
   // ── 생활 설정 ───────────────────────────────────────────────
   final List<String> activityTags;
   final int discomfortLevel;      // 0=안느낌 1=보통 2=많이불편
@@ -66,6 +71,9 @@ class UserProfile {
     required this.stroke,
     required this.isPregnant,
     required this.smokingStatus,
+    this.smokesCigarette = false,
+    this.smokesHeated    = false,
+    this.smokesVaping    = false,
     required this.activityTags,
     required this.discomfortLevel,
     this.homeStationName  = '',
@@ -141,6 +149,9 @@ class UserProfile {
     bool? stroke,
     bool? isPregnant,
     SmokingStatus? smokingStatus,
+    bool? smokesCigarette,
+    bool? smokesHeated,
+    bool? smokesVaping,
     List<String>? activityTags,
     int? discomfortLevel,
     String? homeStationName,
@@ -159,6 +170,9 @@ class UserProfile {
       stroke:            stroke            ?? this.stroke,
       isPregnant:        isPregnant        ?? this.isPregnant,
       smokingStatus:     smokingStatus     ?? this.smokingStatus,
+      smokesCigarette:   smokesCigarette   ?? this.smokesCigarette,
+      smokesHeated:      smokesHeated      ?? this.smokesHeated,
+      smokesVaping:      smokesVaping      ?? this.smokesVaping,
       activityTags:      activityTags      ?? this.activityTags,
       discomfortLevel:   discomfortLevel   ?? this.discomfortLevel,
       homeStationName:   homeStationName   ?? this.homeStationName,
@@ -181,6 +195,9 @@ class UserProfile {
         'stroke':            stroke,
         'isPregnant':        isPregnant,
         'smokingStatus':     smokingStatus.name,
+        'smokesCigarette':   smokesCigarette,
+        'smokesHeated':      smokesHeated,
+        'smokesVaping':      smokesVaping,
         'activityTags':      activityTags,
         'discomfortLevel':   discomfortLevel,
         'homeStationName':   homeStationName,
@@ -206,6 +223,9 @@ class UserProfile {
       isPregnant:   json['isPregnant']   as bool? ?? false,
       smokingStatus: SmokingStatus.values.byName(
           json['smokingStatus'] as String? ?? 'never'),
+      smokesCigarette: json['smokesCigarette'] as bool? ?? false,
+      smokesHeated:    json['smokesHeated']    as bool? ?? false,
+      smokesVaping:    json['smokesVaping']    as bool? ?? false,
       activityTags: (json['activityTags'] as List<dynamic>?)
                         ?.cast<String>() ?? [],
       discomfortLevel:   json['discomfortLevel']   as int?    ?? 1,

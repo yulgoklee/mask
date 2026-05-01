@@ -130,4 +130,37 @@ void main() {
       expect(await repo.isTutorialSeen(), isTrue);
     });
   });
+
+  group('ProfileRepository — smokingType 필드', () {
+    test('smokesCigarette=true / smokesVaping=true 저장·복원', () async {
+      final repo = await _buildRepo();
+      const profile = UserProfile(
+        nickname: '', birthYear: 1990, gender: '',
+        asthma: false, rhinitis: false, copd: false, allergy: false,
+        hypertension: false, heartDisease: false, stroke: false,
+        isPregnant: false, smokingStatus: SmokingStatus.current,
+        smokesCigarette: true, smokesHeated: false, smokesVaping: true,
+        activityTags: [], discomfortLevel: 1,
+      );
+      await repo.saveProfile(profile);
+      final loaded = await repo.loadProfile();
+      expect(loaded.smokesCigarette, isTrue);
+      expect(loaded.smokesHeated, isFalse);
+      expect(loaded.smokesVaping, isTrue);
+    });
+
+    test('구버전 JSON (smokingType 필드 없음) → 기본값 false', () async {
+      const legacyJson =
+          '{"nickname":"","birthYear":1990,"gender":"",'
+          '"asthma":false,"rhinitis":false,"copd":false,"allergy":false,'
+          '"hypertension":false,"heartDisease":false,"stroke":false,'
+          '"isPregnant":false,"smokingStatus":"current",'
+          '"activityTags":[],"discomfortLevel":1}';
+      final repo = await _buildRepo({'user_profile': legacyJson});
+      final loaded = await repo.loadProfile();
+      expect(loaded.smokesCigarette, isFalse);
+      expect(loaded.smokesHeated, isFalse);
+      expect(loaded.smokesVaping, isFalse);
+    });
+  });
 }
