@@ -1363,37 +1363,6 @@ InputDecoration _inputDecoration(String hint) => InputDecoration(
           const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
     );
 
-/// 영향도 퍼센트 → 트래픽라이트 색상 (단계 4 삭제 예정)
-Color _badgeColor(String badge) {
-  if (badge.startsWith('−') || badge.startsWith('-')) {
-    return AppColors.success;
-  }
-  final n = int.tryParse(badge.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
-  if (n == 0)   return AppColors.success;
-  if (n <= 15)  return AppColors.dustNormal;
-  return AppColors.coral;
-}
-
-/// 퍼센트 배지 칩 — 영향도 크기에 따라 색상 자동 적용
-/// [color] 로 색상을 직접 지정하면 _badgeColor 대신 사용
-Widget _badgeChip(String badge, bool selected, {Color? color}) {
-  final c = color ?? _badgeColor(badge);
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-    decoration: BoxDecoration(
-      color: selected ? c : c.withValues(alpha: 0.12),
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Text(
-      badge,
-      style: TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.bold,
-        color: selected ? Colors.white : c,
-      ),
-    ),
-  );
-}
 
 // ══════════════════════════════════════════════════════════════
 //  Yes / No 두 버튼 Row

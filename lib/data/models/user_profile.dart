@@ -1,5 +1,18 @@
 import '../../core/engine/threshold_engine.dart';
 
+/// 흡연 이력 상태
+enum SmokingStatus {
+  current, // 현재 흡연 중
+  former,  // 과거 흡연 (금연)
+  never,   // 비흡연
+}
+
+/// 사용자 그룹 (알림/케어 카피 분기용)
+enum UserGroup {
+  main,    // 취약 사용자 (호흡기/심혈관/임신/60+/현재흡연)
+  general, // 일반 사용자
+}
+
 /// 활동 태그 상수
 class ActivityTag {
   static const String commute   = 'commute';   // 출퇴근
@@ -9,41 +22,53 @@ class ActivityTag {
   static const String childcare = 'childcare'; // 아이 등하원
 }
 
-/// 개인 건강 프로필 모델 v2
+/// 개인 건강 프로필 모델 v3
 ///
-/// 10개 필드 기반 (enum 미사용)
+/// 11개 건강 항목 기반 (호흡기 4 + 심혈관 3 + 임신 + 흡연 + 기본 2)
 class UserProfile {
-  final String nickname;              // Q1 표시 이름
-  final int birthYear;                // Q2 출생연도 (기본 1990)
-  final String gender;                // Q3 'male'|'female'|'other'
-  /// Q4 호흡기 상태 — 비트플래그
-  /// 0=건강, 1=비염, 2=천식, 3=비염+천식
-  final int respiratoryStatus;
-  final int sensitivityLevel;         // Q5 0=무던 1=보통 2=예민
-  final bool isPregnant;              // Q6 female only
-  final bool recentSkinTreatment;     // Q7 피부 시술 받았는지 여부
-  final DateTime? skinTreatmentDate;  // Q7 시술 날짜 (null = 날짜 미입력)
-  final int outdoorMinutes;           // Q8 0=1h미만 1=1~3h 2=3h이상
-  final List<String> activityTags;    // Q9 활동 태그 목록
-  final int discomfortLevel;          // Q10 0=안느낌 1=보통 2=많이불편
+  final String nickname;
+  final int birthYear;
+  final String gender; // 'male' | 'female' | ''
+
+  // ── 호흡기 ─────────────────────────────────────────────────
+  final bool asthma;
+  final bool rhinitis;
+  final bool copd;
+  final bool allergy;
+
+  // ── 심혈관 ─────────────────────────────────────────────────
+  final bool hypertension;
+  final bool heartDisease;
+  final bool stroke;
+
+  // ── 기타 건강 상태 ──────────────────────────────────────────
+  final bool isPregnant;          // female only
+  final SmokingStatus smokingStatus;
+
+  // ── 생활 설정 ───────────────────────────────────────────────
+  final List<String> activityTags;
+  final int discomfortLevel;      // 0=안느낌 1=보통 2=많이불편
 
   // ── 관심 지역 (Stage 3 iOS Fallback용) ──────────────────────
-  final String homeStationName;       // 집 근처 측정소 이름
-  final String officeStationName;     // 회사 근처 측정소 이름
+  final String homeStationName;
+  final String officeStationName;
 
   const UserProfile({
     required this.nickname,
     required this.birthYear,
     required this.gender,
-    required this.respiratoryStatus,
-    required this.sensitivityLevel,
+    required this.asthma,
+    required this.rhinitis,
+    required this.copd,
+    required this.allergy,
+    required this.hypertension,
+    required this.heartDisease,
+    required this.stroke,
     required this.isPregnant,
-    required this.recentSkinTreatment,
-    this.skinTreatmentDate,
-    required this.outdoorMinutes,
+    required this.smokingStatus,
     required this.activityTags,
     required this.discomfortLevel,
-    this.homeStationName = '',
+    this.homeStationName  = '',
     this.officeStationName = '',
   });
 
@@ -56,46 +81,48 @@ class UserProfile {
   bool get isVulnerableAge => age < 18 || age >= 60;
 
   /// 알림/홈 화면 호칭 ("지수님" 또는 빈 문자열)
-  /// 닉네임 미입력 시 빈 문자열 반환 — 사용처에서 분기 처리
   String get displayName => nickname.isNotEmpty ? '$nickname님' : '';
 
-  /// 피부 시술 효과 활성 여부
-  /// - 날짜가 없으면 사용자가 "받았어요"를 눌렀으므로 활성으로 간주
-  /// - 날짜가 있으면 14일(2주) 이내인 경우만 활성
-  bool get isSkinTreatmentActive {
-    if (!recentSkinTreatment) return false;
-    if (skinTreatmentDate == null) return true;
-    return DateTime.now().difference(skinTreatmentDate!).inDays <= 14;
-  }
+  /// 호흡기 질환 보유 여부 (PM10 max 적용 분기에 사용)
+  bool get hasRespiratoryCondition => asthma || rhinitis || copd || allergy;
 
-  /// 호흡기 상태 레이블 (비트플래그 기반)
-  String get respiratoryLabel {
-    final hasRhinitis = respiratoryStatus & 1 != 0;
-    final hasAsthma   = respiratoryStatus & 2 != 0;
-    if (hasRhinitis && hasAsthma) return '비염+천식';
-    if (hasAsthma)                return '천식 등 질환';
-    if (hasRhinitis)              return '비염 있음';
-    return '건강함';
-  }
+  /// 심혈관 질환 보유 여부
+  bool get hasCardiovascularCondition =>
+      hypertension || heartDisease || stroke;
 
-  /// 최종 PM2.5 알림 임계치 (μg/m³) — ThresholdEngine v2
+  /// 메인 사용자 여부 (취약 그룹)
+  bool get isMainUser =>
+      hasRespiratoryCondition ||
+      hasCardiovascularCondition ||
+      isPregnant ||
+      age >= 60 ||
+      smokingStatus == SmokingStatus.current;
+
+  /// 사용자 그룹 (케어 탭 분기용)
+  UserGroup get userGroup => isMainUser ? UserGroup.main : UserGroup.general;
+
+  /// 최종 PM2.5 알림 임계치 (μg/m³)
   ///
-  /// 공식: clamp(35 × (1 − W_age − W_health − W_sensitivity − W_lifestyle), 15, 35)
+  /// 공식: clamp(35 × (1 − W_age − W_health), 15, 35)
+  /// W_health = W_respiratory + W_cardiovascular + W_smoking + W_special
   double get tFinal => const ThresholdEngine().computeTFinal(this);
 
   // ── 팩토리 ────────────────────────────────────────────────
 
   factory UserProfile.defaultProfile() => const UserProfile(
-        nickname: '',
-        birthYear: 1990,
-        gender: '', // 기본값: 미선택 상태
-        respiratoryStatus: 0,
-        sensitivityLevel: 1,
-        isPregnant: false,
-        recentSkinTreatment: false,
-        skinTreatmentDate: null,
-        outdoorMinutes: 1,
-        activityTags: [],
+        nickname:       '',
+        birthYear:      1990,
+        gender:         '',
+        asthma:         false,
+        rhinitis:       false,
+        copd:           false,
+        allergy:        false,
+        hypertension:   false,
+        heartDisease:   false,
+        stroke:         false,
+        isPregnant:     false,
+        smokingStatus:  SmokingStatus.never,
+        activityTags:   [],
         discomfortLevel: 1,
       );
 
@@ -105,76 +132,85 @@ class UserProfile {
     String? nickname,
     int? birthYear,
     String? gender,
-    int? respiratoryStatus,
-    int? sensitivityLevel,
+    bool? asthma,
+    bool? rhinitis,
+    bool? copd,
+    bool? allergy,
+    bool? hypertension,
+    bool? heartDisease,
+    bool? stroke,
     bool? isPregnant,
-    bool? recentSkinTreatment,
-    // skinTreatmentDate를 null로 지우려면 clearSkinTreatmentDate: true 사용
-    DateTime? skinTreatmentDate,
-    bool clearSkinTreatmentDate = false,
-    int? outdoorMinutes,
+    SmokingStatus? smokingStatus,
     List<String>? activityTags,
     int? discomfortLevel,
     String? homeStationName,
     String? officeStationName,
   }) {
     return UserProfile(
-      nickname:            nickname            ?? this.nickname,
-      birthYear:           birthYear           ?? this.birthYear,
-      gender:              gender              ?? this.gender,
-      respiratoryStatus:   respiratoryStatus   ?? this.respiratoryStatus,
-      sensitivityLevel:    sensitivityLevel    ?? this.sensitivityLevel,
-      isPregnant:          isPregnant          ?? this.isPregnant,
-      recentSkinTreatment: recentSkinTreatment ?? this.recentSkinTreatment,
-      skinTreatmentDate:   clearSkinTreatmentDate
-                               ? null
-                               : (skinTreatmentDate ?? this.skinTreatmentDate),
-      outdoorMinutes:      outdoorMinutes      ?? this.outdoorMinutes,
-      activityTags:        activityTags        ?? this.activityTags,
-      discomfortLevel:     discomfortLevel     ?? this.discomfortLevel,
-      homeStationName:     homeStationName     ?? this.homeStationName,
-      officeStationName:   officeStationName   ?? this.officeStationName,
+      nickname:          nickname          ?? this.nickname,
+      birthYear:         birthYear         ?? this.birthYear,
+      gender:            gender            ?? this.gender,
+      asthma:            asthma            ?? this.asthma,
+      rhinitis:          rhinitis          ?? this.rhinitis,
+      copd:              copd              ?? this.copd,
+      allergy:           allergy           ?? this.allergy,
+      hypertension:      hypertension      ?? this.hypertension,
+      heartDisease:      heartDisease      ?? this.heartDisease,
+      stroke:            stroke            ?? this.stroke,
+      isPregnant:        isPregnant        ?? this.isPregnant,
+      smokingStatus:     smokingStatus     ?? this.smokingStatus,
+      activityTags:      activityTags      ?? this.activityTags,
+      discomfortLevel:   discomfortLevel   ?? this.discomfortLevel,
+      homeStationName:   homeStationName   ?? this.homeStationName,
+      officeStationName: officeStationName ?? this.officeStationName,
     );
   }
 
   // ── JSON 직렬화 ───────────────────────────────────────────
 
   Map<String, dynamic> toJson() => {
-        'nickname':            nickname,
-        'birthYear':           birthYear,
-        'gender':              gender,
-        'respiratoryStatus':   respiratoryStatus,
-        'sensitivityLevel':    sensitivityLevel,
-        'isPregnant':          isPregnant,
-        'recentSkinTreatment': recentSkinTreatment,
-        'skinTreatmentDate':   skinTreatmentDate?.toIso8601String(),
-        'outdoorMinutes':      outdoorMinutes,
-        'activityTags':        activityTags,
-        'discomfortLevel':     discomfortLevel,
-        'homeStationName':     homeStationName,
-        'officeStationName':   officeStationName,
+        'nickname':          nickname,
+        'birthYear':         birthYear,
+        'gender':            gender,
+        'asthma':            asthma,
+        'rhinitis':          rhinitis,
+        'copd':              copd,
+        'allergy':           allergy,
+        'hypertension':      hypertension,
+        'heartDisease':      heartDisease,
+        'stroke':            stroke,
+        'isPregnant':        isPregnant,
+        'smokingStatus':     smokingStatus.name,
+        'activityTags':      activityTags,
+        'discomfortLevel':   discomfortLevel,
+        'homeStationName':   homeStationName,
+        'officeStationName': officeStationName,
       };
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
-    final d = UserProfile.defaultProfile();
-    final skinDateStr = json['skinTreatmentDate'] as String?;
+    // 구버전 respiratoryStatus 비트플래그 하위 호환
+    final legacyStatus = json['respiratoryStatus'] as int? ?? 0;
+
     return UserProfile(
-      nickname:            json['nickname']            as String?  ?? d.nickname,
-      birthYear:           json['birthYear']           as int?     ?? d.birthYear,
-      gender:              json['gender']              as String?  ?? d.gender,
-      respiratoryStatus:   json['respiratoryStatus']  as int?     ?? d.respiratoryStatus,
-      sensitivityLevel:    json['sensitivityLevel']   as int?     ?? d.sensitivityLevel,
-      isPregnant:          json['isPregnant']          as bool?    ?? d.isPregnant,
-      recentSkinTreatment: json['recentSkinTreatment'] as bool?   ?? d.recentSkinTreatment,
-      skinTreatmentDate:   skinDateStr != null
-                               ? DateTime.tryParse(skinDateStr)
-                               : null,
-      outdoorMinutes:      json['outdoorMinutes']      as int?     ?? d.outdoorMinutes,
-      activityTags:        (json['activityTags'] as List<dynamic>?)
-                               ?.cast<String>()                   ?? d.activityTags,
-      discomfortLevel:     json['discomfortLevel']    as int?     ?? d.discomfortLevel,
-      homeStationName:     json['homeStationName']    as String?  ?? d.homeStationName,
-      officeStationName:   json['officeStationName']  as String?  ?? d.officeStationName,
+      nickname:  json['nickname']  as String? ?? '',
+      birthYear: json['birthYear'] as int?    ?? 1990,
+      gender:    json['gender']    as String? ?? '',
+      // 신규 필드 없으면 legacyStatus 비트플래그로 폴백
+      asthma:    json['asthma']    as bool?   ?? (legacyStatus & 2) != 0,
+      rhinitis:  json['rhinitis']  as bool?   ?? (legacyStatus & 1) != 0,
+      copd:      json['copd']      as bool?   ?? false,
+      allergy:   json['allergy']   as bool?   ?? false,
+      hypertension: json['hypertension'] as bool? ?? false,
+      heartDisease: json['heartDisease'] as bool? ?? false,
+      stroke:       json['stroke']       as bool? ?? false,
+      isPregnant:   json['isPregnant']   as bool? ?? false,
+      smokingStatus: SmokingStatus.values.byName(
+          json['smokingStatus'] as String? ?? 'never'),
+      activityTags: (json['activityTags'] as List<dynamic>?)
+                        ?.cast<String>() ?? [],
+      discomfortLevel:   json['discomfortLevel']   as int?    ?? 1,
+      homeStationName:   json['homeStationName']   as String? ?? '',
+      officeStationName: json['officeStationName'] as String? ?? '',
     );
   }
 }

@@ -8,33 +8,39 @@ const _engine = ThresholdEngine();
 ///
 /// birthYear 기본값 1990 (2026 기준 36세 → W_age = 0.0)
 UserProfile _profile({
-  int birthYear          = 1990,
-  String gender          = 'female',
-  int respiratoryStatus  = 0,
-  int sensitivityLevel   = 0,
-  int outdoorMinutes     = 0,
-  bool isPregnant        = false,
-  bool recentSkinTreatment = false,
-  DateTime? skinTreatmentDate,
+  int birthYear        = 1990,
+  String gender        = 'female',
+  bool asthma          = false,
+  bool rhinitis        = false,
+  bool copd            = false,
+  bool allergy         = false,
+  bool hypertension    = false,
+  bool heartDisease    = false,
+  bool stroke          = false,
+  bool isPregnant      = false,
+  SmokingStatus smokingStatus = SmokingStatus.never,
 }) =>
     UserProfile(
-      nickname:            '',
-      birthYear:           birthYear,
-      gender:              gender,
-      respiratoryStatus:   respiratoryStatus,
-      sensitivityLevel:    sensitivityLevel,
-      isPregnant:          isPregnant,
-      recentSkinTreatment: recentSkinTreatment,
-      skinTreatmentDate:   skinTreatmentDate,
-      outdoorMinutes:      outdoorMinutes,
-      activityTags:        [],
-      discomfortLevel:     1,
+      nickname:      '',
+      birthYear:     birthYear,
+      gender:        gender,
+      asthma:        asthma,
+      rhinitis:      rhinitis,
+      copd:          copd,
+      allergy:       allergy,
+      hypertension:  hypertension,
+      heartDisease:  heartDisease,
+      stroke:        stroke,
+      isPregnant:    isPregnant,
+      smokingStatus: smokingStatus,
+      activityTags:  [],
+      discomfortLevel: 1,
     );
 
 void main() {
   // ── computeWAge ────────────────────────────────────────────────
 
-  group('computeWAge — 연령 6구간', () {
+  group('computeWAge — 연령 구간', () {
     test('11세 → under_12 → 0.10', () {
       final p = _profile(birthYear: DateTime.now().year - 11);
       expect(_engine.computeWAge(p), closeTo(0.10, 0.001));
@@ -50,14 +56,9 @@ void main() {
       expect(_engine.computeWAge(p), closeTo(0.0, 0.001));
     });
 
-    test('50세 → 50_to_59 경계 → 0.03', () {
+    test('50세 → 50_to_59 경계 → 0.00 (가중치 없음)', () {
       final p = _profile(birthYear: DateTime.now().year - 50);
-      expect(_engine.computeWAge(p), closeTo(0.03, 0.001));
-    });
-
-    test('59세 → 50_to_59 경계 → 0.03', () {
-      final p = _profile(birthYear: DateTime.now().year - 59);
-      expect(_engine.computeWAge(p), closeTo(0.03, 0.001));
+      expect(_engine.computeWAge(p), closeTo(0.00, 0.001));
     });
 
     test('60세 → 60_to_69 경계 → 0.06', () {
@@ -65,18 +66,8 @@ void main() {
       expect(_engine.computeWAge(p), closeTo(0.06, 0.001));
     });
 
-    test('69세 → 60_to_69 경계 → 0.06', () {
-      final p = _profile(birthYear: DateTime.now().year - 69);
-      expect(_engine.computeWAge(p), closeTo(0.06, 0.001));
-    });
-
     test('70세 → 70_to_79 경계 → 0.10', () {
       final p = _profile(birthYear: DateTime.now().year - 70);
-      expect(_engine.computeWAge(p), closeTo(0.10, 0.001));
-    });
-
-    test('79세 → 70_to_79 경계 → 0.10', () {
-      final p = _profile(birthYear: DateTime.now().year - 79);
       expect(_engine.computeWAge(p), closeTo(0.10, 0.001));
     });
 
@@ -91,48 +82,84 @@ void main() {
     });
   });
 
-  // ── computeWSensitivity ────────────────────────────────────────
+  // ── computeWHealth — 호흡기 카테고리 ──────────────────────────
 
-  group('computeWSensitivity — 민감도 3단계', () {
-    test('level 0 무던 → 0.0', () {
-      expect(_engine.computeWSensitivity(_profile(sensitivityLevel: 0)),
-          closeTo(0.0, 0.001));
-    });
-
-    test('level 1 조금 예민 → 0.02', () {
-      expect(_engine.computeWSensitivity(_profile(sensitivityLevel: 1)),
-          closeTo(0.02, 0.001));
-    });
-
-    test('level 2 매우 예민 → 0.05', () {
-      expect(_engine.computeWSensitivity(_profile(sensitivityLevel: 2)),
-          closeTo(0.05, 0.001));
-    });
-  });
-
-  // ── computeWHealth (합산) ────────────────────────────────────────
-
-  group('computeWHealth — 합산 방식', () {
+  group('computeWHealth — 호흡기 카테고리 (상한 0.30)', () {
     test('건강함 → 0.0', () {
       expect(_engine.computeWHealth(_profile()), closeTo(0.0, 0.001));
     });
 
-    test('비염만 (respiratoryStatus=1) → 0.15', () {
-      expect(_engine.computeWHealth(_profile(respiratoryStatus: 1)),
-          closeTo(0.15, 0.001));
+    test('비염만 → 0.15', () {
+      expect(_engine.computeWHealth(_profile(rhinitis: true)), closeTo(0.15, 0.001));
     });
 
-    test('천식만 (respiratoryStatus=2) → 0.20', () {
-      expect(_engine.computeWHealth(_profile(respiratoryStatus: 2)),
+    test('천식만 → 0.20', () {
+      expect(_engine.computeWHealth(_profile(asthma: true)), closeTo(0.20, 0.001));
+    });
+
+    test('COPD만 → 0.25', () {
+      expect(_engine.computeWHealth(_profile(copd: true)), closeTo(0.25, 0.001));
+    });
+
+    test('알레르기만 → 0.15', () {
+      expect(_engine.computeWHealth(_profile(allergy: true)), closeTo(0.15, 0.001));
+    });
+
+    test('비염+천식 합산 → 0.35 이지만 상한 0.30 적용', () {
+      expect(_engine.computeWHealth(_profile(rhinitis: true, asthma: true)),
+          closeTo(0.30, 0.001));
+    });
+
+    test('COPD+천식 합산 → 0.45 이지만 상한 0.30 적용', () {
+      expect(_engine.computeWHealth(_profile(copd: true, asthma: true)),
+          closeTo(0.30, 0.001));
+    });
+  });
+
+  // ── computeWHealth — 심혈관 카테고리 ──────────────────────────
+
+  group('computeWHealth — 심혈관 카테고리 (상한 0.25)', () {
+    test('고혈압만 → 0.15', () {
+      expect(_engine.computeWHealth(_profile(hypertension: true)), closeTo(0.15, 0.001));
+    });
+
+    test('심장질환만 → 0.20', () {
+      expect(_engine.computeWHealth(_profile(heartDisease: true)), closeTo(0.20, 0.001));
+    });
+
+    test('뇌졸중만 → 0.15', () {
+      expect(_engine.computeWHealth(_profile(stroke: true)), closeTo(0.15, 0.001));
+    });
+
+    test('고혈압+심장+뇌졸중 합산 → 0.50 이지만 상한 0.25 적용', () {
+      expect(_engine.computeWHealth(_profile(hypertension: true, heartDisease: true, stroke: true)),
+          closeTo(0.25, 0.001));
+    });
+  });
+
+  // ── computeWHealth — 흡연 ─────────────────────────────────────
+
+  group('computeWHealth — 흡연 이력', () {
+    test('비흡연 → 0.0', () {
+      expect(_engine.computeWHealth(_profile(smokingStatus: SmokingStatus.never)),
+          closeTo(0.0, 0.001));
+    });
+
+    test('현재 흡연 → 0.20', () {
+      expect(_engine.computeWHealth(_profile(smokingStatus: SmokingStatus.current)),
           closeTo(0.20, 0.001));
     });
 
-    test('비염+천식 (respiratoryStatus=3) → 0.35 (합산)', () {
-      expect(_engine.computeWHealth(_profile(respiratoryStatus: 3)),
-          closeTo(0.35, 0.001));
+    test('과거 흡연 → 0.10', () {
+      expect(_engine.computeWHealth(_profile(smokingStatus: SmokingStatus.former)),
+          closeTo(0.10, 0.001));
     });
+  });
 
-    test('임신 (여성) → 0.20', () {
+  // ── computeWHealth — 임신 ─────────────────────────────────────
+
+  group('computeWHealth — 임신', () {
+    test('임신 (female) → 0.20', () {
       final p = _profile(gender: 'female', isPregnant: true);
       expect(_engine.computeWHealth(p), closeTo(0.20, 0.001));
     });
@@ -146,154 +173,75 @@ void main() {
       final p = _profile(gender: 'male', isPregnant: true);
       expect(_engine.computeWHealth(p), closeTo(0.0, 0.001));
     });
-
-    test('피부 시술 (날짜 없음) → 0.10', () {
-      final p = _profile(recentSkinTreatment: true);
-      expect(_engine.computeWHealth(p), closeTo(0.10, 0.001));
-    });
-
-    test('피부 시술 (7일 이내) → 0.10', () {
-      final p = _profile(
-        recentSkinTreatment: true,
-        skinTreatmentDate: DateTime.now().subtract(const Duration(days: 7)),
-      );
-      expect(_engine.computeWHealth(p), closeTo(0.10, 0.001));
-    });
-
-    test('피부 시술 (15일 경과) → 0.0 (만료)', () {
-      final p = _profile(
-        recentSkinTreatment: true,
-        skinTreatmentDate: DateTime.now().subtract(const Duration(days: 15)),
-      );
-      expect(_engine.computeWHealth(p), closeTo(0.0, 0.001));
-    });
-
-    test('비염+천식+임신+시술 → 0.65 (전체 합산)', () {
-      final p = _profile(
-        gender: 'female',
-        respiratoryStatus: 3,
-        isPregnant: true,
-        recentSkinTreatment: true,
-      );
-      expect(_engine.computeWHealth(p), closeTo(0.65, 0.001));
-    });
-  });
-
-  // ── computeWLifestyle ────────────────────────────────────────────
-
-  group('computeWLifestyle — 야외 활동', () {
-    test('outdoorMinutes 0 (<1h) → 0.0', () {
-      expect(_engine.computeWLifestyle(_profile(outdoorMinutes: 0)),
-          closeTo(0.0, 0.001));
-    });
-
-    test('outdoorMinutes 1 (1~3h) → 0.03', () {
-      expect(_engine.computeWLifestyle(_profile(outdoorMinutes: 1)),
-          closeTo(0.03, 0.001));
-    });
-
-    test('outdoorMinutes 2 (3h+) → 0.07', () {
-      expect(_engine.computeWLifestyle(_profile(outdoorMinutes: 2)),
-          closeTo(0.07, 0.001));
-    });
   });
 
   // ── computeTFinal — 케이스 시뮬레이션 ─────────────────────────────
 
   group('computeTFinal — 케이스 시뮬레이션', () {
-    test('케이스 1: 평범한 사용자 (1996년생, 건강, 조금예민, 1~3h)', () {
-      // W_age=0.0 (30세 → 12~49), W_health=0.0, W_sensitivity=0.02, W_lifestyle=0.03
-      // raw = 35 × (1 - 0.05) = 35 × 0.95 = 33.25
-      final p = _profile(
-        birthYear:        1996,
-        respiratoryStatus: 0,
-        sensitivityLevel:  1,
-        outdoorMinutes:    1,
-      );
-      expect(p.tFinal, closeTo(33.25, 0.01));
-    });
-
-    test('케이스 2: 위험 누적 (1962년생/64세, 비염+천식, 매우예민, 1~3h)', () {
-      // W_age=0.06, W_health=0.35, W_sensitivity=0.05, W_lifestyle=0.03
-      // W_total=0.49, raw = 35 × 0.51 = 17.85
-      final p = _profile(
-        birthYear:         1962,
-        respiratoryStatus: 3,
-        sensitivityLevel:  2,
-        outdoorMinutes:    1,
-      );
-      expect(p.tFinal, closeTo(17.85, 0.01));
-    });
-
-    test('케이스 3: 극단 (1950년생/76세, 천식+임신+시술, 매우예민, 3h+) → clamp(15)', () {
-      // W_age=0.10, W_health=0.50 (천식0.20+임신0.20+시술0.10), W_sensitivity=0.05, W_lifestyle=0.07
-      // W_total=0.72, raw = 35 × 0.28 = 9.8 → clamp → 15.0
-      final p = _profile(
-        birthYear:         1950,
-        gender:            'female',
-        respiratoryStatus: 2,
-        sensitivityLevel:  2,
-        outdoorMinutes:    2,
-        isPregnant:        true,
-        recentSkinTreatment: true,
-      );
-      expect(p.tFinal, closeTo(15.0, 0.01));
-    });
-
-    test('최대 누적 (80세, 비염+천식+임신+시술, 매우예민, 3h+) → clamp(15)', () {
-      // W_age=0.13, W_health=0.65, W_sensitivity=0.05, W_lifestyle=0.07
-      // W_total=0.90, raw = 35 × 0.10 = 3.5 → clamp → 15.0
-      final p = _profile(
-        birthYear:         DateTime.now().year - 80,
-        gender:            'female',
-        respiratoryStatus: 3,
-        sensitivityLevel:  2,
-        outdoorMinutes:    2,
-        isPregnant:        true,
-        recentSkinTreatment: true,
-      );
-      expect(p.tFinal, closeTo(15.0, 0.01));
-    });
-
-    test('일반인 (건강, 무던, 야외 없음, 12~49세) → 35.0 (무가중)', () {
-      final p = _profile(
-        birthYear:         1990,
-        respiratoryStatus: 0,
-        sensitivityLevel:  0,
-        outdoorMinutes:    0,
-      );
+    test('일반인 (1990년생, 건강, 비흡연) → T_final=35.0', () {
+      final p = _profile(birthYear: 1990);
       expect(p.tFinal, closeTo(35.0, 0.01));
+    });
+
+    test('비염 (1990년생) → W_health=0.15 → T_final=29.75', () {
+      final p = _profile(birthYear: 1990, rhinitis: true);
+      // W_total=0.15, raw=35×0.85=29.75
+      expect(p.tFinal, closeTo(29.75, 0.01));
+    });
+
+    test('60세+천식 (1964년생) → W_age=0.06+W_resp=0.20 → T_final=26.6', () {
+      final p = _profile(birthYear: 1964, asthma: true);
+      // W_age=0.06, W_resp=0.20, W_total=0.26, raw=35×0.74=25.9
+      expect(p.tFinal, closeTo(25.9, 0.01));
+    });
+
+    test('위험 누적 (1964년생/62세, 비염+천식) → cap 0.30 적용 → T_final=20.3', () {
+      final p = _profile(birthYear: 1964, rhinitis: true, asthma: true);
+      // W_age=0.06, W_resp=min(0.15+0.20, 0.30)=0.30, W_total=0.36
+      // raw=35×0.64=22.4
+      expect(p.tFinal, closeTo(22.4, 0.01));
+    });
+
+    test('극단 누적 (1946년생/80세, 비염+천식+임신+현재흡연) → clamp(15)', () {
+      final p = _profile(
+        birthYear:     1946,
+        gender:        'female',
+        rhinitis:      true,
+        asthma:        true,
+        isPregnant:    true,
+        smokingStatus: SmokingStatus.current,
+      );
+      // W_age=0.13, W_resp=0.30(cap), W_smoke=0.20, W_special=0.20 → W_total≥0.83
+      // raw < 15 → clamp
+      expect(p.tFinal, closeTo(15.0, 0.01));
     });
   });
 
   // ── clamp 동작 ────────────────────────────────────────────────
 
   group('clamp 동작', () {
-    test('가중치 없으면 tFinal은 tBase(35)로 clamp', () {
-      final p = _profile(
-        birthYear:        1990,
-        respiratoryStatus: 0,
-        sensitivityLevel:  0,
-        outdoorMinutes:    0,
-      );
+    test('가중치 없으면 tFinal은 tBase(35)로 반환', () {
+      final p = _profile(birthYear: 1990);
       expect(_engine.computeTFinal(p), closeTo(35.0, 0.01));
     });
 
     test('극단 가중치 시 tFinal은 tFloor(15) 이하로 내려가지 않음', () {
       final p = _profile(
-        birthYear:         DateTime.now().year - 85,
-        gender:            'female',
-        respiratoryStatus: 3,
-        sensitivityLevel:  2,
-        outdoorMinutes:    2,
-        isPregnant:        true,
-        recentSkinTreatment: true,
+        birthYear:     DateTime.now().year - 85,
+        gender:        'female',
+        asthma:        true,
+        rhinitis:      true,
+        copd:          true,
+        hypertension:  true,
+        heartDisease:  true,
+        isPregnant:    true,
+        smokingStatus: SmokingStatus.current,
       );
       expect(_engine.computeTFinal(p), greaterThanOrEqualTo(15.0));
     });
   });
 
-  // ── PM10 비율 ─────────────────────────────────────────────────
+  // ── computeTFinalPm10 ─────────────────────────────────────────
 
   group('computeTFinalPm10 = computeTFinal × (80/35)', () {
     test('일반인 → tFinal=35 → PM10 임계치=80', () {
@@ -305,14 +253,9 @@ void main() {
 
     test('임의 프로필에서도 비율 항상 80/35 유지', () {
       final profiles = [
-        _profile(respiratoryStatus: 1),
-        _profile(respiratoryStatus: 3, sensitivityLevel: 2),
-        _profile(
-          birthYear: 1960,
-          gender: 'female',
-          isPregnant: true,
-          outdoorMinutes: 2,
-        ),
+        _profile(rhinitis: true),
+        _profile(rhinitis: true, asthma: true),
+        _profile(birthYear: 1960, gender: 'female', isPregnant: true),
       ];
       for (final p in profiles) {
         final ratio = _engine.computeTFinalPm10(p) / _engine.computeTFinal(p);
@@ -323,21 +266,15 @@ void main() {
 
   // ── ThresholdBreakdown ────────────────────────────────────────
 
-  group('ThresholdBreakdown — 4필드 구조', () {
-    test('wTotal = wAge + wHealth + wSensitivity + wLifestyle', () {
-      final p = _profile(
-        birthYear:         1962,
-        respiratoryStatus: 3,
-        sensitivityLevel:  2,
-        outdoorMinutes:    1,
-      );
+  group('ThresholdBreakdown — 구조 검증', () {
+    test('wTotal = wAge + wHealth (합산)', () {
+      final p = _profile(birthYear: 1964, rhinitis: true, asthma: true);
       final bd = _engine.breakdown(p);
-      expect(bd.wTotal,
-          closeTo(bd.wAge + bd.wHealth + bd.wSensitivity + bd.wLifestyle, 0.0001));
+      expect(bd.wTotal, closeTo(bd.wAge + bd.wHealth, 0.0001));
     });
 
     test('tFinalRaw = 35 × (1 - wTotal)', () {
-      final p = _profile(respiratoryStatus: 1, sensitivityLevel: 1, outdoorMinutes: 1);
+      final p = _profile(rhinitis: true);
       final bd = _engine.breakdown(p);
       final expected = 35.0 * (1.0 - bd.wTotal);
       expect(bd.tFinalRaw, closeTo(expected, 0.0001));
@@ -345,13 +282,15 @@ void main() {
 
     test('floorApplied = true when tFinalRaw < 15', () {
       final p = _profile(
-        birthYear:         DateTime.now().year - 85,
-        gender:            'female',
-        respiratoryStatus: 3,
-        sensitivityLevel:  2,
-        outdoorMinutes:    2,
-        isPregnant:        true,
-        recentSkinTreatment: true,
+        birthYear:     DateTime.now().year - 85,
+        gender:        'female',
+        asthma:        true,
+        rhinitis:      true,
+        copd:          true,
+        hypertension:  true,
+        heartDisease:  true,
+        isPregnant:    true,
+        smokingStatus: SmokingStatus.current,
       );
       final bd = _engine.breakdown(p);
       expect(bd.floorApplied, isTrue);
@@ -362,6 +301,13 @@ void main() {
       final p = _profile();
       final bd = _engine.breakdown(p);
       expect(bd.floorApplied, isFalse);
+    });
+
+    test('wHealth getter = wRespiratory + wCardiovascular + wSmoking + wSpecial', () {
+      final p = _profile(rhinitis: true, heartDisease: true, smokingStatus: SmokingStatus.former);
+      final bd = _engine.breakdown(p);
+      expect(bd.wHealth,
+          closeTo(bd.wRespiratory + bd.wCardiovascular + bd.wSmoking + bd.wSpecial, 0.0001));
     });
   });
 }

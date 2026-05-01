@@ -58,20 +58,8 @@ class MyBodyInfoScreen extends ConsumerWidget {
           _InfoSection(children: [
             _InfoRow(
               title: '호흡기',
-              value: profile.respiratoryLabel,
+              value: _respiratoryLabel(profile),
               onTap: () => _showRespiratorySheet(context, ref, profile),
-            ),
-            const _Divider(),
-            _InfoRow(
-              title: '민감도',
-              value: _sensitivityLabel(profile.sensitivityLevel),
-              onTap: () => _showSensitivitySheet(context, ref, profile),
-            ),
-            const _Divider(),
-            _InfoRow(
-              title: '야외 활동',
-              value: _outdoorLabel(profile.outdoorMinutes),
-              onTap: () => _showOutdoorSheet(context, ref, profile),
             ),
             const _Divider(),
             _InfoRow(
@@ -92,12 +80,6 @@ class MyBodyInfoScreen extends ConsumerWidget {
               value: profile.isPregnant ? '예' : '아니오',
               onTap: () => _showPregnantSheet(context, ref, profile),
             ),
-            const _Divider(),
-            _InfoRow(
-              title: '피부 시술',
-              value: profile.isSkinTreatmentActive ? '회복 중' : '해당 없음',
-              onTap: () => _showSkinTreatmentSheet(context, ref, profile),
-            ),
           ]),
           const SizedBox(height: 24),
         ],
@@ -115,17 +97,15 @@ String _genderLabel(String g) => switch (g) {
       _        => '미선택',
     };
 
-String _sensitivityLabel(int v) => switch (v) {
-      1 => '조금 예민',
-      2 => '매우 예민',
-      _ => '무던함',
-    };
-
-String _outdoorLabel(int v) => switch (v) {
-      1 => '30분~3시간',
-      2 => '3시간 이상',
-      _ => '30분 이하',
-    };
+String _respiratoryLabel(UserProfile profile) {
+  final list = [
+    if (profile.asthma)   '천식',
+    if (profile.rhinitis) '비염',
+    if (profile.copd)     'COPD',
+    if (profile.allergy)  '알레르기',
+  ];
+  return list.isEmpty ? '건강함' : list.join(', ');
+}
 
 // ── 저장 + SnackBar 헬퍼 ─────────────────────────────────
 
@@ -421,7 +401,10 @@ void _showRespiratorySheet(BuildContext context, WidgetRef ref, UserProfile prof
     useRootNavigator: true,
     backgroundColor: Colors.transparent,
     builder: (ctx) {
-      int selected = profile.respiratoryStatus;
+      bool asthma  = profile.asthma;
+      bool rhinitis = profile.rhinitis;
+      bool copd    = profile.copd;
+      bool allergy = profile.allergy;
       return StatefulBuilder(
         builder: (ctx, setState) => _sheetShell(
           child: Column(
@@ -430,21 +413,16 @@ void _showRespiratorySheet(BuildContext context, WidgetRef ref, UserProfile prof
             children: [
               const Text('호흡기 상태', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: DT.text)),
               const SizedBox(height: 16),
-              _ChipGroup<int>(
-                values: const [0, 1, 2, 3],
-                selected: selected,
-                labelOf: (v) => switch (v) {
-                  1 => '비염',
-                  2 => '천식',
-                  3 => '둘 다',
-                  _ => '건강함',
-                },
-                onSelect: (v) => setState(() => selected = v),
-              ),
+              _BoolToggleRow(label: '천식',    value: asthma,   onChanged: (v) => setState(() => asthma   = v)),
+              _BoolToggleRow(label: '비염',    value: rhinitis, onChanged: (v) => setState(() => rhinitis = v)),
+              _BoolToggleRow(label: 'COPD',   value: copd,     onChanged: (v) => setState(() => copd     = v)),
+              _BoolToggleRow(label: '알레르기', value: allergy,  onChanged: (v) => setState(() => allergy  = v)),
               const SizedBox(height: 20),
               _actionRow(
                 onSave: () {
-                  _save(ctx, ref, profile.copyWith(respiratoryStatus: selected));
+                  _save(ctx, ref, profile.copyWith(
+                    asthma: asthma, rhinitis: rhinitis, copd: copd, allergy: allergy,
+                  ));
                   Navigator.pop(ctx);
                 },
                 onCancel: () => Navigator.pop(ctx),
@@ -457,95 +435,7 @@ void _showRespiratorySheet(BuildContext context, WidgetRef ref, UserProfile prof
   );
 }
 
-// ── 바텀시트 e: 민감도 ───────────────────────────────────
-
-void _showSensitivitySheet(BuildContext context, WidgetRef ref, UserProfile profile) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    useRootNavigator: true,
-    backgroundColor: Colors.transparent,
-    builder: (ctx) {
-      int selected = profile.sensitivityLevel;
-      return StatefulBuilder(
-        builder: (ctx, setState) => _sheetShell(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('체감 민감도', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: DT.text)),
-              const SizedBox(height: 16),
-              _ChipGroup<int>(
-                values: const [0, 1, 2],
-                selected: selected,
-                labelOf: (v) => switch (v) {
-                  1 => '조금 예민',
-                  2 => '매우 예민',
-                  _ => '무던함',
-                },
-                onSelect: (v) => setState(() => selected = v),
-              ),
-              const SizedBox(height: 20),
-              _actionRow(
-                onSave: () {
-                  _save(ctx, ref, profile.copyWith(sensitivityLevel: selected));
-                  Navigator.pop(ctx);
-                },
-                onCancel: () => Navigator.pop(ctx),
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-}
-
-// ── 바텀시트 f: 야외 활동 ─────────────────────────────────
-
-void _showOutdoorSheet(BuildContext context, WidgetRef ref, UserProfile profile) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    useRootNavigator: true,
-    backgroundColor: Colors.transparent,
-    builder: (ctx) {
-      int selected = profile.outdoorMinutes;
-      return StatefulBuilder(
-        builder: (ctx, setState) => _sheetShell(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('야외 활동 시간', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: DT.text)),
-              const SizedBox(height: 16),
-              _ChipGroup<int>(
-                values: const [0, 1, 2],
-                selected: selected,
-                labelOf: (v) => switch (v) {
-                  1 => '30분~3시간',
-                  2 => '3시간 이상',
-                  _ => '30분 이하',
-                },
-                onSelect: (v) => setState(() => selected = v),
-              ),
-              const SizedBox(height: 20),
-              _actionRow(
-                onSave: () {
-                  _save(ctx, ref, profile.copyWith(outdoorMinutes: selected));
-                  Navigator.pop(ctx);
-                },
-                onCancel: () => Navigator.pop(ctx),
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-}
-
-// ── 바텀시트 g: 활동 유형 ─────────────────────────────────
+// ── 바텀시트 e: 활동 유형 ─────────────────────────────────
 
 const _kActivityOptions = [
   (tag: ActivityTag.commute,   label: '출퇴근'),
@@ -653,117 +543,31 @@ void _showPregnantSheet(BuildContext context, WidgetRef ref, UserProfile profile
   );
 }
 
-// ── 바텀시트 i: 피부 시술 ─────────────────────────────────
-
-void _showSkinTreatmentSheet(BuildContext context, WidgetRef ref, UserProfile profile) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    useRootNavigator: true,
-    backgroundColor: Colors.transparent,
-    builder: (ctx) {
-      bool hasTreatment = profile.recentSkinTreatment;
-      DateTime? treatmentDate = profile.skinTreatmentDate;
-
-      return StatefulBuilder(
-        builder: (ctx, setState) {
-          Future<void> pickDate() async {
-            final now = DateTime.now();
-            final picked = await showDatePicker(
-              context: ctx,
-              initialDate: treatmentDate ?? now,
-              firstDate: now.subtract(const Duration(days: 60)),
-              lastDate: now,
-              helpText: '시술 날짜를 선택하세요',
-              cancelText: '취소',
-              confirmText: '확인',
-            );
-            if (picked != null) setState(() => treatmentDate = picked);
-          }
-
-          String dateLabel() {
-            if (treatmentDate == null) return '날짜 선택';
-            final diff = DateTime.now().difference(treatmentDate!).inDays;
-            if (diff == 0) return '오늘';
-            if (diff == 1) return '어제';
-            return '$diff일 전';
-          }
-
-          return _sheetShell(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('피부 시술', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: DT.text)),
-                const SizedBox(height: 4),
-                const Text('시술 후 14일간 더 낮은 기준을 적용해요.',
-                    style: TextStyle(fontSize: 13, color: DT.gray)),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('최근 피부 시술했어요', style: TextStyle(fontSize: 15, color: DT.text)),
-                    Switch(
-                      value: hasTreatment,
-                      onChanged: (v) => setState(() {
-                        hasTreatment = v;
-                        if (!v) treatmentDate = null;
-                      }),
-                      activeThumbColor: DT.primary,
-                      activeTrackColor: DT.primaryLt,
-                    ),
-                  ],
-                ),
-                if (hasTreatment) ...[
-                  const SizedBox(height: 12),
-                  GestureDetector(
-                    onTap: pickDate,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: DT.grayLt,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: DT.border),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.calendar_today_outlined, size: 16, color: DT.gray),
-                          const SizedBox(width: 8),
-                          Text(dateLabel(), style: const TextStyle(fontSize: 14, color: DT.text)),
-                          const Spacer(),
-                          const Icon(Icons.chevron_right, size: 18, color: DT.gray),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 20),
-                _actionRow(
-                  onSave: () {
-                    final updated = hasTreatment
-                        ? profile.copyWith(
-                            recentSkinTreatment: true,
-                            skinTreatmentDate: treatmentDate,
-                          )
-                        : profile.copyWith(
-                            recentSkinTreatment: false,
-                            clearSkinTreatmentDate: true,
-                          );
-                    _save(ctx, ref, updated);
-                    Navigator.pop(ctx);
-                  },
-                  onCancel: () => Navigator.pop(ctx),
-                ),
-              ],
-            ),
-          );
-        },
-      );
-    },
-  );
-}
 
 // ── UI 컴포넌트 ───────────────────────────────────────────
+
+class _BoolToggleRow extends StatelessWidget {
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  const _BoolToggleRow({required this.label, required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 15, color: DT.text)),
+        Switch(
+          value: value,
+          onChanged: onChanged,
+          activeThumbColor: DT.primary,
+          activeTrackColor: DT.primaryLt,
+        ),
+      ],
+    );
+  }
+}
 
 class _SectionHeader extends StatelessWidget {
   final String label;

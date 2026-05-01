@@ -64,13 +64,17 @@ const _base = UserProfile(
   nickname: '지수',
   birthYear: 1990,
   gender: 'male',
-  respiratoryStatus: 0,
-  sensitivityLevel: 1,
+  asthma: false,
+  rhinitis: false,
+  copd: false,
+  allergy: false,
+  hypertension: false,
+  heartDisease: false,
+  stroke: false,
   isPregnant: false,
-  recentSkinTreatment: false,
-  outdoorMinutes: 1,
+  smokingStatus: SmokingStatus.never,
   activityTags: [],
-  discomfortLevel: 2, // 보존 확인용 (f 시나리오)
+  discomfortLevel: 2,
 );
 
 // ── 테스트 헬퍼 ───────────────────────────────────────────
@@ -118,17 +122,25 @@ void main() {
       expect(find.text('현재 상황'), findsOneWidget);
     });
 
-    testWidgets('9개 항목 타이틀 표시', (tester) async {
+    testWidgets('6개 항목 타이틀 표시', (tester) async {
       await tester.pumpWidget(_buildApp());
       await tester.pump();
 
       for (final title in [
         '닉네임', '출생 연도', '성별',
-        '호흡기', '민감도', '야외 활동', '활동 유형',
-        '임신', '피부 시술',
+        '호흡기', '활동 유형', '임신',
       ]) {
         expect(find.text(title), findsOneWidget, reason: '$title not found');
       }
+    });
+
+    testWidgets('민감도/야외활동/피부시술 항목 없음', (tester) async {
+      await tester.pumpWidget(_buildApp());
+      await tester.pump();
+
+      expect(find.text('민감도'), findsNothing);
+      expect(find.text('야외 활동'), findsNothing);
+      expect(find.text('피부 시술'), findsNothing);
     });
   });
 
@@ -165,18 +177,6 @@ void main() {
       expect(find.text('건강함'), findsOneWidget);
     });
 
-    testWidgets('민감도 표시 — 조금 예민', (tester) async {
-      await tester.pumpWidget(_buildApp());
-      await tester.pump();
-      expect(find.text('조금 예민'), findsOneWidget);
-    });
-
-    testWidgets('야외 활동 표시 — 30분~3시간', (tester) async {
-      await tester.pumpWidget(_buildApp());
-      await tester.pump();
-      expect(find.text('30분~3시간'), findsOneWidget);
-    });
-
     testWidgets('활동 유형 없음 표시', (tester) async {
       await tester.pumpWidget(_buildApp());
       await tester.pump();
@@ -187,12 +187,6 @@ void main() {
       await tester.pumpWidget(_buildApp());
       await tester.pump();
       expect(find.text('아니오'), findsOneWidget);
-    });
-
-    testWidgets('피부 시술 해당 없음 표시', (tester) async {
-      await tester.pumpWidget(_buildApp());
-      await tester.pump();
-      expect(find.text('해당 없음'), findsOneWidget);
     });
   });
 
@@ -206,7 +200,6 @@ void main() {
       await tester.tap(find.text('닉네임'));
       await tester.pumpAndSettle();
 
-      // TextField가 바텀시트에 표시됨
       expect(find.byType(TextField), findsOneWidget);
     });
 
@@ -235,14 +228,13 @@ void main() {
       expect(find.text('기타'), findsOneWidget);
     });
 
-    testWidgets('호흡기 항목 탭 → 바텀시트 열림', (tester) async {
+    testWidgets('호흡기 항목 탭 → 바텀시트 열림 (비염/천식 토글 표시)', (tester) async {
       await tester.pumpWidget(_buildApp());
       await tester.pump();
 
       await tester.tap(find.text('호흡기'));
       await tester.pumpAndSettle();
 
-      expect(find.text('건강함'), findsWidgets);
       expect(find.text('비염'), findsOneWidget);
       expect(find.text('천식'), findsOneWidget);
     });
@@ -267,19 +259,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('임신 중이에요'), findsOneWidget);
-      expect(find.byType(Switch), findsOneWidget);
-    });
-
-    testWidgets('피부 시술 항목 탭 → 스위치 바텀시트 열림', (tester) async {
-      await tester.pumpWidget(_buildApp());
-      await tester.pump();
-
-      await tester.scrollUntilVisible(find.text('피부 시술'), 100);
-      await tester.pump();
-      await tester.tap(find.text('피부 시술'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('최근 피부 시술했어요'), findsOneWidget);
       expect(find.byType(Switch), findsOneWidget);
     });
   });
@@ -321,60 +300,6 @@ void main() {
       expect(container.read(profileProvider).gender, 'female');
     });
 
-    testWidgets('d-호흡기: 비염으로 변경 저장 반영', (tester) async {
-      final (container, widget) = _buildWithContainer();
-      addTearDown(container.dispose);
-      await tester.pumpWidget(widget);
-      await tester.pump();
-
-      await tester.tap(find.text('호흡기'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('비염'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('저장'));
-      await tester.pumpAndSettle();
-
-      expect(container.read(profileProvider).respiratoryStatus, 1);
-    });
-
-    testWidgets('d-민감도: 매우 예민으로 변경 저장 반영', (tester) async {
-      final (container, widget) = _buildWithContainer();
-      addTearDown(container.dispose);
-      await tester.pumpWidget(widget);
-      await tester.pump();
-
-      await tester.tap(find.text('민감도'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('매우 예민'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('저장'));
-      await tester.pumpAndSettle();
-
-      expect(container.read(profileProvider).sensitivityLevel, 2);
-    });
-
-    testWidgets('d-야외활동: 3시간 이상으로 변경 저장 반영', (tester) async {
-      final (container, widget) = _buildWithContainer();
-      addTearDown(container.dispose);
-      await tester.pumpWidget(widget);
-      await tester.pump();
-
-      await tester.tap(find.text('야외 활동'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('3시간 이상'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('저장'));
-      await tester.pumpAndSettle();
-
-      expect(container.read(profileProvider).outdoorMinutes, 2);
-    });
-
     testWidgets('d-활동유형: 출퇴근 선택 저장 반영', (tester) async {
       final (container, widget) = _buildWithContainer();
       addTearDown(container.dispose);
@@ -403,7 +328,6 @@ void main() {
       await tester.tap(find.text('임신'));
       await tester.pumpAndSettle();
 
-      // 스위치 탭으로 ON
       await tester.tap(find.byType(Switch));
       await tester.pumpAndSettle();
 
@@ -411,26 +335,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(container.read(profileProvider).isPregnant, isTrue);
-    });
-
-    testWidgets('d-피부시술: ON으로 변경 저장 반영', (tester) async {
-      final (container, widget) = _buildWithContainer();
-      addTearDown(container.dispose);
-      await tester.pumpWidget(widget);
-      await tester.pump();
-
-      await tester.scrollUntilVisible(find.text('피부 시술'), 100);
-      await tester.pump();
-      await tester.tap(find.text('피부 시술'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byType(Switch));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('저장'));
-      await tester.pumpAndSettle();
-
-      expect(container.read(profileProvider).recentSkinTreatment, isTrue);
     });
   });
 
@@ -454,68 +358,27 @@ void main() {
 
       expect(container.read(profileProvider).gender, 'male');
     });
-
-    testWidgets('호흡기 바텀시트에서 변경 후 취소 → 원래값 유지', (tester) async {
-      final (container, widget) = _buildWithContainer();
-      addTearDown(container.dispose);
-      await tester.pumpWidget(widget);
-      await tester.pump();
-
-      await tester.tap(find.text('호흡기'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('비염'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('취소'));
-      await tester.pumpAndSettle();
-
-      expect(container.read(profileProvider).respiratoryStatus, 0);
-    });
   });
 
   // ── f. discomfortLevel 보존 ───────────────────────────────
 
-  group('f: discomfortLevel 수정 후에도 보존', () {
-    testWidgets('민감도 변경 저장 후 discomfortLevel=2 유지', (tester) async {
-      // _base에 discomfortLevel: 2 설정돼 있음
+  group('f: 다른 필드 수정 시 discomfortLevel 보존', () {
+    testWidgets('성별 변경 저장 후 discomfortLevel=2 유지', (tester) async {
       final (container, widget) = _buildWithContainer();
       addTearDown(container.dispose);
       await tester.pumpWidget(widget);
       await tester.pump();
 
-      await tester.tap(find.text('민감도'));
+      await tester.tap(find.text('성별'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('매우 예민'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('저장'));
-      await tester.pumpAndSettle();
-
-      final saved = container.read(profileProvider);
-      expect(saved.sensitivityLevel, 2);
-      expect(saved.discomfortLevel, 2); // 원래값 보존
-    });
-
-    testWidgets('호흡기 변경 저장 후 discomfortLevel=2 유지', (tester) async {
-      final (container, widget) = _buildWithContainer();
-      addTearDown(container.dispose);
-      await tester.pumpWidget(widget);
-      await tester.pump();
-
-      await tester.tap(find.text('호흡기'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('천식'));
+      await tester.tap(find.text('여성'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('저장'));
       await tester.pumpAndSettle();
 
-      final saved = container.read(profileProvider);
-      expect(saved.respiratoryStatus, 2);
-      expect(saved.discomfortLevel, 2);
+      expect(container.read(profileProvider).discomfortLevel, 2);
     });
   });
 }

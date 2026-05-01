@@ -13,16 +13,20 @@ import 'package:mask_alert/providers/profile_providers.dart';
 // ── Fake repo ─────────────────────────────────────────────
 
 class _FakeProfileRepo extends Fake implements ProfileRepository {
-  UserProfile _profile = UserProfile(
+  UserProfile _profile = const UserProfile(
     nickname: '테스트',
     birthYear: 1990,
     gender: 'male',
-    respiratoryStatus: 0,
-    sensitivityLevel: 0,
+    asthma: false,
+    rhinitis: false,
+    copd: false,
+    allergy: false,
+    hypertension: false,
+    heartDisease: false,
+    stroke: false,
     isPregnant: false,
-    recentSkinTreatment: false,
-    outdoorMinutes: 0,
-    activityTags: const [],
+    smokingStatus: SmokingStatus.never,
+    activityTags: [],
     discomfortLevel: 0,
   );
 

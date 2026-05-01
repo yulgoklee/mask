@@ -3,21 +3,22 @@ import 'package:mask_alert/core/utils/dust_calculator.dart';
 import 'package:mask_alert/data/models/dust_data.dart';
 import 'package:mask_alert/data/models/user_profile.dart';
 
-// 기본 프로필: birthYear=1990(30대), 아무 가중치 없음 → S=0.1, T_final≈31.5
+// 기본 프로필: birthYear=1990(36세), 기저질환 없음 → T_final=35.0
 const _defaultProfile = UserProfile(
   nickname: '', birthYear: 1990, gender: 'male',
-  respiratoryStatus: 0, sensitivityLevel: 1,
-  isPregnant: false, recentSkinTreatment: false,
-  outdoorMinutes: 1, activityTags: [], discomfortLevel: 1,
+  asthma: false, rhinitis: false, copd: false, allergy: false,
+  hypertension: false, heartDisease: false, stroke: false,
+  isPregnant: false, smokingStatus: SmokingStatus.never,
+  activityTags: [], discomfortLevel: 1,
 );
 
-// 민감한 프로필: 비염+예민 → S 올라감
+// 민감한 프로필: 비염 → W_health=0.15 → T_final=29.75
 const _sensitiveProfile = UserProfile(
   nickname: '', birthYear: 1990, gender: 'male',
-  respiratoryStatus: 1,  // +0.15
-  sensitivityLevel: 2,   // +0.10
-  isPregnant: false, recentSkinTreatment: false,
-  outdoorMinutes: 1, activityTags: [], discomfortLevel: 1,
+  asthma: false, rhinitis: true, copd: false, allergy: false,
+  hypertension: false, heartDisease: false, stroke: false,
+  isPregnant: false, smokingStatus: SmokingStatus.never,
+  activityTags: [], discomfortLevel: 1,
 );
 
 DustData _dust(int pm25, {int? pm10 = 30}) => DustData(
@@ -27,7 +28,7 @@ DustData _dust(int pm25, {int? pm10 = 30}) => DustData(
 );
 
 void main() {
-  group('DustCalculator — T_final 비율 기반 위험도 (기본 프로필, T_final≈31.5)', () {
+  group('DustCalculator — T_final 비율 기반 위험도 (기본 프로필, T_final=35.0)', () {
     test('PM2.5=10 (ratio<0.5) → low, 마스크 불필요', () {
       final r = DustCalculator.calculate(_defaultProfile, _dust(10));
       expect(r.riskLevel, RiskLevel.low);
@@ -128,32 +129,29 @@ void main() {
   });
 
   group('DustCalculator — shouldSendRealtime 경계값 (finalRatio >= 1.5)', () {
-    // 기본 프로필 T_final ≈ 31.5 (birthYear=1990, outdoorMinutes=1, 가중치 미미)
-    // 실제 T_final은 ThresholdEngine으로 계산 — 여기서는 PM10 ratio로 정확히 제어
+    // 기본 프로필 T_final=35.0, T_pm10=80.0
 
-    test('PM10=120, T_pm10=80 → ratio=1.50 → shouldSendRealtime=true (경계 inclusive)', () {
-      // T_final_pm25 기본값 ≈ 31.5, T_final_pm10 = 31.5 × (80/35) ≈ 72
-      // PM10=120이면 ratio_pm10 = 120/72 ≈ 1.667 → true
+    test('PM10=120, T_pm10=80 → ratio=1.50 → shouldSendRealtime=true', () {
+      // PM10=120, T_pm10=80.0 → ratio=1.5 → true
       final r = DustCalculator.calculate(_defaultProfile, _dust(5, pm10: 120));
       expect(r.shouldSendRealtime, true);
     });
 
-    test('PM10=119 → ratio_pm10 < 1.5 (pm25도 낮음) → shouldSendRealtime=false', () {
-      // PM10=119, T_pm10≈72 → ratio≈1.653 → still > 1.5 for default profile
-      // 더 낮은 PM10으로 테스트: PM10=100, ratio=100/72≈1.39 → false
+    test('PM10=100, pm25 낮음 → ratio=1.25 < 1.5 → shouldSendRealtime=false', () {
+      // PM10=100, T_pm10=80 → ratio=1.25 < 1.5 → false
       final r = DustCalculator.calculate(_defaultProfile, _dust(5, pm10: 100));
       expect(r.shouldSendRealtime, false);
     });
 
     test('PM2.5만으로 ratio >= 1.5 → shouldSendRealtime=true', () {
-      // 기본 프로필 T_final≈33.25 (W_lifestyle=0.05)
-      // pm25=50 → 50/33.25 ≈ 1.504 → true
-      final r = DustCalculator.calculate(_defaultProfile, _dust(50, pm10: null));
+      // 기본 프로필 T_final=35.0
+      // pm25=53 → 53/35 ≈ 1.514 → true
+      final r = DustCalculator.calculate(_defaultProfile, _dust(53, pm10: null));
       expect(r.shouldSendRealtime, true);
     });
 
-    test('PM2.5=45, PM10 없음 → ratio≈1.35 → shouldSendRealtime=false', () {
-      // pm25=45, T_final≈33.25 → ratio≈1.35 < 1.5
+    test('PM2.5=45, PM10 없음 → ratio≈1.29 → shouldSendRealtime=false', () {
+      // pm25=45, T_final=35.0 → ratio≈1.29 < 1.5
       final r = DustCalculator.calculate(_defaultProfile, _dust(45, pm10: null));
       expect(r.shouldSendRealtime, false);
     });

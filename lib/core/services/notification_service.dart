@@ -746,10 +746,8 @@ class NotificationService {
   static String _p(String name) => name.isNotEmpty ? '$name, ' : '';
 
   static String? _personalNote(UserProfile profile) {
-    if (profile.respiratoryStatus & 2 != 0) return '호흡기 질환 기준으로 맞춤 관리 중이에요';
-    if (profile.respiratoryStatus & 1 != 0) return '비염 기준으로 맞춤 관리 중이에요';
+    if (profile.hasRespiratoryCondition) return '호흡기 질환 기준으로 맞춤 관리 중이에요';
     if (profile.isVulnerableAge) return '${profile.age}세 민감 연령 기준으로 관리 중이에요';
-    if (profile.sensitivityLevel == 2) return '고민감도 기준으로 맞춤 관리 중이에요';
     return null;
   }
 }

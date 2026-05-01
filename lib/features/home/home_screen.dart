@@ -7,7 +7,6 @@ import '../../core/constants/app_tokens.dart';
 import '../../core/constants/dust_standards.dart';
 import '../../core/services/air_korea_service.dart' show AirKoreaService;
 import '../../core/utils/dust_calculator.dart';
-import '../../data/models/dust_data.dart';
 import '../../data/models/forecast_models.dart';
 import '../../data/models/today_situation.dart';
 import '../../providers/providers.dart';
@@ -22,7 +21,6 @@ import '../location_setup/location_setup_screen.dart';
 import 'dust_detail_screen.dart';
 import 'dust_forecast_detail_screen.dart';
 import 'aqi_chart_section.dart';
-import 'risk_detail_screen.dart';
 
 final _analytics = FirebaseAnalytics.instance;
 
@@ -205,17 +203,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             tFinal: tFinal,
                             name: profile.nickname.isNotEmpty ? profile.nickname : null,
                             highlightOverride: _highlightHero,
-                            onTap: () => Navigator.push(
-                              context,
-                              AppRouter.slideUp(const RiskDetailScreen()),
-                            ),
                           ),
 
                           const SizedBox(height: 12),
 
                           // ── PM2.5 추이 Area Chart ───────────────
                           AqiChartSection(
-                            forecastGrade: dust.pm25Grade ?? '보통',
+                            forecastGrade: dust.pm25Grade,
                             timeGuideKey: _timeGuideKey,
                           ),
 
@@ -439,7 +433,6 @@ class _HeroButton extends StatefulWidget {
   final double tFinal;
   final String? name;
   final bool? highlightOverride;
-  final VoidCallback onTap;
 
   const _HeroButton({
     required this.result,
@@ -447,7 +440,6 @@ class _HeroButton extends StatefulWidget {
     required this.tFinal,
     required this.name,
     required this.highlightOverride,
-    required this.onTap,
   });
 
   @override
@@ -539,9 +531,7 @@ class _HeroButtonState extends State<_HeroButton>
     final nameStr =
         (widget.name != null && widget.name!.isNotEmpty) ? widget.name! : null;
 
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: AnimatedBuilder(
+    return AnimatedBuilder(
         animation: _pulse,
         builder: (context, child) {
           return Stack(
@@ -753,7 +743,6 @@ class _HeroButtonState extends State<_HeroButton>
             ],
           ),
         ),
-      ),
     );
   }
 }

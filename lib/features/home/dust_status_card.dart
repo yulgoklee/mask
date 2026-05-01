@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/dust_calculator.dart';
 import '../../providers/providers.dart';
-import 'risk_detail_screen.dart';
 
 /// 홈 화면 — 행동 카드
 ///
@@ -39,12 +38,7 @@ class DustStatusCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(profileProvider);
 
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const RiskDetailScreen()),
-      ),
-      child: Container(
+    return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
@@ -171,20 +165,8 @@ class DustStatusCard extends ConsumerWidget {
               ),
             ],
 
-            // 상세 보기
-            const SizedBox(height: 10),
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text('상세 보기',
-                    style: TextStyle(color: Colors.white70, fontSize: 12)),
-                SizedBox(width: 2),
-                Icon(Icons.chevron_right, color: Colors.white70, size: 16),
-              ],
-            ),
           ],
         ),
-      ),
     );
   }
 }

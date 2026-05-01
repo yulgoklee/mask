@@ -2,21 +2,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mask_alert/core/services/notification_service.dart';
 import 'package:mask_alert/data/models/user_profile.dart';
 
-/// 테스트용 기본 프로필 (v2)
 UserProfile _profile({
   String nickname = '',
-  int respiratoryStatus = 0,
-  int sensitivityLevel = 1,
+  bool rhinitis = false,
 }) =>
     UserProfile(
       nickname: nickname,
       birthYear: 1990,
       gender: 'male',
-      respiratoryStatus: respiratoryStatus,
-      sensitivityLevel: sensitivityLevel,
+      asthma: false,
+      rhinitis: rhinitis,
+      copd: false,
+      allergy: false,
+      hypertension: false,
+      heartDisease: false,
+      stroke: false,
       isPregnant: false,
-      recentSkinTreatment: false,
-      outdoorMinutes: 1,
+      smokingStatus: SmokingStatus.never,
       activityTags: const [],
       discomfortLevel: 1,
     );
@@ -63,7 +65,7 @@ void main() {
     });
 
     test('호흡기 질환 있을 때 본문에 기준 적용 문구 포함', () {
-      final profile = _profile(nickname: '지수', respiratoryStatus: 1);
+      final profile = _profile(nickname: '지수', rhinitis: true);
       final content = NotificationService.morningContent(
         profile: profile,
         pm25: 45,

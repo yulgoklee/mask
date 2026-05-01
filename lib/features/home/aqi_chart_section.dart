@@ -3,7 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
-import '../../data/models/today_situation.dart';
+
 import '../../data/repositories/aqi_history_repository.dart';
 import '../../providers/providers.dart';
 
@@ -21,20 +21,7 @@ class AqiChartSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final chartAsync = ref.watch(aqiChartDataProvider(forecastGrade));
     final profile = ref.watch(profileProvider);
-    final todaySituations = ref.watch(todaySituationProvider);
-
-    double tFinal = profile.tFinal;
-
-    // 오늘 야외운동 토글 활성 → outdoorMinutes=2 가정으로 tFinal 재계산 후 더 낮으면 반영
-    // 이미 3h+ 설정이면 profile.tFinal 와 동일하므로 변화 없음
-    final isOutdoorToday = todaySituations.any(
-      (s) =>
-          s.type == TodaySituationType.outdoorExercise && s.isActive,
-    );
-    if (isOutdoorToday) {
-      final adjusted = profile.copyWith(outdoorMinutes: 2).tFinal;
-      if (adjusted < tFinal) tFinal = adjusted;
-    }
+    final double tFinal = profile.tFinal;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),

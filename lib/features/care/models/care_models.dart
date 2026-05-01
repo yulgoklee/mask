@@ -36,7 +36,7 @@ class StatusCardData {
   /// sensitivity_multiplier — 위젯 표시 안 함, 하위 호환 유지
   final double sensitivityMultiplier;
   final String nickname;
-  final int respiratoryStatus;
+  final bool hasRespiratoryCondition;
 
   const StatusCardData({
     required this.status,
@@ -53,7 +53,7 @@ class StatusCardData {
     required this.finalRatio,
     required this.sensitivityMultiplier,
     required this.nickname,
-    required this.respiratoryStatus,
+    required this.hasRespiratoryCondition,
   });
 
   factory StatusCardData.placeholder() => const StatusCardData(
@@ -71,7 +71,7 @@ class StatusCardData {
     finalRatio:          0,
     sensitivityMultiplier: 1.0,
     nickname:            '',
-    respiratoryStatus:   0,
+    hasRespiratoryCondition: false,
   );
 }
 

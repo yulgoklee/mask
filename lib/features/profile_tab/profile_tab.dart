@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/design_tokens.dart';
-import 'widgets/persona_card.dart';
 
 class ProfileTab extends ConsumerWidget {
   const ProfileTab({super.key});
@@ -35,8 +34,6 @@ class ProfileTab extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 20),
-              const PersonaCard().animate().fadeIn(duration: 350.ms, curve: Curves.easeOutCubic).slideY(begin: 0.06, end: 0),
-              const SizedBox(height: 16),
               const MyBodyInfoButton().animate(delay: 50.ms).fadeIn(duration: 300.ms, curve: Curves.easeOutCubic).slideY(begin: 0.06, end: 0),
               const Spacer(),
             ],

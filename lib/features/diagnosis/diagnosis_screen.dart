@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/engine/threshold_engine.dart';
-import '../../core/utils/sensitivity_calculator.dart';
 import '../../data/models/user_profile.dart';
 import '../../providers/profile_providers.dart';
 import 'result_screen.dart';
@@ -26,21 +25,14 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
   final _pageController = PageController();
   int _currentPage = 0;
 
-  // 진단 응답 — 기존 프로필 값으로 초기화
-  late int _respiratoryStatus;
-  late int _outdoorMinutes;
-  late int _sensitivityLevel;
-
-  // 결과 페이지용 계산된 S값
-  double _s = 0.0;
+  // 진단 응답 — 기존 프로필 값으로 초기화 (0=없음, 1=비염, 2=천식)
+  late int _respChoice;
 
   @override
   void initState() {
     super.initState();
     final profile = ref.read(profileProvider);
-    _respiratoryStatus = profile.respiratoryStatus;
-    _outdoorMinutes    = profile.outdoorMinutes;
-    _sensitivityLevel  = profile.sensitivityLevel;
+    _respChoice = profile.asthma ? 2 : profile.rhinitis ? 1 : 0;
   }
 
   @override
@@ -67,20 +59,15 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
     setState(() => _currentPage--);
   }
 
-  /// Part 3 → 결과 페이지: S 계산 후 프로필 저장
+  /// Part 1 → 결과 페이지: 호흡기 상태 저장
   Future<void> _goToResult() async {
     final profile = ref.read(profileProvider);
     final updated = profile.copyWith(
-      respiratoryStatus: _respiratoryStatus,
-      outdoorMinutes:    _outdoorMinutes,
-      sensitivityLevel:  _sensitivityLevel,
+      rhinitis: _respChoice == 1,
+      asthma:   _respChoice == 2,
     );
-
-    final s = SensitivityCalculator.compute(updated);
     await ref.read(profileProvider.notifier).saveProfile(updated);
-
     if (!mounted) return;
-    setState(() => _s = s);
     _next();
   }
 
@@ -99,37 +86,29 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
         child: Column(
           children: [
             _Header(
-              title: _currentPage < 3 ? '$nameOf 민감도 진단' : '진단 완료',
-              showBack: _currentPage > 0 && _currentPage < 3,
+              title: _currentPage < 1 ? '$nameOf 호흡기 진단' : '진단 완료',
+              showBack: _currentPage > 0 && _currentPage < 1,
               onBack: _prev,
               onClose: () => Navigator.pop(context),
             ),
-            if (_currentPage < 3) _ProgressBar(step: _currentPage + 1, total: 3),
+            if (_currentPage < 1) _ProgressBar(step: _currentPage + 1, total: 1),
             Expanded(
               child: PageView(
                 controller: _pageController,
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
                   _Part1(
-                    respiratoryStatus: _respiratoryStatus,
-                    onChanged: (v) => setState(() => _respiratoryStatus = v),
+                    respiratoryStatus: _respChoice,
+                    onChanged: (v) => setState(() => _respChoice = v),
                   ),
-                  _Part2(
-                    outdoorMinutes: _outdoorMinutes,
-                    onChanged: (v) => setState(() => _outdoorMinutes = v),
-                  ),
-                  _Part3(
-                    sensitivityLevel: _sensitivityLevel,
-                    onChanged: (v) => setState(() => _sensitivityLevel = v),
-                  ),
-                  _ResultPage(s: _s, profile: profile),
+                  _ResultPage(profile: profile),
                 ],
               ),
             ),
-            if (_currentPage < 3)
+            if (_currentPage < 1)
               _BottomButton(
-                label: _currentPage == 2 ? '분석하기' : '다음',
-                onTap: _currentPage == 2 ? _goToResult : _next,
+                label: '분석하기',
+                onTap: _goToResult,
               ),
           ],
         ),
@@ -200,142 +179,19 @@ class _Part1 extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────
-// Part 2 — 야외 활동 시간
-// ─────────────────────────────────────────────────────────
-
-class _Part2 extends StatelessWidget {
-  final int outdoorMinutes;
-  final ValueChanged<int> onChanged;
-
-  const _Part2({required this.outdoorMinutes, required this.onChanged});
-
-  static const _items = [
-    (0, Icons.home_outlined,   '1시간 미만', '주로 실내에 있어요', 0.0),
-    (1, Icons.directions_walk, '1~3시간',   '매일 외출은 해요',   0.1),
-    (2, Icons.directions_run,  '3시간 이상', '야외 활동이 많아요', 0.2),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 32),
-          const _PartLabel('Part 2 · 일상 패턴'),
-          const SizedBox(height: 14),
-          const Text(
-            '하루에 밖에서 보내는\n시간이 얼마나 되나요?',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            '외출 시간이 길수록 미세먼지에 노출될 위험이 높아요.',
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 32),
-          ..._items.map((item) {
-            final (value, icon, label, sublabel, _) = item;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _CardChoice(
-                icon: icon,
-                label: label,
-                sublabel: sublabel,
-                selected: outdoorMinutes == value,
-                onTap: () => onChanged(value),
-              ),
-            );
-          }),
-          const Spacer(),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────
-// Part 3 — 체감 민감도
-// ─────────────────────────────────────────────────────────
-
-class _Part3 extends StatelessWidget {
-  final int sensitivityLevel;
-  final ValueChanged<int> onChanged;
-
-  const _Part3({required this.sensitivityLevel, required this.onChanged});
-
-  static const _items = [
-    (0, Icons.sentiment_neutral_outlined,     '잘 모르겠어요', '느끼지 못하는 편이에요'),
-    (1, Icons.sentiment_satisfied_outlined,   '가끔 느껴요',   '심할 때만 불편해요'),
-    (2, Icons.sentiment_dissatisfied_outlined,'바로 느껴요',   '조금만 탁해도 달라요'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 32),
-          const _PartLabel('Part 3 · 체감 민감도'),
-          const SizedBox(height: 14),
-          const Text(
-            '공기가 안 좋을 때\n바로 느껴지는 편인가요?',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            '주관적인 체감도예요. 솔직하게 선택해주세요.',
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 32),
-          ..._items.map((item) {
-            final (value, icon, label, sublabel) = item;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _CardChoice(
-                icon: icon,
-                label: label,
-                sublabel: sublabel,
-                selected: sensitivityLevel == value,
-                onTap: () => onChanged(value),
-              ),
-            );
-          }),
-          const Spacer(),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────
 // 결과 페이지
 // ─────────────────────────────────────────────────────────
 
 class _ResultPage extends StatelessWidget {
-  final double s;
   final UserProfile profile;
 
-  const _ResultPage({required this.s, required this.profile});
+  const _ResultPage({required this.profile});
 
   @override
   Widget build(BuildContext context) {
     final bd = const ThresholdEngine().breakdown(profile);
-    final levelLabel = SensitivityCalculator.label(bd.wTotal);
-    final levelColor = _levelColor(s);
+    final levelLabel = bd.wHealth >= 0.4 ? '매우 민감' : bd.wHealth >= 0.2 ? '약간 민감' : '일반';
+    final levelColor = _levelColor(bd.wHealth);
 
     final double tFinal = profile.tFinal;
     final String compareText = tFinal >= 35.0
@@ -410,8 +266,8 @@ class _ResultPage extends StatelessWidget {
             child: Column(
               children: [
                 _ResultRow(
-                  label: '민감도 계수 (S)',
-                  value: s.toStringAsFixed(2),
+                  label: '건강 가중치',
+                  value: bd.wHealth.toStringAsFixed(2),
                   color: levelColor,
                 ),
                 const Divider(height: 28, color: AppColors.divider),
@@ -488,10 +344,10 @@ class _ResultPage extends StatelessWidget {
     );
   }
 
-  Color _levelColor(double s) {
-    if (s >= 0.5) return AppColors.dustBad;
-    if (s >= 0.3) return AppColors.dustNormal;
-    if (s >= 0.1) return AppColors.secondary;
+  Color _levelColor(double w) {
+    if (w >= 0.4) return AppColors.dustBad;
+    if (w >= 0.2) return AppColors.dustNormal;
+    if (w >= 0.1) return AppColors.secondary;
     return AppColors.textSecondary;
   }
 }
