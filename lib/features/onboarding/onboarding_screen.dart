@@ -11,22 +11,14 @@ import 'diagnosis_cards.dart';
 
 final _analytics = FirebaseAnalytics.instance;
 
-/// Phase 2 온보딩 — Q1~Q9 카드 PageView (개편 버전)
+/// 온보딩 — Q1~Q8 카드 PageView
 ///
-/// Step 1 — 기본 (5개)
-///   Q1 닉네임          Q4 호흡기
-///   Q2 출생연도         Q5 민감도
-///   Q3 성별
+/// Q1 닉네임       Q4 호흡기 (비염/천식/COPD/알레르기)
+/// Q2 출생연도      Q5 심혈관 (고혈압/심장/뇌졸중)
+/// Q3 성별          Q6 흡연 (필수)  Q6-1 흡연 종류 (현재 흡연만)
+///                  Q7 임신 (female/미선택만)  Q8 마스크 불편도
 ///
-/// Step 2 — 특별 상태
-///   Q6 피부시술
-///   Q7 임신 (female/미선택만, male 제외)
-///
-/// Step 3 — 생활
-///   Q8 (또는 Q7)  야외활동
-///   Q9 (또는 Q8)  마스크 불편도
-///
-/// 총 9개 (female/미선택) / 8개 (male)
+/// 총: 9단계(female+현재흡연) / 8단계(female비흡연 or male+현재흡연) / 7단계(male비흡연)
 /// 완료 → analysis_loading_screen → dashboard
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -49,31 +41,56 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   // ── Q3: 성별 ─────────────────────────────────────────────────
   String? _genderStr; // 'male'|'female'|null
 
-  // ── Q4: 호흡기 (0=없음, 1=비염, 2=천식) ─────────────────────
-  int _respChoice = 0;
+  // ── Q4: 호흡기 ──────────────────────────────────────────────
+  bool _hasRhinitis         = false;
+  bool _hasAsthma           = false;
+  bool _hasCopd             = false;
+  bool _hasAllergy          = false;
+  bool _hasNoneRespiratory  = true; // 초기값: "없어요" 선택
 
-  // ── Q5: 임신 (female/미선택만 유효, male이면 페이지 자체 제외) ──
+  // ── Q5: 심혈관 ──────────────────────────────────────────────
+  bool _hasHypertension     = false;
+  bool _hasHeartDisease     = false;
+  bool _hasStroke           = false;
+  bool _hasNoneCardiovascular = true; // 초기값: "없어요" 선택
+
+  // ── Q6: 흡연 ────────────────────────────────────────────────
+  SmokingStatus? _smokingStatusChoice; // null = 아직 미선택
+
+  // ── Q6-1: 흡연 종류 (현재 흡연 중인 경우만) ─────────────────
+  bool _smokesCigarette = false;
+  bool _smokesHeated    = false;
+  bool _smokesVaping    = false;
+
+  // ── Q7: 임신 (female/미선택만 유효, male이면 페이지 자체 제외) ──
   bool _isPregnant = false;
 
-  // ── Q6: 마스크 불편도 ───────────────────────────────────────
+  // ── Q8: 마스크 불편도 ───────────────────────────────────────
   int _discomfortLevel = 1;
 
   // ── 저장 중 상태 (중복 탭 방지) ─────────────────────────────
   bool _saving = false;
 
-  // ── 동적 페이지 목록 ─────────────────────────────────────────
-  //  Q7(임신)은 female 또는 성별 미선택 시만 포함
-  //  male 선택 시 Q7 완전 제거 → 8페이지
-  //  gender 변경 시 _currentPage <= 2 이므로 인덱스 안전
+  // ── 동적 페이지 조건 ─────────────────────────────────────────
 
-  /// Q6 포함 여부 — male이면 완전 제외
-  bool get _includeQ6 => _genderStr != 'male';
+  /// Q6-1(흡연 종류) 포함 여부 — 현재 흡연 중인 경우만
+  bool get _includeSmokingType =>
+      _smokingStatusChoice == SmokingStatus.current;
+
+  /// Q7(임신) 포함 여부 — male이면 완전 제외
+  bool get _includePregnancy => _genderStr != 'male';
+
+  /// 전체 페이지 수 (조건부 페이지 반영)
+  int get _totalPages {
+    int n = 7; // Q1~Q6 + Q8(불편도) 고정
+    if (_includeSmokingType) n++;
+    if (_includePregnancy) n++;
+    return n;
+  }
 
   /// 실제 렌더할 페이지 위젯 목록
-  // Step 1: 기본 5개, Step 2: 특별 상태(조건부), Step 3: 생활 2개
-  // female/미선택: 9개, male: 8개
   List<Widget> get _pages => [
-        // ── Step 1: 기본 ───────────────────────────────────
+        // ── 기본 ───────────────────────────────────────────
         DiagQ1Nickname(
           questionNumber: 1,
           initialValue: _nickname,
@@ -95,31 +112,84 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             if (v == 'male') _isPregnant = false;
           }),
         ),
+
+        // ── Q4: 호흡기 (다중 체크박스) ──────────────────────
         DiagQ4Respiratory(
           questionNumber: 4,
-          value: _respChoice,
-          onChanged: (v) => setState(() => _respChoice = v),
+          rhinitis:     _hasRhinitis,
+          asthma:       _hasAsthma,
+          copd:         _hasCopd,
+          allergy:      _hasAllergy,
+          noneSelected: _hasNoneRespiratory,
+          onChanged: (r, a, c, al, none) => setState(() {
+            _hasRhinitis         = r;
+            _hasAsthma           = a;
+            _hasCopd             = c;
+            _hasAllergy          = al;
+            _hasNoneRespiratory  = none;
+          }),
         ),
 
-        // ── Step 2: 특별 상태 ────────────────────────────────
-        if (_includeQ6)
+        // ── Q5: 심혈관 (다중 체크박스) ──────────────────────
+        DiagQ5Cardiovascular(
+          questionNumber: 5,
+          hypertension: _hasHypertension,
+          heartDisease: _hasHeartDisease,
+          stroke:       _hasStroke,
+          noneSelected: _hasNoneCardiovascular,
+          onChanged: (h, hd, s, none) => setState(() {
+            _hasHypertension       = h;
+            _hasHeartDisease       = hd;
+            _hasStroke             = s;
+            _hasNoneCardiovascular = none;
+          }),
+        ),
+
+        // ── Q6: 흡연 이력 (라디오) ─────────────────────────
+        DiagQ6Smoking(
+          questionNumber: 6,
+          value: _smokingStatusChoice,
+          onChanged: (v) => setState(() {
+            _smokingStatusChoice = v;
+            // 비흡연/금연으로 변경 시 흡연 종류 초기화
+            if (v != SmokingStatus.current) {
+              _smokesCigarette = false;
+              _smokesHeated    = false;
+              _smokesVaping    = false;
+            }
+          }),
+        ),
+
+        // ── Q6-1: 흡연 종류 (현재 흡연 중인 경우만) ────────
+        if (_includeSmokingType)
+          DiagQ6_1SmokingType(
+            questionNumber: 7,
+            cigarette: _smokesCigarette,
+            heated:    _smokesHeated,
+            vaping:    _smokesVaping,
+            onChanged: (c, h, v) => setState(() {
+              _smokesCigarette = c;
+              _smokesHeated    = h;
+              _smokesVaping    = v;
+            }),
+          ),
+
+        // ── Q7: 임신 (female/미선택만) ─────────────────────
+        if (_includePregnancy)
           DiagQ6Pregnancy(
-            questionNumber: 5,
+            questionNumber: _includeSmokingType ? 8 : 7,
             value: _isPregnant,
             genderStr: _genderStr,
             onChanged: (v) => setState(() => _isPregnant = v),
           ),
 
-        // ── Step 3: 생활 ────────────────────────────────────
+        // ── Q8: 마스크 불편도 ───────────────────────────────
         DiagQ10Discomfort(
-          questionNumber: _includeQ6 ? 6 : 5,
+          questionNumber: _totalPages,
           value: _discomfortLevel,
           onChanged: (v) => setState(() => _discomfortLevel = v),
         ),
       ];
-
-  /// 전체 페이지 수 (male: 8, 그 외: 9)
-  int get _totalPages => _pages.length;
 
   // ── 라이프사이클 ─────────────────────────────────────────────
 
@@ -269,15 +339,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         nickname:        _nickname ?? '',
         birthYear:       _birthYear ?? 1990,
         gender:          _genderStr ?? '',
-        asthma:          _respChoice == 2,
-        rhinitis:        _respChoice == 1,
-        copd:            false,
-        allergy:         false,
-        hypertension:    false,
-        heartDisease:    false,
-        stroke:          false,
+        rhinitis:        _hasRhinitis,
+        asthma:          _hasAsthma,
+        copd:            _hasCopd,
+        allergy:         _hasAllergy,
+        hypertension:    _hasHypertension,
+        heartDisease:    _hasHeartDisease,
+        stroke:          _hasStroke,
         isPregnant:      _isPregnant,
-        smokingStatus:   SmokingStatus.never,
+        smokingStatus:   _smokingStatusChoice ?? SmokingStatus.never,
+        smokesCigarette: _smokesCigarette,
+        smokesHeated:    _smokesHeated,
+        smokesVaping:    _smokesVaping,
         activityTags:    const [],
         discomfortLevel: _discomfortLevel,
         homeStationName:  '',
@@ -325,7 +398,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 label: _currentPage == _totalPages - 1 ? '분석 시작하기  →' : '다음',
                 onTap: (_saving ||
                         (_currentPage == 0 && !(_nickname?.trim().isNotEmpty ?? false)) ||
-                        (_currentPage == 1 && !_birthYearEdited))
+                        (_currentPage == 1 && !_birthYearEdited) ||
+                        // Q6(흡연): 반드시 선택
+                        (_currentPage == 5 && _smokingStatusChoice == null) ||
+                        // Q6-1(흡연 종류): 현재 흡연 중인 경우 최소 1개 선택
+                        (_currentPage == 6 && _includeSmokingType &&
+                            !_smokesCigarette && !_smokesHeated && !_smokesVaping))
                     ? null
                     : _nextPage,
                 isLoading: _saving,

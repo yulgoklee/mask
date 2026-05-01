@@ -159,4 +159,75 @@ void main() {
       expect(ActivityTag.childcare,'childcare');
     });
   });
+
+  group('SmokingType 새 필드 — toJson / fromJson / copyWith', () {
+    test('toJson — smokesCigarette/smokesHeated/smokesVaping 포함', () {
+      const p = UserProfile(
+        nickname: '', birthYear: 1990, gender: '',
+        asthma: false, rhinitis: false, copd: false, allergy: false,
+        hypertension: false, heartDisease: false, stroke: false,
+        isPregnant: false, smokingStatus: SmokingStatus.current,
+        smokesCigarette: true, smokesHeated: false, smokesVaping: true,
+        activityTags: [], discomfortLevel: 1,
+      );
+      final json = p.toJson();
+      expect(json['smokesCigarette'], isTrue);
+      expect(json['smokesHeated'], isFalse);
+      expect(json['smokesVaping'], isTrue);
+    });
+
+    test('fromJson — smokingType 필드 복원', () {
+      final json = <String, dynamic>{
+        'nickname': '', 'birthYear': 1990, 'gender': '',
+        'asthma': false, 'rhinitis': false, 'copd': false, 'allergy': false,
+        'hypertension': false, 'heartDisease': false, 'stroke': false,
+        'isPregnant': false, 'smokingStatus': 'current',
+        'smokesCigarette': true, 'smokesHeated': false, 'smokesVaping': true,
+        'activityTags': <String>[], 'discomfortLevel': 1,
+      };
+      final p = UserProfile.fromJson(json);
+      expect(p.smokesCigarette, isTrue);
+      expect(p.smokesHeated, isFalse);
+      expect(p.smokesVaping, isTrue);
+    });
+
+    test('toJson → fromJson 왕복 동일', () {
+      const p = UserProfile(
+        nickname: '', birthYear: 1990, gender: '',
+        asthma: false, rhinitis: false, copd: false, allergy: false,
+        hypertension: false, heartDisease: false, stroke: false,
+        isPregnant: false, smokingStatus: SmokingStatus.current,
+        smokesCigarette: true, smokesHeated: true, smokesVaping: false,
+        activityTags: [], discomfortLevel: 1,
+      );
+      final restored = UserProfile.fromJson(p.toJson());
+      expect(restored.smokesCigarette, p.smokesCigarette);
+      expect(restored.smokesHeated, p.smokesHeated);
+      expect(restored.smokesVaping, p.smokesVaping);
+    });
+
+    test('fromJson — 새 필드 없는 구버전 JSON → 모두 false', () {
+      final json = <String, dynamic>{
+        'nickname': '', 'birthYear': 1990, 'gender': '',
+        'asthma': false, 'rhinitis': false, 'copd': false, 'allergy': false,
+        'hypertension': false, 'heartDisease': false, 'stroke': false,
+        'isPregnant': false, 'smokingStatus': 'current',
+        'activityTags': <String>[], 'discomfortLevel': 1,
+        // smokesCigarette/smokesHeated/smokesVaping 없음 — 구버전 호환
+      };
+      final p = UserProfile.fromJson(json);
+      expect(p.smokesCigarette, isFalse);
+      expect(p.smokesHeated, isFalse);
+      expect(p.smokesVaping, isFalse);
+    });
+
+    test('copyWith — smokingType 필드 변경, 나머지 유지', () {
+      final base = UserProfile.defaultProfile();
+      final updated = base.copyWith(smokesCigarette: true, smokesVaping: true);
+      expect(updated.smokesCigarette, isTrue);
+      expect(updated.smokesVaping, isTrue);
+      expect(updated.smokesHeated, isFalse);
+      expect(updated.smokingStatus, base.smokingStatus);
+    });
+  });
 }

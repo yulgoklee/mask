@@ -88,7 +88,34 @@ class ProfileScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 10),
           _BasicInfoSection(profile: profile),
-          const SizedBox(height: 16),
+          const SizedBox(height: 28),
+
+          // ── 호흡기 질환 ─────────────────────────────────────
+          const _SectionHeader(
+            title: '호흡기 질환',
+            badge: '민감도 반영',
+          ),
+          const SizedBox(height: 10),
+          _RespiratorySection(profile: profile),
+          const SizedBox(height: 28),
+
+          // ── 심혈관 질환 ─────────────────────────────────────
+          const _SectionHeader(
+            title: '심혈관 질환',
+            badge: '민감도 반영',
+          ),
+          const SizedBox(height: 10),
+          _CardiovascularSection(profile: profile),
+          const SizedBox(height: 28),
+
+          // ── 흡연 ────────────────────────────────────────────
+          const _SectionHeader(
+            title: '흡연',
+            badge: '민감도 반영',
+          ),
+          const SizedBox(height: 10),
+          _SmokingSection(profile: profile),
+          const SizedBox(height: 28),
 
           // ── 알림 방해 금지 ─────────────────────────────────
           const _SectionHeader(
@@ -518,6 +545,10 @@ class _TemporaryStatesSection extends ConsumerWidget {
                   await ref
                       .read(temporaryStatesProvider.notifier)
                       .remove(state.type);
+                  if (state.type == TemporaryStateType.pregnancy) {
+                    ref.read(profileProvider.notifier).update(
+                          profile.copyWith(isPregnant: false));
+                  }
                 }
               },
             )),
@@ -786,6 +817,198 @@ class _BasicInfoSection extends ConsumerWidget {
           labelOf: (v) => v == 0 ? '안 느껴요' : v == 1 ? '보통이에요' : '많이 불편해요',
           onSelect: (v) => _save(context, ref, profile.copyWith(discomfortLevel: v)),
         ),
+      ],
+    );
+  }
+}
+
+// ── 호흡기 섹션 ───────────────────────────────────────────
+
+class _RespiratorySection extends ConsumerWidget {
+  final UserProfile profile;
+
+  const _RespiratorySection({required this.profile});
+
+  void _save(BuildContext context, WidgetRef ref, UserProfile updated) {
+    ref.read(profileProvider.notifier).update(updated);
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('저장됐어요'),
+        duration: Duration(seconds: 1),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      children: [
+        _SettingRow(
+          icon: '👃',
+          title: '비염',
+          subtitle: '알레르기성 또는 비알레르기성 비염',
+          isActive: profile.rhinitis,
+          onToggle: (v) => _save(context, ref, profile.copyWith(rhinitis: v)),
+        ),
+        _SettingRow(
+          icon: '🫁',
+          title: '천식',
+          subtitle: '기관지 천식 진단 또는 증상',
+          isActive: profile.asthma,
+          onToggle: (v) => _save(context, ref, profile.copyWith(asthma: v)),
+        ),
+        _SettingRow(
+          icon: '🌬️',
+          title: 'COPD (만성 폐쇄성 폐질환)',
+          subtitle: '만성기관지염, 폐기종 포함',
+          isActive: profile.copd,
+          onToggle: (v) => _save(context, ref, profile.copyWith(copd: v)),
+        ),
+        _SettingRow(
+          icon: '🌸',
+          title: '알레르기 (꽃가루 등)',
+          subtitle: '꽃가루·먼지·음식 등 알레르기 반응',
+          isActive: profile.allergy,
+          onToggle: (v) => _save(context, ref, profile.copyWith(allergy: v)),
+        ),
+      ],
+    );
+  }
+}
+
+// ── 심혈관 섹션 ───────────────────────────────────────────
+
+class _CardiovascularSection extends ConsumerWidget {
+  final UserProfile profile;
+
+  const _CardiovascularSection({required this.profile});
+
+  void _save(BuildContext context, WidgetRef ref, UserProfile updated) {
+    ref.read(profileProvider.notifier).update(updated);
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('저장됐어요'),
+        duration: Duration(seconds: 1),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      children: [
+        _SettingRow(
+          icon: '🩺',
+          title: '고혈압',
+          subtitle: '고혈압 진단 또는 약 복용 중',
+          isActive: profile.hypertension,
+          onToggle: (v) => _save(context, ref, profile.copyWith(hypertension: v)),
+        ),
+        _SettingRow(
+          icon: '❤️',
+          title: '심장 질환',
+          subtitle: '협심증, 심근경색, 부정맥 등',
+          isActive: profile.heartDisease,
+          onToggle: (v) =>
+              _save(context, ref, profile.copyWith(heartDisease: v)),
+        ),
+        _SettingRow(
+          icon: '🧠',
+          title: '뇌졸중 (중풍 경험)',
+          subtitle: '뇌졸중 또는 뇌혈관 질환 병력',
+          isActive: profile.stroke,
+          onToggle: (v) => _save(context, ref, profile.copyWith(stroke: v)),
+        ),
+      ],
+    );
+  }
+}
+
+// ── 흡연 섹션 ─────────────────────────────────────────────
+
+class _SmokingSection extends ConsumerWidget {
+  final UserProfile profile;
+
+  const _SmokingSection({required this.profile});
+
+  void _save(BuildContext context, WidgetRef ref, UserProfile updated) {
+    ref.read(profileProvider.notifier).update(updated);
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('저장됐어요'),
+        duration: Duration(seconds: 1),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isCurrent = profile.smokingStatus == SmokingStatus.current;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _FieldLabel('흡연 여부'),
+        const SizedBox(height: 8),
+        _ChipGroup<SmokingStatus>(
+          values: SmokingStatus.values,
+          selected: profile.smokingStatus,
+          labelOf: (v) => v == SmokingStatus.current
+              ? '현재 흡연 중'
+              : v == SmokingStatus.former
+                  ? '끊었어요'
+                  : '안 피워요',
+          onSelect: (v) {
+            if (v != SmokingStatus.current) {
+              _save(
+                context,
+                ref,
+                profile.copyWith(
+                  smokingStatus: v,
+                  smokesCigarette: false,
+                  smokesHeated: false,
+                  smokesVaping: false,
+                ),
+              );
+            } else {
+              _save(context, ref, profile.copyWith(smokingStatus: v));
+            }
+          },
+        ),
+        if (isCurrent) ...[
+          const SizedBox(height: 16),
+          _FieldLabel('흡연 종류'),
+          const SizedBox(height: 8),
+          _SettingRow(
+            icon: '🚬',
+            title: '연초',
+            subtitle: '일반 담배',
+            isActive: profile.smokesCigarette,
+            onToggle: (v) =>
+                _save(context, ref, profile.copyWith(smokesCigarette: v)),
+          ),
+          _SettingRow(
+            icon: '💨',
+            title: '가열식',
+            subtitle: 'IQOS, glo 등',
+            isActive: profile.smokesHeated,
+            onToggle: (v) =>
+                _save(context, ref, profile.copyWith(smokesHeated: v)),
+          ),
+          _SettingRow(
+            icon: '☁️',
+            title: '전자담배',
+            subtitle: '액상형 전자담배',
+            isActive: profile.smokesVaping,
+            onToggle: (v) =>
+                _save(context, ref, profile.copyWith(smokesVaping: v)),
+          ),
+        ],
       ],
     );
   }
@@ -1170,6 +1393,10 @@ class _AddStateSheetState extends ConsumerState<_AddStateSheet> {
       await ref.read(temporaryStatesProvider.notifier).add(state);
     } catch (e, st) {
       AppLogger.error(e, st, reason: 'temporary_state_add');
+    }
+    if (widget.type == TemporaryStateType.pregnancy) {
+      final p = ref.read(profileProvider);
+      ref.read(profileProvider.notifier).update(p.copyWith(isPregnant: true));
     }
     if (mounted) Navigator.pop(context);
   }

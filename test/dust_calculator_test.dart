@@ -129,11 +129,12 @@ void main() {
   });
 
   group('DustCalculator — shouldSendRealtime 경계값 (finalRatio >= 1.5)', () {
-    // 기본 프로필 T_final=35.0, T_pm10=80.0
+    // 호흡기 프로필 사용 — PM10은 hasRespiratoryCondition=true 일 때만 계산에 반영됨
 
     test('PM10=120, T_pm10=80 → ratio=1.50 → shouldSendRealtime=true', () {
+      // _sensitiveProfile (rhinitis:true) → PM10 계산 반영
       // PM10=120, T_pm10=80.0 → ratio=1.5 → true
-      final r = DustCalculator.calculate(_defaultProfile, _dust(5, pm10: 120));
+      final r = DustCalculator.calculate(_sensitiveProfile, _dust(5, pm10: 120));
       expect(r.shouldSendRealtime, true);
     });
 
@@ -159,8 +160,9 @@ void main() {
 
   group('DustCalculator — PM10 dominant 케이스', () {
     test('PM10이 PM2.5보다 ratio 높으면 dominant=pm10', () {
-      // PM2.5=5 (ratio≈0.16), PM10=120 (ratio≈1.67) → pm10 dominant
-      final r = DustCalculator.calculate(_defaultProfile, _dust(5, pm10: 120));
+      // _sensitiveProfile (rhinitis:true) → PM10 계산 반영
+      // PM2.5=5 (ratio≈0.17), PM10=120 (ratio≈1.50) → pm10 dominant
+      final r = DustCalculator.calculate(_sensitiveProfile, _dust(5, pm10: 120));
       expect(r.dominantPollutant, DominantPollutant.pm10);
     });
 
