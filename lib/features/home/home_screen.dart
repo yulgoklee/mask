@@ -484,9 +484,7 @@ class _HeroButtonState extends State<_HeroButton>
   void _updatePulse() {
     final risk = widget.result?.riskLevel ?? RiskLevel.unknown;
     final shouldPulse = (widget.highlightOverride ?? false) ||
-        risk == RiskLevel.warning ||
-        risk == RiskLevel.danger ||
-        risk == RiskLevel.critical;
+        DustCalculator.gradeRequiresUrgentUI(risk);
     if (shouldPulse) {
       _pulse.repeat();
     } else {
@@ -536,9 +534,7 @@ class _HeroButtonState extends State<_HeroButton>
     final riskLevel = result?.riskLevel ?? RiskLevel.unknown;
     final colors = _gradientColors(riskLevel);
     final shouldPulse = (widget.highlightOverride ?? false) ||
-        riskLevel == RiskLevel.warning ||
-        riskLevel == RiskLevel.danger ||
-        riskLevel == RiskLevel.critical;
+        DustCalculator.gradeRequiresUrgentUI(riskLevel);
     final pm25Val = widget.pm25;
     final nameStr =
         (widget.name != null && widget.name!.isNotEmpty) ? widget.name! : null;

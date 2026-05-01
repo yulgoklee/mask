@@ -83,9 +83,9 @@ final statusCardProvider = Provider<StatusCardData>((ref) {
 RiskLevel _resolveRiskLevel(double pm25, double tFinal) {
   final ratio = tFinal > 0 ? pm25 / tFinal : 0.0;
   if (ratio < 0.5) return RiskLevel.low;
-  if (ratio < 1.0) return RiskLevel.normal;
-  if (ratio < 1.5) return RiskLevel.warning;
-  if (ratio < 2.0) return RiskLevel.danger;
+  if (ratio < 0.7) return RiskLevel.normal;
+  if (ratio < 1.0) return RiskLevel.warning;
+  if (ratio < 1.5) return RiskLevel.danger;
   return RiskLevel.critical;
 }
 
@@ -94,18 +94,18 @@ RiskLevel _resolveRiskLevel(double pm25, double tFinal) {
 String _emoji(RiskLevel s) => switch (s) {
   RiskLevel.low      => '😊',
   RiskLevel.normal   => '🙂',
-  RiskLevel.warning  => '😷',
-  RiskLevel.danger   => '😨',
-  RiskLevel.critical => '🆘',
+  RiskLevel.warning  => '😐',
+  RiskLevel.danger   => '😷',
+  RiskLevel.critical => '😨',
   RiskLevel.unknown  => '⏳',
 };
 
 String _title(RiskLevel s) => switch (s) {
   RiskLevel.low      => '마스크 안 챙겨도 돼요',
-  RiskLevel.normal   => '외출 시 마스크 챙기세요',
+  RiskLevel.normal   => '외출 시 가볍게 챙기세요',
   RiskLevel.warning  => '마스크를 챙기세요',
-  RiskLevel.danger   => 'KF94 마스크를 꼭 착용하세요',
-  RiskLevel.critical => '외출을 자제해주세요',
+  RiskLevel.danger   => 'KF80 마스크가 필요해요',
+  RiskLevel.critical => 'KF94 마스크 + 외출 자제',
   RiskLevel.unknown  => '데이터를 불러오는 중',
 };
 
@@ -122,9 +122,9 @@ String _buildSubCopy(RiskLevel status, Persona persona) {
 
 String _defaultSubCopy(RiskLevel s) => switch (s) {
   RiskLevel.low      => '공기가 맑아요.',
-  RiskLevel.normal   => '지금은 괜찮지만 오래 밖에 있을 땐 KF80을 권장해요.',
-  RiskLevel.warning  => '외출 시 KF80 이상이 필요해요.',
-  RiskLevel.danger   => '가급적 외출을 줄여주세요.',
+  RiskLevel.normal   => '오래 밖에 있을 때만 마스크 챙기세요.',
+  RiskLevel.warning  => '외출 시 마스크 챙기세요.',
+  RiskLevel.danger   => 'KF80 이상 마스크 권장이에요.',
   RiskLevel.critical => '가능하면 실내에서 지내세요.',
   RiskLevel.unknown  => '',
 };

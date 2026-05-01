@@ -35,30 +35,71 @@ void main() {
       expect(r.maskType, isNull);
     });
 
-    test('PM2.5=25 (ratio≈0.79) → normal', () {
+    test('PM2.5=25 (ratio≈0.79) → warning, 마스크 불필요', () {
       final r = DustCalculator.calculate(_defaultProfile, _dust(25));
-      expect(r.riskLevel, RiskLevel.normal);
+      expect(r.riskLevel, RiskLevel.warning);
       expect(r.maskRequired, false);
     });
 
-    test('PM2.5=38 (ratio≈1.2) → warning, KF80', () {
+    test('PM2.5=38 (ratio≈1.2) → danger, KF80', () {
       final r = DustCalculator.calculate(_defaultProfile, _dust(38));
-      expect(r.riskLevel, RiskLevel.warning);
+      expect(r.riskLevel, RiskLevel.danger);
       expect(r.maskRequired, true);
       expect(r.maskType, 'KF80');
     });
 
-    test('PM2.5=55 (ratio≈1.75) → danger, KF94', () {
+    test('PM2.5=55 (ratio≈1.75) → critical, KF94, shouldSendRealtime', () {
       final r = DustCalculator.calculate(_defaultProfile, _dust(55));
-      expect(r.riskLevel, RiskLevel.danger);
+      expect(r.riskLevel, RiskLevel.critical);
       expect(r.maskRequired, true);
       expect(r.maskType, 'KF94');
+      expect(r.shouldSendRealtime, true);
     });
 
     test('PM2.5=80 (ratio≥2.0) → critical, shouldSendRealtime', () {
       final r = DustCalculator.calculate(_defaultProfile, _dust(80));
       expect(r.riskLevel, RiskLevel.critical);
       expect(r.maskRequired, true);
+      expect(r.shouldSendRealtime, true);
+    });
+  });
+
+  group('DustCalculator — 새 5단계 임계값 경계값 검증 (0.5/0.7/1.0/1.5)', () {
+    // 기본 프로필 T_final≈31.5 사용 — PM10 없음(pm10=null)으로 PM2.5 단독 ratio 제어
+    DustData _dustNoPm10(int pm25) => DustData(
+      stationName: '테스트', pm25Value: pm25, pm10Value: null,
+      pm25Grade: '보통', pm10Grade: '보통',
+      dataTime: DateTime.now(), fetchedAt: DateTime.now(),
+    );
+    // ratio=0.49 (< 0.5) → low
+    test('ratio < 0.5 → low (PM2.5=15, ratio≈0.48)', () {
+      final r = DustCalculator.calculate(_defaultProfile, _dustNoPm10(15));
+      expect(r.riskLevel, RiskLevel.low);
+    });
+    // ratio=0.65 (0.5~0.7) → normal
+    test('ratio 0.5~0.7 → normal (PM2.5=20, ratio≈0.63)', () {
+      final r = DustCalculator.calculate(_defaultProfile, _dustNoPm10(20));
+      expect(r.riskLevel, RiskLevel.normal);
+    });
+    // ratio=0.85 (0.7~1.0) → warning
+    test('ratio 0.7~1.0 → warning (PM2.5=27, ratio≈0.86)', () {
+      final r = DustCalculator.calculate(_defaultProfile, _dustNoPm10(27));
+      expect(r.riskLevel, RiskLevel.warning);
+      expect(r.maskRequired, false);
+    });
+    // ratio=1.20 (1.0~1.5) → danger
+    test('ratio 1.0~1.5 → danger (PM2.5=38, ratio≈1.21)', () {
+      final r = DustCalculator.calculate(_defaultProfile, _dustNoPm10(38));
+      expect(r.riskLevel, RiskLevel.danger);
+      expect(r.maskRequired, true);
+      expect(r.maskType, 'KF80');
+    });
+    // ratio=1.70 (≥ 1.5) → critical
+    test('ratio >= 1.5 → critical (PM2.5=54, ratio≈1.71)', () {
+      final r = DustCalculator.calculate(_defaultProfile, _dustNoPm10(54));
+      expect(r.riskLevel, RiskLevel.critical);
+      expect(r.maskRequired, true);
+      expect(r.maskType, 'KF94');
       expect(r.shouldSendRealtime, true);
     });
   });
