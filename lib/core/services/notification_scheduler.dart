@@ -17,9 +17,7 @@ import '../config/app_config.dart';
 import '../constants/app_constants.dart';
 import '../constants/dust_standards.dart';
 import '../database/local_database.dart';
-import '../utils/adaptive_learner.dart';
 import '../utils/dust_calculator.dart';
-import '../utils/sensitivity_calculator.dart';
 import 'air_korea_service.dart';
 import 'cloud_functions_data_source.dart';
 import 'dust_data_source.dart';
@@ -45,14 +43,11 @@ class NotificationScheduler {
 
       final now = DateTime.now();
 
-      // ── 무응답 처리 + 학습 평가 ─────────────────────────────
+      // ── 무응답 처리 ─────────────────────────────────────────
       // 스누즈 여부와 무관하게 항상 먼저 실행:
       //   - 이전 알림 무응답 → ignored 기록
-      //   - 피드백 데이터로 sOffset 재계산
-      // (알림을 끄더라도 학습은 계속 누적되어야 함)
       final feedbackRepo = FeedbackRepository(prefs);
       await feedbackRepo.resolveIgnoredIfAny();
-      await AdaptiveLearner.evaluate(prefs, feedbackRepo);
 
       // ── 6시간 스누즈 체크 (SQLite 기반) ──────────────────────
       // 학습 처리 후에 스누즈 여부를 판단
@@ -158,20 +153,14 @@ class NotificationScheduler {
       final stateOnlyMask = result.maskRequired && !baseResult.maskRequired;
 
       // ── 개인 임계치(T_final) 트리거 여부 계산 ─────────────────
-      // sOffset(학습 조정값)을 반영한 S_eff 기반으로 임계치 계산
+      // 게이트 제거 — 모든 사용자에게 개인 tFinal 적용 (Phase 3 분할 C)
       // T_final triggered = 개인 기준선 초과 AND 표준 '나쁨' 미달
-      final s    = SensitivityCalculator.compute(profile);
-      final sEff = AdaptiveLearner.effectiveS(s, prefs);   // sOffset 반영
-      final tFinalValue = sEff >= SensitivityCalculator.sThreshold
-          ? AdaptiveLearner.effectiveThreshold(s, prefs)
-          : null;
-      final tFinalTriggered = tFinalValue != null &&
-          pm25.toDouble() >= tFinalValue &&
-          pm25 <= DustStandards.pm25Normal;
+      final tFinalValue = profile.tFinal;
+      final tFinalTriggered = pm25.toDouble() >= tFinalValue
+          && pm25 <= DustStandards.pm25Normal;
 
-      debugPrint('[NotificationScheduler] S=$s sEff=$sEff '
-          'T_eff=${tFinalValue?.toStringAsFixed(1)} '
-          '${AdaptiveLearner.debugSummary(prefs)}');
+      debugPrint('[NotificationScheduler] tFinal=${profile.tFinal.toStringAsFixed(1)} '
+          'pm25=$pm25 triggered=$tFinalTriggered');
 
       final analytics = FirebaseAnalytics.instance;
 
@@ -371,7 +360,7 @@ class NotificationScheduler {
 
       // ── 안심(safeEntry) 알림 ─────────────────────────────
       // 조건: T_final 이하로 15분 이상 유지 + 이전 마스크 필요 알림 존재
-      if (tFinalValue != null && !isSnoozeActive) {
+      if (!isSnoozeActive) {
         await _checkSafeEntryAlert(
           prefs: prefs,
           now: now,

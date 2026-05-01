@@ -335,11 +335,10 @@ class _ResultPage extends StatelessWidget {
     final levelLabel = SensitivityCalculator.label(s);
     final levelColor = _levelColor(s);
 
-    final bool usesFinal = s >= SensitivityCalculator.sThreshold;
-    final double tFinal = usesFinal ? profile.tFinal : 36.0;
-    final String compareText = usesFinal
-        ? '일반 기준(36 μg/m³)보다 ${(36 - tFinal).toStringAsFixed(0)} 낮아요'
-        : '일반 기준과 동일해요';
+    final double tFinal = profile.tFinal;
+    final String compareText = tFinal >= 35.0
+        ? '일반 기준과 동일해요'
+        : '일반 기준(36 μg/m³)보다 ${(36 - tFinal).toStringAsFixed(0)} 낮아요';
 
     final name = profile.nickname.isNotEmpty
         ? '${profile.nickname}님은'

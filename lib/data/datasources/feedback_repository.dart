@@ -5,8 +5,8 @@ import '../models/notification_feedback.dart';
 
 /// 알림 피드백 기록 저장소
 ///
-/// 학습 알고리즘([AdaptiveLearner])이 소비하는 원시 데이터를 담당한다.
-/// 최근 30일 기록만 유지 (학습에 필요한 최소 기간).
+/// 알림 응답 이력(챙겼어요/스누즈/무응답)을 SharedPreferences에 관리한다.
+/// 최근 30일 기록만 유지.
 ///
 /// 모든 쓰기 메서드는 배경 isolate에서 호출 가능한 static 버전을 함께 제공한다.
 class FeedbackRepository {
