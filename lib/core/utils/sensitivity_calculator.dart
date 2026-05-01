@@ -35,33 +35,4 @@ class SensitivityCalculator {
     return '낮음';
   }
 
-  // ── 공개 가중치 헬퍼 (v2 필드 기반) ──────────────────────
-  // result_screen 등에서 사용
-
-  /// 호흡기·건강 상태 가중치 — ThresholdEngine 위임 (우선순위-max)
-  static double conditionWeight(UserProfile p) =>
-      const ThresholdEngine().computeWHealth(p);
-
-  /// 야외 활동량 가중치 — ThresholdEngine 위임
-  static double activityWeight(UserProfile p) =>
-      const ThresholdEngine().computeWLifestyle(p);
-
-  /// 주관적 민감도 가중치
-  static double sensitivityWeightFromProfile(UserProfile p) {
-    if (p.sensitivityLevel == 2) return 0.10;
-    if (p.sensitivityLevel == 1) return 0.05;
-    return 0.0;
-  }
-
-  /// 특별 상태 가중치 (임신 + 피부 시술)
-  static double specialStateWeight(UserProfile p) {
-    double w = 0.0;
-    if (p.gender == 'female' && p.isPregnant) w += 0.30;
-    if (p.isSkinTreatmentActive)              w += 0.25;
-    return w;
-  }
-
-  /// 편의 성향 가중치 (discomfortLevel == 2 → 완화)
-  static double prefWeight(UserProfile p) =>
-      p.discomfortLevel == 2 ? -0.10 : 0.0;
 }

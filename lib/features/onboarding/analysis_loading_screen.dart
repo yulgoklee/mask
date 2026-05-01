@@ -74,7 +74,7 @@ class _AnalysisLoadingScreenState
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
     final s = SensitivityCalculator.compute(profile);
-    final tFinal = SensitivityCalculator.threshold(s);
+    final tFinal = profile.tFinal;
     final name = profile.displayName;
 
     return Scaffold(

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/engine/threshold_engine.dart';
 import '../../core/utils/persona_generator.dart';
 import '../../core/utils/sensitivity_calculator.dart';
 import '../../data/models/user_profile.dart';
@@ -90,7 +91,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     const SizedBox(height: 20),
 
                     // ③ 민감도 기여 카드
-                    _ContributionList(profile: profile, s: s),
+                    _ContributionList(profile: profile),
 
                     const SizedBox(height: 28),
 
@@ -713,44 +714,46 @@ class _RiskZonePainter extends CustomPainter {
 //  ③ 민감도 기여 항목 카드
 // ══════════════════════════════════════════════════════════════
 
+String _ageGroupLabel(int age) {
+  if (age < 12) return '어린이';
+  if (age < 50) return '일반';
+  if (age < 60) return '50대';
+  if (age < 70) return '60대';
+  if (age < 80) return '70대';
+  return '80대 이상';
+}
+
 class _ContributionList extends StatelessWidget {
   final UserProfile profile;
-  final double s;
 
-  const _ContributionList({required this.profile, required this.s});
+  const _ContributionList({required this.profile});
 
   @override
   Widget build(BuildContext context) {
-    final w1    = SensitivityCalculator.conditionWeight(profile);
-    final w2    = SensitivityCalculator.activityWeight(profile);
-    final w3    = SensitivityCalculator.sensitivityWeightFromProfile(profile);
-    final wSpec = SensitivityCalculator.specialStateWeight(profile);
-    final wPref = SensitivityCalculator.prefWeight(profile);
+    final bd = const ThresholdEngine().breakdown(profile);
 
     final items = [
       _ContribItem(
-        icon: Icons.favorite_outline,
-        label: '호흡기 상태',
-        value: w1,
-        maxValue: 0.45, // 비염(+15%) + 천식(+30%) 중복 최대
-        isPositive: true,
-        detail: profile.respiratoryLabel,
-      ),
-      _ContribItem(
         icon: Icons.person_outline,
         label: '연령',
-        value: profile.isVulnerableAge ? 0.10 : 0.0,
-        maxValue: 0.10,
+        value: bd.wAge,
+        maxValue: 0.13,
         isPositive: true,
-        detail: profile.isVulnerableAge
-            ? '취약 연령 (${profile.age}세)'
-            : '일반 연령 (${profile.age}세)',
+        detail: '${profile.age}세 (${_ageGroupLabel(profile.age)})',
+      ),
+      _ContribItem(
+        icon: Icons.favorite_outline,
+        label: '호흡기 · 특별 상태',
+        value: bd.wHealth,
+        maxValue: 0.65,
+        isPositive: true,
+        detail: _healthDetail(profile),
       ),
       _ContribItem(
         icon: Icons.tune,
         label: '체감 민감도',
-        value: w3,
-        maxValue: 0.10, // sensitivityWeightFromProfile 최대값 (level 2 = +0.10)
+        value: bd.wSensitivity,
+        maxValue: 0.05,
         isPositive: true,
         detail: profile.sensitivityLevel == 2
             ? '매우 예민'
@@ -761,28 +764,10 @@ class _ContributionList extends StatelessWidget {
       _ContribItem(
         icon: Icons.directions_walk,
         label: '야외 활동량',
-        value: w2,
-        maxValue: 0.20, // Q8(0.10) + Q9 태그(0.10) 최대
+        value: bd.wLifestyle,
+        maxValue: 0.07,
         isPositive: true,
         detail: _activityDetail(profile),
-      ),
-      _ContribItem(
-        icon: Icons.health_and_safety_outlined,
-        label: '특별 상태',
-        value: wSpec,
-        maxValue: 0.55,
-        isPositive: true,
-        detail: _specDetail(profile),
-      ),
-      _ContribItem(
-        icon: Icons.masks_outlined,
-        label: '마스크 불편도',
-        value: wPref.abs(),
-        maxValue: 0.10,
-        isPositive: false,
-        detail: profile.discomfortLevel == 2
-            ? '많이 불편 (기준 완화)'
-            : '착용 문제없음',
       ),
     ];
 
@@ -815,7 +800,7 @@ class _ContributionList extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  '종합 ${(s * 100).round()}% 강화',
+                  '종합 ${(bd.wTotal * 100).round()}% 강화',
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -835,9 +820,11 @@ class _ContributionList extends StatelessWidget {
     );
   }
 
-  String _specDetail(UserProfile p) {
+  String _healthDetail(UserProfile p) {
     final parts = <String>[];
-    if (p.isPregnant) parts.add('임신');
+    if (p.respiratoryStatus & 1 != 0) parts.add('비염');
+    if (p.respiratoryStatus & 2 != 0) parts.add('천식');
+    if (p.gender == 'female' && p.isPregnant) parts.add('임신');
     if (p.isSkinTreatmentActive) parts.add('피부 시술');
     return parts.isEmpty ? '해당 없음' : parts.join(' · ');
   }
