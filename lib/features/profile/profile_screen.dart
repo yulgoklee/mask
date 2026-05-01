@@ -6,7 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_tokens.dart';
 import '../../core/engine/threshold_engine.dart';
-import '../../core/utils/sensitivity_calculator.dart';
+
 import '../../data/models/notification_setting.dart';
 import '../../data/models/temporary_state.dart';
 import '../../data/models/today_situation.dart';
@@ -120,16 +120,14 @@ class _DiagnosisBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = SensitivityCalculator.compute(profile);
     final bd = const ThresholdEngine().breakdown(profile);
-    final levelLabel = SensitivityCalculator.label(bd.wTotal);
+    final levelLabel = bd.wTotal >= 0.4 ? '매우 민감' : bd.wTotal >= 0.2 ? '약간 민감' : '일반';
     final tFinal = profile.tFinal;
 
-    // S 레벨에 따른 강조색
     final Color accentColor;
-    if (s >= 0.5) {
+    if (bd.wTotal >= 0.4) {
       accentColor = AppColors.dustBad;
-    } else if (s >= 0.3) {
+    } else if (bd.wTotal >= 0.2) {
       accentColor = AppColors.dustNormal;
     } else {
       accentColor = AppColors.secondary;
@@ -776,49 +774,6 @@ class _BasicInfoSection extends ConsumerWidget {
         _BirthYearPicker(
           birthYear: profile.birthYear,
           onChanged: (year) => _save(context, ref, profile.copyWith(birthYear: year)),
-        ),
-        const SizedBox(height: 20),
-
-        // ── 호흡기 상태 ──────────────────────────────────────
-        _FieldLabel('호흡기 상태'),
-        const SizedBox(height: 8),
-        _ChipGroup<int>(
-          values: const [0, 1, 2, 3],
-          selected: profile.respiratoryStatus,
-          labelOf: (v) => switch (v) {
-            1 => '비염',
-            2 => '천식 등',
-            3 => '비염+천식',
-            _ => '건강해요',
-          },
-          onSelect: (v) => _save(context, ref, profile.copyWith(respiratoryStatus: v)),
-        ),
-        const SizedBox(height: 20),
-
-        // ── 야외 활동량 ──────────────────────────────────────
-        _FieldLabel('야외 활동 시간'),
-        const SizedBox(height: 8),
-        _ChipGroup<int>(
-          values: const [0, 1, 2],
-          selected: profile.outdoorMinutes,
-          labelOf: (v) => v == 0 ? '1시간 미만' : v == 1 ? '1~3시간' : '3시간 이상',
-          onSelect: (v) => _save(context, ref, profile.copyWith(outdoorMinutes: v)),
-        ),
-        const SizedBox(height: 20),
-
-        // ── 알림 민감도 ──────────────────────────────────────
-        _FieldLabel('체감 민감도'),
-        const SizedBox(height: 4),
-        const Text(
-          '높을수록 더 낮은 수치에서 알림을 보내요.',
-          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 8),
-        _ChipGroup<int>(
-          values: const [0, 1, 2],
-          selected: profile.sensitivityLevel,
-          labelOf: (v) => SensitivityCalculator.sensitivityLevelLabel(v),
-          onSelect: (v) => _save(context, ref, profile.copyWith(sensitivityLevel: v)),
         ),
         const SizedBox(height: 20),
 

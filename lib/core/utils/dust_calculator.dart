@@ -34,10 +34,12 @@ class DustCalculator {
     }
 
     // ── Tier 1: final_ratio = max(PM2.5/T_pm25, PM10/T_pm10) ──
-    final tFinalPm25 = profile.tFinal;
-    final pm10       = dust.pm10Value;
-    final ratio      = _computeFinalRatio(pm25: pm25, pm10: pm10, tFinalPm25: tFinalPm25);
-    final dominant   = _computeDominantPollutant(pm25: pm25, pm10: pm10, tFinalPm25: tFinalPm25);
+    // PM10 max는 호흡기 환자(천식/비염/COPD/알레르기)에게만 적용
+    final tFinalPm25    = profile.tFinal;
+    final pm10          = dust.pm10Value;
+    final pm10ForCalc   = profile.hasRespiratoryCondition ? pm10 : null;
+    final ratio         = _computeFinalRatio(pm25: pm25, pm10: pm10ForCalc, tFinalPm25: tFinalPm25);
+    final dominant      = _computeDominantPollutant(pm25: pm25, pm10: pm10ForCalc, tFinalPm25: tFinalPm25);
 
     final RiskLevel riskLevel;
     if (ratio < 0.5)      { riskLevel = RiskLevel.low; }
@@ -93,7 +95,7 @@ class DustCalculator {
       shouldSendRealtime: shouldSendRealtime,
       message: _buildMessage(riskLevel, pm25, profile),
       heroText: heroText,
-      reason: _buildReason(dominant: dominant, pm25: pm25, pm10: pm10, pm25Grade: actualGrade.label),
+      reason: _buildReason(dominant: dominant, pm25: pm25, pm10: pm10ForCalc, pm25Grade: actualGrade.label),
       personalNote: personalNote,
       maskRequired: maskRequired,
       maskType: maskType,
@@ -211,12 +213,8 @@ class DustCalculator {
   // ── 개인화 맥락 한 줄 ─────────────────────────────────────
 
   static String? _buildPersonalNote(UserProfile profile) {
-    if (profile.respiratoryStatus & 2 != 0) return '호흡기 질환 보유자 기준 적용';
-    if (profile.respiratoryStatus & 1 != 0) return '비염 보유자 기준 적용';
-    if (profile.isVulnerableAge) {
-      return '${profile.age}세 민감 연령 기준 적용';
-    }
-    if (profile.sensitivityLevel == 2) return '고민감도 설정 기준 적용';
+    if (profile.hasRespiratoryCondition) return '호흡기 질환 기준 적용';
+    if (profile.isVulnerableAge) return '${profile.age}세 민감 연령 기준 적용';
     return null;
   }
 

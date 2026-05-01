@@ -18,11 +18,15 @@ const _sampleProfile = UserProfile(
   nickname: '지수',
   birthYear: 1990,
   gender: 'female',
-  respiratoryStatus: 2,
-  sensitivityLevel: 2,
+  asthma: true,
+  rhinitis: false,
+  copd: false,
+  allergy: false,
+  hypertension: false,
+  heartDisease: false,
+  stroke: false,
   isPregnant: false,
-  recentSkinTreatment: false,
-  outdoorMinutes: 2,
+  smokingStatus: SmokingStatus.never,
   activityTags: [ActivityTag.commute],
   discomfortLevel: 0,
 );
@@ -43,13 +47,12 @@ void main() {
       await repo.saveProfile(_sampleProfile);
       final loaded = await repo.loadProfile();
 
-      expect(loaded.nickname,          _sampleProfile.nickname);
-      expect(loaded.birthYear,         _sampleProfile.birthYear);
-      expect(loaded.gender,            _sampleProfile.gender);
-      expect(loaded.respiratoryStatus, _sampleProfile.respiratoryStatus);
-      expect(loaded.sensitivityLevel,  _sampleProfile.sensitivityLevel);
-      expect(loaded.outdoorMinutes,    _sampleProfile.outdoorMinutes);
-      expect(loaded.activityTags,      _sampleProfile.activityTags);
+      expect(loaded.nickname,      _sampleProfile.nickname);
+      expect(loaded.birthYear,     _sampleProfile.birthYear);
+      expect(loaded.gender,        _sampleProfile.gender);
+      expect(loaded.asthma,        _sampleProfile.asthma);
+      expect(loaded.isPregnant,    _sampleProfile.isPregnant);
+      expect(loaded.activityTags,  _sampleProfile.activityTags);
     });
 
     test('여러 번 저장하면 최신 값으로 덮어씀', () async {

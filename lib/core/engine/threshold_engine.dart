@@ -4,14 +4,16 @@ import 'threshold_config.dart';
 /// 초개인화 임계값 연산 엔진
 ///
 /// 공식: T_final = clamp(
-///          T_base × (1 - W_age - W_health - W_sensitivity - W_lifestyle),
+///          T_base × (1 - W_age - W_health),
 ///          T_floor, T_base
 ///       )
 ///
-/// W_age        : 연령 6구간 단일 매핑
-/// W_health     : 건강 상태 합산 (복수 해당 시 모두 누적)
-/// W_sensitivity: 주관적 민감도 3단계 단일 매핑
-/// W_lifestyle  : 야외 활동 시간 단일 매핑
+/// W_age   : 연령 구간 단일 매핑 (under_12 / 60+ / 80+ 만 가중치 부여)
+/// W_health: 카테고리 분리 합산
+///   W_respiratory    = min(천식+COPD+비염+알레르기, respiratoryCap 0.30)
+///   W_cardiovascular = min(고혈압+심장+뇌졸중, cardiovascularCap 0.25)
+///   W_smoking        = 현재 0.20 / 과거 0.10 / 비흡연 0
+///   W_special        = 임신 0.20 (고정)
 class ThresholdEngine {
   final ThresholdConfig config;
 
@@ -19,7 +21,7 @@ class ThresholdEngine {
 
   // ── W_age ────────────────────────────────────────────────────
 
-  /// 연령 구간 가중치 반환 (6구간 단일 매핑)
+  /// 연령 구간 가중치 반환
   double computeWAge(UserProfile profile) {
     final age = profile.age;
     if (age < 12) return config.ageWeights['under_12']  ?? 0.0;
@@ -30,60 +32,72 @@ class ThresholdEngine {
     return           config.ageWeights['80_plus']       ?? 0.0;
   }
 
-  // ── W_health ─────────────────────────────────────────────────
+  // ── W_health (카테고리 분리) ──────────────────────────────────
 
-  /// 건강 상태 가중치 반환 — 합산 방식 (해당 항목 모두 누적)
-  ///
-  /// 임신은 gender 가드 유지: female 또는 미선택(empty)인 경우만 적용.
+  /// 건강 상태 가중치 — 카테고리 분리 합산
   double computeWHealth(UserProfile profile) {
-    double total = 0.0;
-    for (final entry in config.healthWeights) {
-      switch (entry.key) {
-        case 'asthma':
-          if (profile.respiratoryStatus & 2 != 0) total += entry.weight;
-        case 'rhinitis':
-          if (profile.respiratoryStatus & 1 != 0) total += entry.weight;
-        case 'pregnancy':
-          if ((profile.gender == 'female' || profile.gender.isEmpty) &&
-              profile.isPregnant) {
-            total += entry.weight;
-          }
-        case 'skin_treatment':
-          if (profile.isSkinTreatmentActive) total += entry.weight;
-      }
+    return _computeWRespiratory(profile)
+        + _computeWCardiovascular(profile)
+        + _computeWSmoking(profile)
+        + _computeWSpecial(profile);
+  }
+
+  /// 호흡기 카테고리 (상한: respiratoryCap)
+  double _computeWRespiratory(UserProfile profile) {
+    double raw = 0.0;
+    final hw = config.healthWeights;
+    if (profile.asthma)   raw += _weight(hw, 'asthma');
+    if (profile.copd)     raw += _weight(hw, 'copd');
+    if (profile.rhinitis) raw += _weight(hw, 'rhinitis');
+    if (profile.allergy)  raw += _weight(hw, 'allergy');
+    final cap = config.respiratoryCap;
+    return raw > cap ? cap : raw;
+  }
+
+  /// 심혈관 카테고리 (상한: cardiovascularCap)
+  double _computeWCardiovascular(UserProfile profile) {
+    double raw = 0.0;
+    final hw = config.healthWeights;
+    if (profile.hypertension) raw += _weight(hw, 'hypertension');
+    if (profile.heartDisease) raw += _weight(hw, 'heartDisease');
+    if (profile.stroke)       raw += _weight(hw, 'stroke');
+    final cap = config.cardiovascularCap;
+    return raw > cap ? cap : raw;
+  }
+
+  /// 흡연 이력 가중치 (단독, 상한 없음)
+  double _computeWSmoking(UserProfile profile) {
+    final hw = config.healthWeights;
+    switch (profile.smokingStatus) {
+      case SmokingStatus.current: return _weight(hw, 'smoking_current');
+      case SmokingStatus.former:  return _weight(hw, 'smoking_former');
+      case SmokingStatus.never:   return 0.0;
     }
-    return total;
   }
 
-  // ── W_sensitivity ────────────────────────────────────────────
-
-  /// 주관적 민감도 가중치 반환 (3단계 단일 매핑)
-  double computeWSensitivity(UserProfile profile) {
-    final key = 'level_${profile.sensitivityLevel}';
-    return config.sensitivityWeights[key] ?? 0.0;
+  /// 특별 상태 가중치 (임신 — gender 가드 유지)
+  double _computeWSpecial(UserProfile profile) {
+    if ((profile.gender == 'female' || profile.gender.isEmpty) &&
+        profile.isPregnant) {
+      return _weight(config.healthWeights, 'pregnancy');
+    }
+    return 0.0;
   }
 
-  // ── W_lifestyle ──────────────────────────────────────────────
-
-  /// 야외 활동 시간 가중치 반환
-  double computeWLifestyle(UserProfile profile) {
-    final lw = config.lifestyleWeights;
-    if (profile.outdoorMinutes == 2) return lw['outdoor_3h_plus']  ?? 0.0;
-    if (profile.outdoorMinutes == 1) return lw['outdoor_1to3h']    ?? 0.0;
-    return                                  lw['outdoor_under_1h'] ?? 0.0;
-  }
+  double _weight(List<HealthWeightEntry> entries, String key) =>
+      entries
+          .firstWhere((e) => e.key == key,
+              orElse: () =>
+                  const HealthWeightEntry(key: '', weight: 0.0, label: ''))
+          .weight;
 
   // ── T_final ──────────────────────────────────────────────────
 
   /// 최종 PM2.5 알림 임계치 계산
-  ///
-  /// 내부 정밀도 유지: double 반환. 표시 시 toInt() 적용은 호출자 책임.
   double computeTFinal(UserProfile profile) {
-    final wAge         = computeWAge(profile);
-    final wHealth      = computeWHealth(profile);
-    final wSensitivity = computeWSensitivity(profile);
-    final wLifestyle   = computeWLifestyle(profile);
-    final raw = config.tBase * (1.0 - wAge - wHealth - wSensitivity - wLifestyle);
+    final wAge    = computeWAge(profile);
+    final wHealth = computeWHealth(profile);
+    final raw = config.tBase * (1.0 - wAge - wHealth);
     return raw.clamp(config.tFloor, config.tBase);
   }
 
@@ -96,18 +110,10 @@ class ThresholdEngine {
 
   // ── 마스크 등급 추천 ─────────────────────────────────────────
 
-  /// W_health 기반 권장 마스크 등급
-  ///
-  /// 천식(0.20) 이상 고위험군 → KF94, 그 외 → KF80
+  /// 호흡기 환자 또는 W_health ≥ 0.20 → KF94
   String recommendedMaskType(UserProfile profile) {
-    final wHealth = computeWHealth(profile);
-    if (wHealth >= (config.healthWeights
-            .firstWhere((e) => e.key == 'asthma',
-                orElse: () =>
-                    const HealthWeightEntry(key: 'asthma', weight: 0.20, label: ''))
-            .weight)) {
-      return 'KF94';
-    }
+    if (profile.hasRespiratoryCondition) return 'KF94';
+    if (computeWHealth(profile) >= 0.20) return 'KF94';
     return 'KF80';
   }
 
@@ -141,22 +147,24 @@ class ThresholdEngine {
   // ── 디버그 정보 ──────────────────────────────────────────────
 
   ThresholdBreakdown breakdown(UserProfile profile) {
-    final wAge         = computeWAge(profile);
-    final wHealth      = computeWHealth(profile);
-    final wSensitivity = computeWSensitivity(profile);
-    final wLifestyle   = computeWLifestyle(profile);
-    final wTotal       = wAge + wHealth + wSensitivity + wLifestyle;
-    final tFinalRaw    = config.tBase * (1.0 - wTotal);
-    final tFinal       = tFinalRaw.clamp(config.tFloor, config.tBase);
+    final wAge           = computeWAge(profile);
+    final wRespiratory   = _computeWRespiratory(profile);
+    final wCardiovascular = _computeWCardiovascular(profile);
+    final wSmoking       = _computeWSmoking(profile);
+    final wSpecial       = _computeWSpecial(profile);
+    final wTotal         = wAge + wRespiratory + wCardiovascular + wSmoking + wSpecial;
+    final tFinalRaw      = config.tBase * (1.0 - wTotal);
+    final tFinal         = tFinalRaw.clamp(config.tFloor, config.tBase);
     return ThresholdBreakdown(
-      wAge:         wAge,
-      wHealth:      wHealth,
-      wSensitivity: wSensitivity,
-      wLifestyle:   wLifestyle,
-      wTotal:       wTotal,
-      tFinalRaw:    tFinalRaw,
-      tFinal:       tFinal,
-      maskType:     recommendedMaskType(profile),
+      wAge:              wAge,
+      wRespiratory:      wRespiratory,
+      wCardiovascular:   wCardiovascular,
+      wSmoking:          wSmoking,
+      wSpecial:          wSpecial,
+      wTotal:            wTotal,
+      tFinalRaw:         tFinalRaw,
+      tFinal:            tFinal,
+      maskType:          recommendedMaskType(profile),
     );
   }
 }
@@ -164,30 +172,35 @@ class ThresholdEngine {
 /// T_final 연산 상세 내역 (UI 표시 / 디버깅용)
 class ThresholdBreakdown {
   final double wAge;
-  final double wHealth;
-  final double wSensitivity;
-  final double wLifestyle;
-  final double wTotal;      // 4개 가중치 합
-  final double tFinalRaw;   // clamp 적용 전 원본값
-  final double tFinal;      // clamp 적용 후 최종값
+  final double wRespiratory;
+  final double wCardiovascular;
+  final double wSmoking;
+  final double wSpecial;
+  final double wTotal;    // 전체 가중치 합
+  final double tFinalRaw; // clamp 적용 전 원본값
+  final double tFinal;    // clamp 적용 후 최종값
   final String maskType;
 
   const ThresholdBreakdown({
     required this.wAge,
-    required this.wHealth,
-    required this.wSensitivity,
-    required this.wLifestyle,
+    required this.wRespiratory,
+    required this.wCardiovascular,
+    required this.wSmoking,
+    required this.wSpecial,
     required this.wTotal,
     required this.tFinalRaw,
     required this.tFinal,
     required this.maskType,
   });
 
+  double get wHealth => wRespiratory + wCardiovascular + wSmoking + wSpecial;
+
   bool get floorApplied => tFinalRaw < 15.0;
 
   @override
   String toString() =>
       'T_final=$tFinal (raw=$tFinalRaw, '
-      'W_age=$wAge W_h=$wHealth W_s=$wSensitivity W_l=$wLifestyle '
+      'W_age=$wAge W_resp=$wRespiratory W_cardio=$wCardiovascular '
+      'W_smoke=$wSmoking W_special=$wSpecial '
       'W_total=$wTotal${floorApplied ? ' → floor 적용' : ''}, mask=$maskType)';
 }

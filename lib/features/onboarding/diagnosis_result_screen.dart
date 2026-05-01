@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/design_tokens.dart';
-import '../../core/utils/persona_generator.dart';
-import '../../features/profile_tab/widgets/persona_card.dart';
 import '../../providers/profile_providers.dart';
 import '../../widgets/app_button.dart';
 
@@ -43,7 +41,6 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen>
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
-    final persona = PersonaGenerator.generate(profile);
 
     return PopScope(
       canPop: false,
@@ -77,39 +74,17 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen>
                       ),
                       const SizedBox(height: 20),
 
-                      // ── 페르소나 카드 (항상 펼친 상태) ──────
+                      // ── 기준치 비교 ──────────────────────────
                       Container(
-                        decoration: personaCardDecoration(persona.type),
-                        padding: personaCardPadding,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: DT.border),
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // 이모지 + 이름 + 서브타이틀
-                            Text(
-                              persona.emoji,
-                              style: const TextStyle(fontSize: 40),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              persona.name,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: DT.text,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              persona.subtitle,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: DT.gray,
-                                height: 1.4,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-
-                            // 기준치 비교
                             _ResultThresholdRow(
                               label: '내 기준치',
                               value: '${profile.tFinal.toInt()} µg/m³',
@@ -120,12 +95,6 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen>
                               label: '일반인 기준',
                               value: '35 µg/m³',
                               highlight: false,
-                            ),
-
-                            // 구분선 + reasons (PersonaCardExpanded 재사용)
-                            PersonaCardExpanded(
-                              persona: persona,
-                              profile: profile,
                             ),
                           ],
                         ),

@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/engine/threshold_engine.dart';
-import '../../core/utils/persona_generator.dart';
-import '../../core/utils/sensitivity_calculator.dart';
+
 import '../../data/models/user_profile.dart';
 import '../../providers/providers.dart';
 import '../../widgets/app_button.dart';
@@ -51,7 +50,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
-    final s       = SensitivityCalculator.compute(profile);
     final tFinal  = profile.tFinal;
 
     return PopScope(
@@ -81,7 +79,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     const SizedBox(height: 28),
 
                     // ① 헤더
-                    _DashboardHeader(profile: profile, s: s, tFinal: tFinal),
+                    _DashboardHeader(profile: profile, tFinal: tFinal),
 
                     const SizedBox(height: 24),
 
@@ -178,25 +176,20 @@ class _EmotionSection extends StatelessWidget {
 
 class _DashboardHeader extends StatelessWidget {
   final UserProfile profile;
-  final double s;
   final double tFinal;
 
   const _DashboardHeader({
     required this.profile,
-    required this.s,
     required this.tFinal,
   });
 
   @override
   Widget build(BuildContext context) {
-    final persona = PersonaGenerator.generate(profile).name;
     final bd = const ThresholdEngine().breakdown(profile);
-    // s=0.10 클램프 최솟값에서는 "1.1배" 표시가 어색 — 의미 있는 수준(s>0.15)부터만 표시
-    final multiplier = (1.0 - s) > 0 ? (1.0 / (1.0 - s)) : double.infinity;
-    final multiplierText =
-        multiplier.isInfinite ? '∞배' : '${multiplier.toStringAsFixed(1)}배';
-    // 실질적으로 민감도가 올라간 경우만 배율 문구 표시
-    final showMultiplier = s > 0.15;
+    final sensitivityLabel = bd.wTotal >= 0.4 ? '매우 민감' : bd.wTotal >= 0.2 ? '약간 민감' : '일반';
+    final multiplier = bd.wTotal > 0 ? (1.0 / (1.0 - bd.wTotal.clamp(0.0, 0.9))) : 1.0;
+    final multiplierText = '${multiplier.toStringAsFixed(1)}배';
+    final showMultiplier = bd.wTotal > 0.15;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,7 +209,7 @@ class _DashboardHeader extends StatelessWidget {
                   color: AppColors.coral, size: 16),
               const SizedBox(width: 6),
               Text(
-                persona,
+                sensitivityLabel,
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -345,7 +338,7 @@ class _DashboardHeader extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      '민감도 ${SensitivityCalculator.label(bd.wTotal)}',
+                      '민감도 $sensitivityLabel',
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -750,22 +743,6 @@ class _ContributionList extends StatelessWidget {
         isPositive: true,
         detail: _healthDetail(profile),
       ),
-      _ContribItem(
-        icon: Icons.tune,
-        label: '체감 민감도',
-        value: bd.wSensitivity,
-        maxValue: 0.05,
-        isPositive: true,
-        detail: SensitivityCalculator.sensitivityLevelLabel(profile.sensitivityLevel),
-      ),
-      _ContribItem(
-        icon: Icons.directions_walk,
-        label: '야외 활동량',
-        value: bd.wLifestyle,
-        maxValue: 0.07,
-        isPositive: true,
-        detail: _activityDetail(profile),
-      ),
     ];
 
     return Container(
@@ -819,21 +796,15 @@ class _ContributionList extends StatelessWidget {
 
   String _healthDetail(UserProfile p) {
     final parts = <String>[];
-    if (p.respiratoryStatus & 1 != 0) parts.add('비염');
-    if (p.respiratoryStatus & 2 != 0) parts.add('천식');
-    if (p.gender == 'female' && p.isPregnant) parts.add('임신');
-    if (p.isSkinTreatmentActive) parts.add('피부 시술');
+    if (p.rhinitis)     parts.add('비염');
+    if (p.asthma)       parts.add('천식');
+    if (p.copd)         parts.add('COPD');
+    if (p.allergy)      parts.add('알레르기');
+    if (p.hypertension) parts.add('고혈압');
+    if (p.heartDisease) parts.add('심장 질환');
+    if (p.stroke)       parts.add('뇌졸중');
+    if (p.isPregnant)   parts.add('임신');
     return parts.isEmpty ? '해당 없음' : parts.join(' · ');
-  }
-
-  String _activityDetail(UserProfile p) {
-    final base = p.outdoorMinutes == 2
-        ? '하루 3시간 이상'
-        : p.outdoorMinutes == 1
-            ? '하루 1~3시간'
-            : '하루 1시간 미만';
-    if (p.activityTags.isEmpty) return base;
-    return '$base · 태그 ${p.activityTags.length}개';
   }
 }
 

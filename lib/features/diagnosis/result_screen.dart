@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/engine/threshold_engine.dart';
-import '../../core/utils/persona_generator.dart';
-import '../../core/utils/sensitivity_calculator.dart';
 import '../../data/models/user_profile.dart';
 import '../../providers/profile_providers.dart';
 import 'diagnosis_screen.dart';
@@ -21,8 +19,6 @@ class ResultScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(profileProvider);
-    final persona = PersonaGenerator.generate(profile);
-    final s = SensitivityCalculator.compute(profile);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -67,147 +63,18 @@ class ResultScreen extends ConsumerWidget {
         children: [
           const SizedBox(height: 8),
 
-          // ── 1. 페르소나 카드 ────────────────────────────────
-          _PersonaCard(persona: persona),
-          const SizedBox(height: 20),
-
-          // ── 2. 민감도 분해 ──────────────────────────────────
+          // ── 건강 가중치 분해 ────────────────────────────────
           _SectionTitle('민감도 분석'),
           const SizedBox(height: 12),
-          _SensitivityBreakdown(profile: profile, s: s),
+          _SensitivityBreakdown(profile: profile),
           const SizedBox(height: 20),
 
-          // ── 3. 마스크 기준 카드 ─────────────────────────────
+          // ── 마스크 기준 카드 ─────────────────────────────────
           _SectionTitle('나만의 마스크 기준'),
           const SizedBox(height: 12),
           _ThresholdCard(profile: profile),
-          const SizedBox(height: 20),
-
-          // ── 4. 행동 가이드 ───────────────────────────────────
-          _SectionTitle('맞춤 행동 가이드'),
-          const SizedBox(height: 12),
-          _ActionGuideList(guides: persona.actionGuides),
           const SizedBox(height: 40),
         ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────
-// 1. 페르소나 카드
-// ─────────────────────────────────────────────────────────
-
-class _PersonaCard extends StatelessWidget {
-  final Persona persona;
-  const _PersonaCard({required this.persona});
-
-  @override
-  Widget build(BuildContext context) {
-    final accentColor = _accentColor(persona.type);
-
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: accentColor.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: accentColor.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(persona.emoji, style: const TextStyle(fontSize: 36)),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      persona.name,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: accentColor,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      persona.subtitle,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          Text(
-            persona.description,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.textPrimary,
-              height: 1.6,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: persona.keywords
-                .map((kw) => _KeywordTag(label: kw, color: accentColor))
-                .toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _accentColor(PersonaType type) {
-    switch (type) {
-      case PersonaType.compound:
-        return AppColors.dustBad;
-      case PersonaType.medicalCare:
-        return AppColors.dustNormal;
-      case PersonaType.activeAndSensitive:
-        return AppColors.dustNormal;
-      case PersonaType.activeOutdoor:
-        return AppColors.primary;
-      case PersonaType.sensitiveFeel:
-        return AppColors.primary;
-      case PersonaType.general:
-        return AppColors.secondary;
-    }
-  }
-}
-
-class _KeywordTag extends StatelessWidget {
-  final String label;
-  final Color color;
-  const _KeywordTag({required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
-      ),
-      child: Text(
-        '# $label',
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: color,
-        ),
       ),
     );
   }
@@ -219,8 +86,7 @@ class _KeywordTag extends StatelessWidget {
 
 class _SensitivityBreakdown extends StatelessWidget {
   final UserProfile profile;
-  final double s;
-  const _SensitivityBreakdown({required this.profile, required this.s});
+  const _SensitivityBreakdown({required this.profile});
 
   @override
   Widget build(BuildContext context) {
@@ -243,37 +109,17 @@ class _SensitivityBreakdown extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           _BreakdownRow(
-            label: '호흡기 · 특별 상태',
+            label: '호흡기 · 건강 상태',
             sublabel: _healthSublabel(profile),
             weight: bd.wHealth,
             maxWeight: 0.65,
           ),
-          const SizedBox(height: 14),
-          _BreakdownRow(
-            label: '체감 민감도',
-            sublabel: SensitivityCalculator.sensitivityLevelLabel(profile.sensitivityLevel),
-            weight: bd.wSensitivity,
-            maxWeight: 0.05,
-          ),
-          const SizedBox(height: 14),
-          _BreakdownRow(
-            label: '야외 활동',
-            sublabel: profile.outdoorMinutes == 0
-                ? '1시간 미만'
-                : profile.outdoorMinutes == 1
-                    ? '1~3시간'
-                    : '3시간 이상',
-            weight: bd.wLifestyle,
-            maxWeight: 0.07,
-          ),
           const Divider(height: 28, color: AppColors.divider),
-
-          // S 합산 게이지
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                '민감도 계수 (S)',
+                '건강 가중치 합계',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
@@ -281,7 +127,7 @@ class _SensitivityBreakdown extends StatelessWidget {
                 ),
               ),
               Text(
-                '${s.toStringAsFixed(2)}  /  0.60',
+                bd.wTotal.toStringAsFixed(2),
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -290,40 +136,12 @@ class _SensitivityBreakdown extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(
-              value: s / SensitivityCalculator.sMax,
-              backgroundColor: AppColors.divider,
-              valueColor: AlwaysStoppedAnimation<Color>(_sColor(s)),
-              minHeight: 10,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              SensitivityCalculator.label(bd.wTotal),
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: _sColor(s),
-              ),
-            ),
-          ),
         ],
       ),
     );
   }
-
-  Color _sColor(double s) {
-    if (s >= 0.5) return AppColors.dustBad;
-    if (s >= 0.3) return AppColors.dustNormal;
-    if (s >= 0.1) return AppColors.secondary;
-    return AppColors.textSecondary;
-  }
 }
+
 
 class _BreakdownRow extends StatelessWidget {
   final String label;
@@ -492,72 +310,6 @@ class _CompareColumn extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────
-// 4. 행동 가이드
-// ─────────────────────────────────────────────────────────
-
-class _ActionGuideList extends StatelessWidget {
-  final List<String> guides;
-  const _ActionGuideList({required this.guides});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: Column(
-        children: guides.asMap().entries.map((e) {
-          final index = e.key;
-          final guide = e.value;
-          final isLast = index == guides.length - 1;
-          return Column(
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryLight,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Center(
-                      child: Text(
-                        '${index + 1}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      guide,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textPrimary,
-                        height: 1.5,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              if (!isLast) const SizedBox(height: 14),
-            ],
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
 
 // ─────────────────────────────────────────────────────────
 // 헬퍼
@@ -574,10 +326,14 @@ String _ageGroupLabel(int age) {
 
 String _healthSublabel(UserProfile p) {
   final parts = <String>[];
-  if (p.respiratoryStatus & 1 != 0) parts.add('비염');
-  if (p.respiratoryStatus & 2 != 0) parts.add('천식');
-  if (p.gender == 'female' && p.isPregnant) parts.add('임신');
-  if (p.isSkinTreatmentActive) parts.add('피부 시술');
+  if (p.asthma)   parts.add('천식');
+  if (p.rhinitis) parts.add('비염');
+  if (p.copd)     parts.add('COPD');
+  if (p.allergy)  parts.add('알레르기');
+  if (p.heartDisease) parts.add('심장 질환');
+  if (p.hypertension) parts.add('고혈압');
+  if (p.stroke)       parts.add('뇌졸중');
+  if (p.isPregnant)   parts.add('임신');
   return parts.isEmpty ? '건강해요' : parts.join(' · ');
 }
 

@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/dust_standards.dart';
 import '../../../core/utils/dust_calculator.dart';
-import '../../../core/utils/persona_generator.dart';
+import '../../../data/models/user_profile.dart';
 import '../../../providers/dust_providers.dart';
 import '../../../providers/profile_providers.dart';
 import '../models/care_models.dart';
@@ -23,8 +23,9 @@ final statusCardProvider = Provider<StatusCardData>((ref) {
       final tFinal      = profile.tFinal;
       final tFinalPm10  = tFinal * (80.0 / 35.0);
       final multiplier  = (35.0 / tFinal).clamp(1.0, 3.0);
+      final pm10ForCalc = profile.hasRespiratoryCondition ? pm10 : null;
       final ratioPm25   = tFinal > 0 ? pm25 / tFinal : 0.0;
-      final ratioPm10   = (pm10 != null && tFinalPm10 > 0) ? pm10 / tFinalPm10 : 0.0;
+      final ratioPm10   = (pm10ForCalc != null && tFinalPm10 > 0) ? pm10ForCalc / tFinalPm10 : 0.0;
       final finalRatio  = ratioPm25 > ratioPm10 ? ratioPm25 : ratioPm10;
       final nickname    = profile.nickname.isNotEmpty ? profile.nickname : '사용자';
 
@@ -33,9 +34,8 @@ final statusCardProvider = Provider<StatusCardData>((ref) {
       final status = calcResult?.riskLevel
           ?? _resolveRiskLevel(pm25.toDouble(), tFinal);
 
-      // 페르소나 → 개인화 서브 카피
-      final persona = PersonaGenerator.generate(profile);
-      final subCopy = _buildSubCopy(status, persona);
+      // 개인 프로필 기반 서브 카피
+      final subCopy = _buildSubCopy(status, profile);
 
       // 정보 바: DominantPollutant 기반 동적 데이터
       final dominant = calcResult?.dominantPollutant ?? DominantPollutant.pm25;
@@ -44,10 +44,10 @@ final statusCardProvider = Provider<StatusCardData>((ref) {
       final double dominantTFinal;
       final DustGrade dominantGrade;
 
-      if (dominant == DominantPollutant.pm10 && pm10 != null) {
-        dominantValue  = pm10;
+      if (dominant == DominantPollutant.pm10 && pm10ForCalc != null) {
+        dominantValue  = pm10ForCalc;
         dominantTFinal = tFinal * (80.0 / 35.0);
-        dominantGrade  = DustStandards.getPm10Grade(pm10);
+        dominantGrade  = DustStandards.getPm10Grade(pm10ForCalc);
       } else {
         dominantValue  = pm25;
         dominantTFinal = tFinal;
@@ -69,7 +69,7 @@ final statusCardProvider = Provider<StatusCardData>((ref) {
         finalRatio:          finalRatio,
         sensitivityMultiplier: multiplier,
         nickname:            nickname,
-        respiratoryStatus:   profile.respiratoryStatus,
+        hasRespiratoryCondition: profile.hasRespiratoryCondition,
       );
     },
     loading: () => StatusCardData.placeholder(),
@@ -109,13 +109,11 @@ String _title(RiskLevel s) => switch (s) {
   RiskLevel.unknown  => '데이터를 불러오는 중',
 };
 
-String _buildSubCopy(RiskLevel status, Persona persona) {
-  // warning 이상 + reasons 있을 때 → 개인화 카피
+String _buildSubCopy(RiskLevel status, UserProfile profile) {
   if (status != RiskLevel.low &&
       status != RiskLevel.normal &&
-      status != RiskLevel.unknown &&
-      persona.reasons.isNotEmpty) {
-    return _reasonToCopy(persona.reasons.first, status);
+      status != RiskLevel.unknown) {
+    return _personalizedSubCopy(status, profile);
   }
   return _defaultSubCopy(status);
 }
@@ -129,25 +127,19 @@ String _defaultSubCopy(RiskLevel s) => switch (s) {
   RiskLevel.unknown  => '',
 };
 
-/// ReasonItem.title → 케어 탭 전용 개인화 카피 (§3.2)
-///
-/// ReasonItem.description은 프로필 탭 전용 — 여기서 직접 사용 금지.
-String _reasonToCopy(ReasonItem reason, RiskLevel status) {
+String _personalizedSubCopy(RiskLevel status, UserProfile profile) {
   final isHighRisk = status == RiskLevel.danger || status == RiskLevel.critical;
-  return switch (reason.title) {
-    '천식'                => isHighRisk
-        ? '천식이 있으시니 KF94를 권해요.'
-        : '천식이 있으시니 마스크를 꼭 챙기세요.',
-    '비염'                => '비염이 있으시니 마스크가 도움돼요.',
-    '비염과 천식'          => '호흡기 보호를 위해 KF94를 권해요.',
-    '하루 3시간 이상 야외' => '바깥 시간이 많은 날엔 더 신경써요.',
-    '하루 1~3시간 야외'   => '외출 중엔 마스크를 챙기세요.',
-    '매우 예민한 체질'    => '예민한 체질이라 더 조심해요.',
-    '조금 예민한 체질'    => '평소보다 조심하시는 게 좋아요.',
-    '임신 중이세요'        => '태아 건강을 위해 KF94를 권해요.',
-    '피부 시술 회복 중'   => '회복 중이니 외출 시 KF94를 권해요.',
-    _                     => _defaultSubCopy(status),
-  };
+  if (profile.asthma && profile.rhinitis) return '호흡기 보호를 위해 KF94를 권해요.';
+  if (profile.asthma) return isHighRisk ? '천식이 있으시니 KF94를 권해요.' : '천식이 있으시니 마스크를 꼭 챙기세요.';
+  if (profile.copd)   return isHighRisk ? 'COPD가 있으시니 KF94를 권해요.' : 'COPD가 있으시니 마스크를 꼭 챙기세요.';
+  if (profile.rhinitis) return '비염이 있으시니 마스크가 도움돼요.';
+  if (profile.allergy)  return '알레르기가 있으시니 마스크를 챙기세요.';
+  if (profile.heartDisease) return isHighRisk ? '심장 질환이 있으시니 KF94를 권해요.' : '심장 질환이 있으시니 마스크를 챙기세요.';
+  if (profile.stroke)       return '뇌졸중 이력이 있으시니 마스크를 챙기세요.';
+  if (profile.hypertension) return '고혈압이 있으시니 마스크를 챙기세요.';
+  if (profile.isPregnant)   return '태아 건강을 위해 KF94를 권해요.';
+  if (profile.smokingStatus == SmokingStatus.current) return '흡연 중이시니 마스크를 꼭 챙기세요.';
+  return _defaultSubCopy(status);
 }
 
 // ── ProtectionAreaChart Provider ──────────────────────────

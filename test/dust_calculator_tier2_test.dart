@@ -5,16 +5,20 @@ import 'package:mask_alert/data/models/user_profile.dart';
 import 'package:mask_alert/data/models/temporary_state.dart';
 import 'package:mask_alert/data/models/today_situation.dart';
 
-/// 기본 프로필 (일반 성인, 기저질환 없음)
+/// 기본 프로필 (일반 성인, 기저질환 없음) → T_final=35.0
 UserProfile _normalProfile() => const UserProfile(
       nickname: '',
       birthYear: 1990,
       gender: 'male',
-      respiratoryStatus: 0,
-      sensitivityLevel: 1,
+      asthma: false,
+      rhinitis: false,
+      copd: false,
+      allergy: false,
+      hypertension: false,
+      heartDisease: false,
+      stroke: false,
       isPregnant: false,
-      recentSkinTreatment: false,
-      outdoorMinutes: 1,
+      smokingStatus: SmokingStatus.never,
       activityTags: [],
       discomfortLevel: 1,
     );

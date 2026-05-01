@@ -49,23 +49,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   // ── Q3: 성별 ─────────────────────────────────────────────────
   String? _genderStr; // 'male'|'female'|null
 
-  // ── Q4: 호흡기 ───────────────────────────────────────────────
-  int _respiratoryStatus = 0;
+  // ── Q4: 호흡기 (0=없음, 1=비염, 2=천식) ─────────────────────
+  int _respChoice = 0;
 
-  // ── Q5: 민감도 ───────────────────────────────────────────────
-  int _sensitivityLevel = 1;
-
-  // ── Q6: 피부 시술 ────────────────────────────────────────────
-  bool _recentSkinTreatment = false;
-  DateTime? _skinTreatmentDate;
-
-  // ── Q7: 임신 (female/미선택만 유효, male이면 페이지 자체 제외) ──
+  // ── Q5: 임신 (female/미선택만 유효, male이면 페이지 자체 제외) ──
   bool _isPregnant = false;
 
-  // ── Q8: 야외 활동량 ──────────────────────────────────────────
-  int _outdoorMinutes = 1;
-
-  // ── Q9: 마스크 불편도 ───────────────────────────────────────
+  // ── Q6: 마스크 불편도 ───────────────────────────────────────
   int _discomfortLevel = 1;
 
   // ── 저장 중 상태 (중복 탭 방지) ─────────────────────────────
@@ -107,43 +97,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ),
         DiagQ4Respiratory(
           questionNumber: 4,
-          value: _respiratoryStatus,
-          onChanged: (v) => setState(() => _respiratoryStatus = v),
-        ),
-        DiagQ5Sensitivity(
-          questionNumber: 5,
-          value: _sensitivityLevel,
-          onChanged: (v) => setState(() => _sensitivityLevel = v),
+          value: _respChoice,
+          onChanged: (v) => setState(() => _respChoice = v),
         ),
 
         // ── Step 2: 특별 상태 ────────────────────────────────
-        DiagQ7SkinTreatment(
-          questionNumber: 6,
-          value: _recentSkinTreatment,
-          onChanged: (v) => setState(() {
-            _recentSkinTreatment = v;
-            if (!v) _skinTreatmentDate = null;
-          }),
-          treatmentDate: _skinTreatmentDate,
-          onTreatmentDateChanged: (d) =>
-              setState(() => _skinTreatmentDate = d),
-        ),
         if (_includeQ6)
           DiagQ6Pregnancy(
-            questionNumber: 7,
+            questionNumber: 5,
             value: _isPregnant,
             genderStr: _genderStr,
             onChanged: (v) => setState(() => _isPregnant = v),
           ),
 
         // ── Step 3: 생활 ────────────────────────────────────
-        DiagQ8Outdoor(
-          questionNumber: _includeQ6 ? 8 : 7,
-          value: _outdoorMinutes,
-          onChanged: (v) => setState(() => _outdoorMinutes = v),
-        ),
         DiagQ10Discomfort(
-          questionNumber: _includeQ6 ? 9 : 8,
+          questionNumber: _includeQ6 ? 6 : 5,
           value: _discomfortLevel,
           onChanged: (v) => setState(() => _discomfortLevel = v),
         ),
@@ -297,21 +266,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   // ── 프로필 조립 ──────────────────────────────────────────────
 
   UserProfile _buildProfile() => UserProfile(
-        nickname:            _nickname ?? '',
-        birthYear:           _birthYear ?? 1990,
-        gender:              _genderStr ?? '',
-        respiratoryStatus:   _respiratoryStatus,
-        sensitivityLevel:    _sensitivityLevel,
-        isPregnant:          _isPregnant,
-        recentSkinTreatment: _recentSkinTreatment,
-        skinTreatmentDate:   _recentSkinTreatment
-                         ? (_skinTreatmentDate ?? DateTime.now())
-                         : null,
-        outdoorMinutes:      _outdoorMinutes,
-        activityTags:        const [],  // 온보딩에서 수집 안 함
-        discomfortLevel:     _discomfortLevel,
-        homeStationName:     '',        // 온보딩에서 수집 안 함 — 프로필 탭에서 설정
-        officeStationName:   '',        // 온보딩에서 수집 안 함 — 프로필 탭에서 설정
+        nickname:        _nickname ?? '',
+        birthYear:       _birthYear ?? 1990,
+        gender:          _genderStr ?? '',
+        asthma:          _respChoice == 2,
+        rhinitis:        _respChoice == 1,
+        copd:            false,
+        allergy:         false,
+        hypertension:    false,
+        heartDisease:    false,
+        stroke:          false,
+        isPregnant:      _isPregnant,
+        smokingStatus:   SmokingStatus.never,
+        activityTags:    const [],
+        discomfortLevel: _discomfortLevel,
+        homeStationName:  '',
+        officeStationName: '',
       );
 
   // ── 빌드 ─────────────────────────────────────────────────────

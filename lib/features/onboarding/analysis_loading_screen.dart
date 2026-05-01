@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/engine/threshold_engine.dart';
-import '../../core/utils/sensitivity_calculator.dart';
 import '../../providers/providers.dart';
 
 /// 온보딩 완료 후 분석 로딩 화면
@@ -160,7 +159,7 @@ class _ResultChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = SensitivityCalculator.label(wTotal);
+    final label = wTotal >= 0.4 ? '매우 민감' : wTotal >= 0.2 ? '약간 민감' : '일반';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),

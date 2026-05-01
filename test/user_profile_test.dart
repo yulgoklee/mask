@@ -8,11 +8,15 @@ void main() {
       expect(p.nickname, '');
       expect(p.birthYear, 1990);
       expect(p.gender, '');
-      expect(p.respiratoryStatus, 0);
-      expect(p.sensitivityLevel, 1);
+      expect(p.asthma, false);
+      expect(p.rhinitis, false);
+      expect(p.copd, false);
+      expect(p.allergy, false);
+      expect(p.hypertension, false);
+      expect(p.heartDisease, false);
+      expect(p.stroke, false);
       expect(p.isPregnant, false);
-      expect(p.recentSkinTreatment, false);
-      expect(p.outdoorMinutes, 1);
+      expect(p.smokingStatus, SmokingStatus.never);
       expect(p.activityTags, isEmpty);
       expect(p.discomfortLevel, 1);
     });
@@ -24,11 +28,15 @@ void main() {
         nickname: '지수',
         birthYear: 1988,
         gender: 'female',
-        respiratoryStatus: 2,
-        sensitivityLevel: 2,
+        asthma: true,
+        rhinitis: true,
+        copd: false,
+        allergy: false,
+        hypertension: false,
+        heartDisease: false,
+        stroke: false,
         isPregnant: true,
-        recentSkinTreatment: false,
-        outdoorMinutes: 2,
+        smokingStatus: SmokingStatus.never,
         activityTags: [ActivityTag.commute, ActivityTag.exercise],
         discomfortLevel: 0,
       );
@@ -37,11 +45,10 @@ void main() {
       expect(restored.nickname, profile.nickname);
       expect(restored.birthYear, profile.birthYear);
       expect(restored.gender, profile.gender);
-      expect(restored.respiratoryStatus, profile.respiratoryStatus);
-      expect(restored.sensitivityLevel, profile.sensitivityLevel);
+      expect(restored.asthma, profile.asthma);
+      expect(restored.rhinitis, profile.rhinitis);
       expect(restored.isPregnant, profile.isPregnant);
-      expect(restored.recentSkinTreatment, profile.recentSkinTreatment);
-      expect(restored.outdoorMinutes, profile.outdoorMinutes);
+      expect(restored.smokingStatus, profile.smokingStatus);
       expect(restored.activityTags, profile.activityTags);
       expect(restored.discomfortLevel, profile.discomfortLevel);
     });
@@ -50,10 +57,10 @@ void main() {
   group('UserProfile.copyWith', () {
     test('일부 값만 변경', () {
       final base = UserProfile.defaultProfile();
-      final updated = base.copyWith(nickname: '지수', respiratoryStatus: 2);
+      final updated = base.copyWith(nickname: '지수', asthma: true);
       expect(updated.nickname, '지수');
-      expect(updated.respiratoryStatus, 2);
-      expect(updated.sensitivityLevel, base.sensitivityLevel);
+      expect(updated.asthma, true);
+      expect(updated.rhinitis, base.rhinitis);
     });
   });
 
@@ -61,9 +68,10 @@ void main() {
     test('닉네임 있으면 "이름님"', () {
       const p = UserProfile(
         nickname: '지수', birthYear: 1990, gender: 'male',
-        respiratoryStatus: 0, sensitivityLevel: 1,
-        isPregnant: false, recentSkinTreatment: false,
-        outdoorMinutes: 1, activityTags: [], discomfortLevel: 1,
+        asthma: false, rhinitis: false, copd: false, allergy: false,
+        hypertension: false, heartDisease: false, stroke: false,
+        isPregnant: false, smokingStatus: SmokingStatus.never,
+        activityTags: [], discomfortLevel: 1,
       );
       expect(p.displayName, '지수님');
     });
@@ -76,18 +84,20 @@ void main() {
     test('2015년생 → 취약', () {
       const p = UserProfile(
         nickname: '', birthYear: 2015, gender: 'male',
-        respiratoryStatus: 0, sensitivityLevel: 1,
-        isPregnant: false, recentSkinTreatment: false,
-        outdoorMinutes: 1, activityTags: [], discomfortLevel: 1,
+        asthma: false, rhinitis: false, copd: false, allergy: false,
+        hypertension: false, heartDisease: false, stroke: false,
+        isPregnant: false, smokingStatus: SmokingStatus.never,
+        activityTags: [], discomfortLevel: 1,
       );
       expect(p.isVulnerableAge, true);
     });
     test('1950년생 → 취약', () {
       const p = UserProfile(
         nickname: '', birthYear: 1950, gender: 'male',
-        respiratoryStatus: 0, sensitivityLevel: 1,
-        isPregnant: false, recentSkinTreatment: false,
-        outdoorMinutes: 1, activityTags: [], discomfortLevel: 1,
+        asthma: false, rhinitis: false, copd: false, allergy: false,
+        hypertension: false, heartDisease: false, stroke: false,
+        isPregnant: false, smokingStatus: SmokingStatus.never,
+        activityTags: [], discomfortLevel: 1,
       );
       expect(p.isVulnerableAge, true);
     });
@@ -96,34 +106,47 @@ void main() {
     });
   });
 
-  group('tFinal — ThresholdEngine v2', () {
-    test('기본 프로필(level=1, outdoorMinutes=1) → W_total=0.05 → 33.25', () {
-      // W_age=0.0, W_health=0.0, W_sensitivity=0.02, W_lifestyle=0.03
-      expect(UserProfile.defaultProfile().tFinal, closeTo(33.25, 0.01));
+  group('tFinal — ThresholdEngine v3', () {
+    test('기본 프로필 (건강, 비흡연, 1990년생) → T_final=35.0', () {
+      expect(UserProfile.defaultProfile().tFinal, closeTo(35.0, 0.01));
     });
 
-    test('천식+임신+시술+매우예민+3h+(1990년생) → clamp(15)', () {
-      // W_age=0.0, W_health=asthma(0.20)+pregnancy(0.20)+skin(0.10)=0.50
-      // W_sensitivity=0.05, W_lifestyle=0.07 → W_total=0.62
-      // raw=35×0.38=13.3 → clamp → 15.0
+    test('비염 (rhinitis=true) → W_health=0.15 → T_final=29.75', () {
+      final p = UserProfile.defaultProfile().copyWith(rhinitis: true);
+      expect(p.tFinal, closeTo(29.75, 0.01));
+    });
+
+    test('천식+임신 (female, 1990년생) → W_health=0.40 → T_final=21.0', () {
       const p = UserProfile(
         nickname: '', birthYear: 1990, gender: 'female',
-        respiratoryStatus: 2, sensitivityLevel: 2,
-        isPregnant: true, recentSkinTreatment: true,
-        outdoorMinutes: 2, activityTags: [], discomfortLevel: 0,
+        asthma: true, rhinitis: false, copd: false, allergy: false,
+        hypertension: false, heartDisease: false, stroke: false,
+        isPregnant: true, smokingStatus: SmokingStatus.never,
+        activityTags: [], discomfortLevel: 0,
+      );
+      // W_respiratory=0.20 (asthma), W_special=0.20 (pregnancy) → W_total=0.40
+      // raw = 35 × 0.60 = 21.0
+      expect(p.tFinal, closeTo(21.0, 0.01));
+    });
+
+    test('극단 누적 → clamp(15)', () {
+      const p = UserProfile(
+        nickname: '', birthYear: 1950, gender: 'female',
+        asthma: true, rhinitis: true, copd: true, allergy: true,
+        hypertension: true, heartDisease: true, stroke: true,
+        isPregnant: true, smokingStatus: SmokingStatus.current,
+        activityTags: [], discomfortLevel: 0,
       );
       expect(p.tFinal, closeTo(15.0, 0.01));
     });
+  });
 
-    test('비염+조금예민+1~3h(1990년생) → W_total=0.20 → 28.0', () {
-      // W_age=0.0, W_health=rhinitis(0.15), W_sensitivity=0.02, W_lifestyle=0.03
-      const p = UserProfile(
-        nickname: '', birthYear: 1990, gender: 'male',
-        respiratoryStatus: 1, sensitivityLevel: 1,
-        isPregnant: false, recentSkinTreatment: false,
-        outdoorMinutes: 1, activityTags: [], discomfortLevel: 1,
-      );
-      expect(p.tFinal, closeTo(28.0, 0.001));
+  group('hasRespiratoryCondition', () {
+    test('아무 조건 없음 → false', () {
+      expect(UserProfile.defaultProfile().hasRespiratoryCondition, false);
+    });
+    test('천식 있음 → true', () {
+      expect(UserProfile.defaultProfile().copyWith(asthma: true).hasRespiratoryCondition, true);
     });
   });
 
