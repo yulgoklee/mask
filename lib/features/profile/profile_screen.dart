@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_tokens.dart';
+import '../../core/engine/threshold_engine.dart';
 import '../../core/utils/sensitivity_calculator.dart';
 import '../../data/models/notification_setting.dart';
 import '../../data/models/temporary_state.dart';
@@ -120,7 +121,8 @@ class _DiagnosisBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = SensitivityCalculator.compute(profile);
-    final levelLabel = SensitivityCalculator.label(s);
+    final bd = const ThresholdEngine().breakdown(profile);
+    final levelLabel = SensitivityCalculator.label(bd.wTotal);
     final tFinal = profile.tFinal;
 
     // S 레벨에 따른 강조색
@@ -815,7 +817,7 @@ class _BasicInfoSection extends ConsumerWidget {
         _ChipGroup<int>(
           values: const [0, 1, 2],
           selected: profile.sensitivityLevel,
-          labelOf: (v) => v == 0 ? '무던해요' : v == 1 ? '보통이에요' : '매우 예민해요',
+          labelOf: (v) => SensitivityCalculator.sensitivityLevelLabel(v),
           onSelect: (v) => _save(context, ref, profile.copyWith(sensitivityLevel: v)),
         ),
         const SizedBox(height: 20),

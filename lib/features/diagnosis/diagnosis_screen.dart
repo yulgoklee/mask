@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/engine/threshold_engine.dart';
 import '../../core/utils/sensitivity_calculator.dart';
 import '../../data/models/user_profile.dart';
 import '../../providers/profile_providers.dart';
@@ -332,7 +333,8 @@ class _ResultPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final levelLabel = SensitivityCalculator.label(s);
+    final bd = const ThresholdEngine().breakdown(profile);
+    final levelLabel = SensitivityCalculator.label(bd.wTotal);
     final levelColor = _levelColor(s);
 
     final double tFinal = profile.tFinal;

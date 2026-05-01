@@ -251,11 +251,7 @@ class _SensitivityBreakdown extends StatelessWidget {
           const SizedBox(height: 14),
           _BreakdownRow(
             label: '체감 민감도',
-            sublabel: profile.sensitivityLevel == 0
-                ? '무던해요'
-                : profile.sensitivityLevel == 1
-                    ? '보통이에요'
-                    : '매우 예민해요',
+            sublabel: SensitivityCalculator.sensitivityLevelLabel(profile.sensitivityLevel),
             weight: bd.wSensitivity,
             maxWeight: 0.05,
           ),
@@ -308,7 +304,7 @@ class _SensitivityBreakdown extends StatelessWidget {
           Align(
             alignment: Alignment.centerRight,
             child: Text(
-              SensitivityCalculator.label(s),
+              SensitivityCalculator.label(bd.wTotal),
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,

@@ -18,12 +18,27 @@ class SensitivityCalculator {
     return w.clamp(0.1, 0.6);
   }
 
-  /// S → 민감도 레이블 (UI 표시용)
-  static String label(double s) {
-    if (s >= 0.5) return '매우 높음';
-    if (s >= 0.3) return '높음';
-    if (s >= 0.1) return '보통';
-    return '낮음';
+  /// W_total(4가중치 합) → 알고리즘 평가 라벨
+  ///
+  /// 새 알고리즘이 사용자를 어떻게 평가하는지 보여주는 텍스트.
+  /// 4가지 가중치(W_age, W_health, W_sensitivity, W_lifestyle) 모두 반영.
+  static String label(double wTotal) {
+    if (wTotal >= 0.5) return '고위험';
+    if (wTotal >= 0.3) return '위험';
+    if (wTotal >= 0.1) return '주의';
+    return '일반';
+  }
+
+  /// sensitivityLevel(0/1/2) → 사용자 자기보고 라벨
+  ///
+  /// 사용자가 입력한 민감도 단계의 텍스트 표현.
+  /// my_body_info_screen 기준 (어미 없음) — 단일 진실원.
+  static String sensitivityLevelLabel(int level) {
+    return switch (level) {
+      1 => '조금 예민',
+      2 => '매우 예민',
+      _ => '무던함',
+    };
   }
 
 }

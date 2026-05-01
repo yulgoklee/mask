@@ -190,6 +190,7 @@ class _DashboardHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final persona = PersonaGenerator.generate(profile).name;
+    final bd = const ThresholdEngine().breakdown(profile);
     // s=0.10 클램프 최솟값에서는 "1.1배" 표시가 어색 — 의미 있는 수준(s>0.15)부터만 표시
     final multiplier = (1.0 - s) > 0 ? (1.0 / (1.0 - s)) : double.infinity;
     final multiplierText =
@@ -344,7 +345,7 @@ class _DashboardHeader extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      '민감도 ${SensitivityCalculator.label(s)}',
+                      '민감도 ${SensitivityCalculator.label(bd.wTotal)}',
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -755,11 +756,7 @@ class _ContributionList extends StatelessWidget {
         value: bd.wSensitivity,
         maxValue: 0.05,
         isPositive: true,
-        detail: profile.sensitivityLevel == 2
-            ? '매우 예민'
-            : profile.sensitivityLevel == 1
-                ? '보통'
-                : '무던함',
+        detail: SensitivityCalculator.sensitivityLevelLabel(profile.sensitivityLevel),
       ),
       _ContribItem(
         icon: Icons.directions_walk,
