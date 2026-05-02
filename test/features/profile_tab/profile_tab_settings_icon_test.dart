@@ -61,6 +61,13 @@ class _FakeProfileRepo extends Fake implements ProfileRepository {
 
 // ── 테스트 헬퍼 ───────────────────────────────────────────
 
+void _setTallView(WidgetTester tester) {
+  tester.view.physicalSize = const Size(400, 6000);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+}
+
 Widget _buildWithRouter() {
   final router = GoRouter(
     initialLocation: '/profile',
@@ -74,8 +81,8 @@ Widget _buildWithRouter() {
         builder: (_, __) => const Scaffold(body: Text('설정 화면')),
       ),
       GoRoute(
-        path: '/my-body-info',
-        builder: (_, __) => const Scaffold(body: Text('내 몸 정보 화면')),
+        path: '/profile/edit',
+        builder: (_, __) => const Scaffold(body: Text('프로필 수정 화면')),
       ),
     ],
   );
@@ -99,19 +106,16 @@ void main() {
       expect(find.byIcon(Icons.settings), findsOneWidget);
     });
 
-    testWidgets('프로필 타이틀과 같은 Row에 위치', (tester) async {
+    testWidgets('프로필 타이틀과 같은 AppBar에 위치', (tester) async {
       await tester.pumpWidget(_buildWithRouter());
       await tester.pumpAndSettle();
 
       final iconFinder = find.byIcon(Icons.settings);
       expect(iconFinder, findsOneWidget);
 
-      final row = find.ancestor(
-        of: iconFinder,
-        matching: find.byType(Row),
-      );
+      final appBar = find.byType(AppBar);
       expect(
-        find.descendant(of: row.first, matching: find.text('프로필')),
+        find.descendant(of: appBar, matching: find.text('프로필')),
         findsOneWidget,
       );
     });
@@ -132,71 +136,90 @@ void main() {
     });
   });
 
-  // ── c-1. 제거된 항목 확인 ────────────────────────────────
+  // ── c. 보기 영역 렌더링 ────────────────────────────────
 
-  group('c-1: 제거된 항목', () {
-    testWidgets('프로필 탭에 "알림 설정" 버튼 없음', (tester) async {
+  group('c: 보기 영역 렌더링', () {
+    testWidgets('ThresholdCompareCard 존재 — "일반인 기준" 텍스트', (tester) async {
+      await tester.pumpWidget(_buildWithRouter());
+      await tester.pumpAndSettle();
+
+      expect(find.text('일반인 기준'), findsOneWidget);
+    });
+
+    testWidgets('SensitivityBreakdown 존재 — "상태 분석" 텍스트', (tester) async {
+      await tester.pumpWidget(_buildWithRouter());
+      await tester.pumpAndSettle();
+
+      expect(find.text('상태 분석'), findsOneWidget);
+    });
+
+    testWidgets('"이렇게 알려드릴게요." 헤더 텍스트 존재', (tester) async {
+      await tester.pumpWidget(_buildWithRouter());
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('이렇게 알려드릴게요'), findsOneWidget);
+    });
+  });
+
+  // ── d. 프로필 수정 진입점 ────────────────────────────────
+
+  group('d: 프로필 수정 진입점', () {
+    testWidgets('"프로필 수정하기" 레이블 표시', (tester) async {
+      _setTallView(tester);
+      await tester.pumpWidget(_buildWithRouter());
+      await tester.pumpAndSettle();
+
+      expect(find.text('프로필 수정하기'), findsOneWidget);
+    });
+
+    testWidgets('프로필 수정하기 탭 → /profile/edit 화면으로 이동', (tester) async {
+      _setTallView(tester);
+      await tester.pumpWidget(_buildWithRouter());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('프로필 수정하기'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('프로필 수정 화면'), findsOneWidget);
+      expect(find.byType(ProfileTab), findsNothing);
+    });
+  });
+
+  // ── e. 제거된 항목 확인 ────────────────────────────────
+
+  group('e: 제거된 항목', () {
+    testWidgets('"알림 설정" 버튼 없음', (tester) async {
       await tester.pumpWidget(_buildWithRouter());
       await tester.pumpAndSettle();
 
       expect(find.text('알림 설정'), findsNothing);
     });
 
-    testWidgets('프로필 탭에 버전 정보 텍스트 없음', (tester) async {
+    testWidgets('버전 정보 텍스트 없음', (tester) async {
       await tester.pumpWidget(_buildWithRouter());
       await tester.pumpAndSettle();
 
       expect(find.textContaining('v1.0'), findsNothing);
     });
-
-    testWidgets('퀵 토글 "감기 중" 없음', (tester) async {
-      await tester.pumpWidget(_buildWithRouter());
-      await tester.pumpAndSettle();
-
-      expect(find.text('감기 중'), findsNothing);
-    });
-
-    testWidgets('퀵 토글 "피부 시술" 없음', (tester) async {
-      await tester.pumpWidget(_buildWithRouter());
-      await tester.pumpAndSettle();
-
-      expect(find.text('피부 시술'), findsNothing);
-    });
-
-    testWidgets('퀵 토글 "야외 활동" 없음', (tester) async {
-      await tester.pumpWidget(_buildWithRouter());
-      await tester.pumpAndSettle();
-
-      expect(find.text('야외 활동'), findsNothing);
-    });
   });
 
-  // ── c. 내 몸 정보 진입점 ────────────────────────────────
+  // ── f. 현재 상태 섹션 렌더링 ──────────────────────────
 
-  group('c: 내 몸 정보 진입점', () {
-    testWidgets('"내 몸 정보" 레이블 표시', (tester) async {
+  group('f: 현재 상태 섹션', () {
+    testWidgets('"현재 상태" 섹션 헤더 표시', (tester) async {
+      _setTallView(tester);
       await tester.pumpWidget(_buildWithRouter());
       await tester.pumpAndSettle();
 
-      expect(find.text('내 몸 정보'), findsOneWidget);
+      expect(find.text('현재 상태'), findsOneWidget);
     });
 
-    testWidgets('"건강 프로필 수정" 레이블 없음', (tester) async {
+    testWidgets('"방해 금지" 섹션 헤더 표시', (tester) async {
+      _setTallView(tester);
       await tester.pumpWidget(_buildWithRouter());
       await tester.pumpAndSettle();
 
-      expect(find.text('건강 프로필 수정'), findsNothing);
-    });
-
-    testWidgets('내 몸 정보 탭 → /my-body-info 화면으로 이동', (tester) async {
-      await tester.pumpWidget(_buildWithRouter());
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('내 몸 정보'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('내 몸 정보 화면'), findsOneWidget);
-      expect(find.byType(ProfileTab), findsNothing);
+      expect(find.text('방해 금지'), findsOneWidget);
     });
   });
 }
