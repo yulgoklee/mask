@@ -267,6 +267,29 @@ class CloudFunctionsDataSource implements DustDataSource {
   }
 
   @override
+  Future<String?> getTomorrowForecastPm10({String? sidoName}) async {
+    final forecasts = await getWeeklyForecast(sidoName: sidoName);
+    final tomorrow = DateTime.now().add(const Duration(days: 1));
+    final tomorrowDate = DateTime(tomorrow.year, tomorrow.month, tomorrow.day);
+
+    final tomorrowForecast = forecasts.where((f) {
+      final d = DateTime(f.date.year, f.date.month, f.date.day);
+      return d == tomorrowDate;
+    }).firstOrNull;
+
+    if (tomorrowForecast == null) return null;
+    final pm10 = tomorrowForecast.pm10Grade;
+    if (pm10 == null) return null;
+
+    return switch (pm10) {
+      DustGrade.good    => '좋음',
+      DustGrade.normal  => '보통',
+      DustGrade.bad     => '나쁨',
+      DustGrade.veryBad => '매우나쁨',
+    };
+  }
+
+  @override
   Future<String?> getSidoForStation(String stationName) async {
     // 1. 로컬 매핑 우선
     final local = _localSidoMap(stationName);

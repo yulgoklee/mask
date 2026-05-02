@@ -217,76 +217,93 @@ void main() {
   // ── 6. buildFlowText (§4 v1) ─────────────────────────
 
   // 13포인트(h=0~12) 생성: splitAt 이전/이후로 ratio 분기
+  // E-7: kThreshold=1.0 → safe=0.3 (<1.0), warn=1.2 (>=1.0)
   List<ChartPoint> _pts13({required int splitAt, required bool startSafe}) =>
       List.generate(13, (h) => _pt(
             h.toDouble(),
-            (startSafe ? h < splitAt : h >= splitAt) ? 0.3 : 0.9,
+            (startSafe ? h < splitAt : h >= splitAt) ? 0.3 : 1.2,
           ));
 
-  group('buildFlowText (§4 v1)', () {
+  group('buildFlowText (E-7: kThreshold=1.0)', () {
     // ── Case 1: 전체 안전 ────────────────────────────────
-    test('전체 안전 (모든 ratio < 0.7) → 12시간 동안 안전해요', () {
+    test('전체 안전 (모든 ratio < 1.0) → 12시간 동안 마스크 없어도 돼요', () {
       final points = List.generate(13, (h) => _pt(h.toDouble(), 0.5));
       final result = buildFlowText(points, DateTime(2024, 1, 1, 9, 0));
-      expect(result, '12시간 동안 안전해요');
+      expect(result, '12시간 동안 마스크 없어도 돼요');
     });
 
-    // ── Case 2: 전체 주의 ────────────────────────────────
-    test('전체 주의 (모든 ratio >= 0.7) → 오늘 종일 주의가 필요해요', () {
-      final points = List.generate(13, (h) => _pt(h.toDouble(), 0.9));
+    // ── Case 2: 전체 마스크 필요 ─────────────────────────
+    test('전체 초과 (모든 ratio >= 1.0) → 지금부터 마스크가 계속 필요해요', () {
+      final points = List.generate(13, (h) => _pt(h.toDouble(), 1.2));
       final result = buildFlowText(points, DateTime(2024, 1, 1, 9, 0));
-      expect(result, '오늘 종일 주의가 필요해요');
+      expect(result, '지금부터 마스크가 계속 필요해요');
     });
 
-    // ── Case 3: 안전 → 주의 전환, 다른 시간대 ────────────
+    // ── Case 3: 안전 → 마스크 전환, 다른 시간대 ─────────
     // now=오전9시: h=2→오전11시(오전), h=3→낮12시(낮) — 전환 시 시간대 달라짐
-    test('안전→주의 전환, 다른 시간대 → {A}까지 안전 → {B}부터 주의', () {
-      // h=0~2: safe(0.3), h=3~12: warn(0.9) — i=3에서 전환
+    test('안전→마스크 전환, 다른 시간대 → {A}까지 OK → {B}부터 마스크 필요', () {
+      // h=0~2: safe(0.3), h=3~12: warn(1.2) — i=3에서 전환
       final points = _pts13(splitAt: 3, startSafe: true);
       final result = buildFlowText(points, DateTime(2024, 1, 1, 9, 0));
-      expect(result, '오전까지 안전 → 낮부터 주의');
+      expect(result, '오전까지 OK → 낮부터 마스크 필요');
     });
 
-    // ── Case 4: 주의 → 안전 전환, 다른 시간대 ────────────
+    // ── Case 4: 마스크 → 안전 전환, 다른 시간대 ─────────
     // now=오전9시: 동일 기준 — i=3 전환
-    test('주의→안전 전환, 다른 시간대 → {A}까지 주의 → {B}부터 안전', () {
-      // h=0~2: warn(0.9), h=3~12: safe(0.3) — i=3에서 전환
+    test('마스크→안전 전환, 다른 시간대 → {A}까지 마스크 필요 → {B}부터 OK', () {
+      // h=0~2: warn(1.2), h=3~12: safe(0.3) — i=3에서 전환
       final points = _pts13(splitAt: 3, startSafe: false);
       final result = buildFlowText(points, DateTime(2024, 1, 1, 9, 0));
-      expect(result, '오전까지 주의 → 낮부터 안전');
+      expect(result, '오전까지 마스크 필요 → 낮부터 OK');
     });
 
     // ── Case 5: 동일 시간대 중복 fallback ────────────────
     // now=오후1시(낮): h=3→낮(16시), h=4→낮(17시) — 전환 전후 모두 "낮"
-    // _nextDifferentLabel('낮'): h=4→낮(동일), h=8→저녁(다름) → '저녁'
-    test('동일 시간대 중복 — nextDifferentLabel fallback → 지금은 안전, 저녁부터 주의 😷', () {
-      // h=0~3: safe(0.3), h=4~12: warn(0.9) — i=4에서 전환
+    // _nextDifferentLabel('낮'): h=5→저녁(18시, 다름) → '저녁'
+    test('동일 시간대 중복 — nextDifferentLabel fallback → {A}까지 OK — {B}부터 마스크 필요 😷', () {
+      // h=0~3: safe(0.3), h=4~12: warn(1.2) — i=4에서 전환
       final points = _pts13(splitAt: 4, startSafe: true);
       final result = buildFlowText(points, DateTime(2024, 1, 1, 13, 0));
-      expect(result, '지금은 안전, 저녁부터 주의 😷');
+      expect(result, '낮까지 OK — 저녁부터 마스크 필요 😷');
     });
   });
 
-  // ── 7. pollutantCopy ─────────────────────────────────
-  group('pollutantCopy', () {
-    test('ratio=0.3 → 여유롭게 숨 쉴 수 있어요',
-        () => expect(pollutantCopy(0.3), '여유롭게 숨 쉴 수 있어요'));
-    test('ratio=0.6 → 괜찮은 편이에요',
-        () => expect(pollutantCopy(0.6), '괜찮은 편이에요'));
-    test('ratio=0.85 → 조금 신경 써야 할 정도예요',
-        () => expect(pollutantCopy(0.85), '조금 신경 써야 할 정도예요'));
+  // ── 7. pollutantCopy (E-7: 3단계) ────────────────────
+  group('pollutantCopy (3단계)', () {
+    test('ratio=0.3 → 지금은 마스크 없어도 돼요',
+        () => expect(pollutantCopy(0.3), '지금은 마스크 없어도 돼요'));
+    test('ratio=0.6 → 지금은 마스크 없어도 돼요',
+        () => expect(pollutantCopy(0.6), '지금은 마스크 없어도 돼요'));
+    test('ratio=0.99 → 지금은 마스크 없어도 돼요 (임계 직전)',
+        () => expect(pollutantCopy(0.99), '지금은 마스크 없어도 돼요'));
+    test('ratio=1.0 → 마스크가 필요해요 (임계 이상)',
+        () => expect(pollutantCopy(1.0), '마스크가 필요해요'));
     test('ratio=1.2 → 마스크가 필요해요',
         () => expect(pollutantCopy(1.2), '마스크가 필요해요'));
-    test('ratio=2.0 → 꼭 마스크를 착용하세요',
-        () => expect(pollutantCopy(2.0), '꼭 마스크를 착용하세요'));
+    test('ratio=1.5 → 마스크를 꼭 착용하세요 (상위 임계)',
+        () => expect(pollutantCopy(1.5), '마스크를 꼭 착용하세요'));
+    test('ratio=2.0 → 마스크를 꼭 착용하세요',
+        () => expect(pollutantCopy(2.0), '마스크를 꼭 착용하세요'));
   });
 
-  // ── 8. pollutantEmoji ────────────────────────────────
-  group('pollutantEmoji', () {
-    test('ratio=0.3 → 😊', () => expect(pollutantEmoji(0.3), '😊'));
-    test('ratio=0.6 → 🙂', () => expect(pollutantEmoji(0.6), '🙂'));
-    test('ratio=0.85 → 😐', () => expect(pollutantEmoji(0.85), '😐'));
+  // ── 8. pollutantEmoji (E-7: 3단계 ☺️/😷/😨) ─────────
+  group('pollutantEmoji (3단계)', () {
+    test('ratio=0.3 → ☺️', () => expect(pollutantEmoji(0.3), '☺️'));
+    test('ratio=0.6 → ☺️', () => expect(pollutantEmoji(0.6), '☺️'));
+    test('ratio=0.99 → ☺️ (임계 직전)', () => expect(pollutantEmoji(0.99), '☺️'));
+    test('ratio=1.0 → 😷 (임계 이상)', () => expect(pollutantEmoji(1.0), '😷'));
     test('ratio=1.2 → 😷', () => expect(pollutantEmoji(1.2), '😷'));
+    test('ratio=1.5 → 😨 (상위 임계)', () => expect(pollutantEmoji(1.5), '😨'));
     test('ratio=2.0 → 😨', () => expect(pollutantEmoji(2.0), '😨'));
+  });
+
+  // ── 9. gradeToMidpointPm10 (E-9) ─────────────────────
+  group('gradeToMidpointPm10 (PM10 등급 중앙값)', () {
+    test('좋음 → 15.0',     () => expect(gradeToMidpointPm10('좋음'),     15.0));
+    test('보통 → 55.0',     () => expect(gradeToMidpointPm10('보통'),     55.0));
+    test('나쁨 → 115.0',    () => expect(gradeToMidpointPm10('나쁨'),    115.0));
+    test('매우나쁨 → 200.0', () => expect(gradeToMidpointPm10('매우나쁨'), 200.0));
+    test('null → 55.0 (기본값)', () => expect(gradeToMidpointPm10(null), 55.0));
+    test('unknown → 55.0 (기본값)', () => expect(gradeToMidpointPm10('unknown'), 55.0));
   });
 }

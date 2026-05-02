@@ -624,6 +624,34 @@ class AirKoreaService implements DustDataSource {
     }
   }
 
+  /// 내일 PM10 예보 조회
+  @override
+  Future<String?> getTomorrowForecastPm10({String? sidoName}) async {
+    try {
+      final now = DateTime.now();
+      final searchBase = now.hour < 5 ? now.subtract(const Duration(days: 1)) : now;
+      final dateStr =
+          '${searchBase.year}-${searchBase.month.toString().padLeft(2, '0')}-${searchBase.day.toString().padLeft(2, '0')}';
+
+      final url = '$_baseUrl/getMinuDustFrcstDspth'
+          '?serviceKey=$_apiKey'
+          '&returnType=json&numOfRows=1&pageNo=1'
+          '&searchDate=$dateStr&informCode=PM10';
+      final response = await _dio.get(url);
+
+      final items = response.data['response']?['body']?['items'] as List?;
+      if (items == null || items.isEmpty) return null;
+
+      final informGrade = items.first['informGrade'] as String?;
+      if (informGrade == null) return null;
+      if (sidoName == null) return informGrade;
+
+      return _filterForecastBySido(informGrade, sidoName)?.label;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// "서울 : 나쁨,경기 : 보통,..." 에서 해당 시도 grade만 추출
   DustGrade? _filterForecastBySido(String informGrade, String sidoName) {
     final targets = _sidoToForecastRegions(sidoName);

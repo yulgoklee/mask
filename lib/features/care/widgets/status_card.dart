@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/design_tokens.dart';
-import '../../../core/utils/dust_calculator.dart';
 import '../../../providers/dust_providers.dart';
 import '../providers/care_providers.dart';
 import '../models/care_models.dart';
@@ -29,49 +28,16 @@ class StatusCard extends ConsumerWidget {
   }
 }
 
-// ── 색상 매핑 (§3.2 v3) ──────────────────────────────────
+// ── 카드 배경색 (finalRatio 기반 3단계) ──────────────────
 
-Color _bgColor(RiskLevel s) => switch (s) {
-  RiskLevel.low      => DT.safeLt,
-  RiskLevel.normal   => DT.cautionBg,
-  RiskLevel.warning  => const Color(0xFFFED7AA),
-  RiskLevel.danger   => DT.dangerLt,
-  RiskLevel.critical => DT.dangerLt,
-  RiskLevel.unknown  => DT.grayLt,
-};
+Color _bgColor(double ratio) {
+  if (ratio < 1.0) return DT.safeLt;
+  if (ratio < 1.5) return const Color(0xFFFED7AA); // warning orange
+  return DT.dangerLt;
+}
 
-// critical에만 1px DT.danger 보더 (danger와 시각 차별화)
-BoxBorder? _border(RiskLevel s) =>
-    s == RiskLevel.critical
-        ? Border.all(color: DT.danger, width: 1)
-        : null;
-
-Color _badgeBg(RiskLevel s) => switch (s) {
-  RiskLevel.low      => DT.safe.withValues(alpha: 0.15),
-  RiskLevel.normal   => DT.primary.withValues(alpha: 0.15),
-  RiskLevel.warning  => DT.caution.withValues(alpha: 0.15),
-  RiskLevel.danger   => DT.danger.withValues(alpha: 0.12),
-  RiskLevel.critical => DT.danger.withValues(alpha: 0.18),
-  RiskLevel.unknown  => DT.gray.withValues(alpha: 0.12),
-};
-
-Color _badgeText(RiskLevel s) => switch (s) {
-  RiskLevel.low      => DT.safe,
-  RiskLevel.normal   => DT.primary,
-  RiskLevel.warning  => DT.caution,
-  RiskLevel.danger   => DT.danger,
-  RiskLevel.critical => DT.danger,
-  RiskLevel.unknown  => DT.gray,
-};
-
-String _badgeLabel(RiskLevel s) => switch (s) {
-  RiskLevel.low      => '안전',
-  RiskLevel.normal   => '보통',
-  RiskLevel.warning  => '주의',
-  RiskLevel.danger   => '나쁨',
-  RiskLevel.critical => '심각',
-  RiskLevel.unknown  => '-',
-};
+BoxBorder? _border(double ratio) =>
+    ratio >= 1.5 ? Border.all(color: DT.danger, width: 1) : null;
 
 // ── 카드 위젯 ────────────────────────────────────────────
 
@@ -81,15 +47,17 @@ class _StatusCardContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ratio = data.finalRatio;
+
     return GestureDetector(
       onTap: () => _showBottomSheet(context),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
         decoration: BoxDecoration(
-          color:        _bgColor(data.status),
+          color:        _bgColor(ratio),
           borderRadius: BorderRadius.circular(16),
-          border:       _border(data.status),
+          border:       _border(ratio),
           boxShadow: const [
             BoxShadow(
               offset:     Offset(0, 2),
@@ -102,81 +70,66 @@ class _StatusCardContent extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── 상단: 배지 + (이모지 + 제목) ──────────────
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                  decoration: BoxDecoration(
-                    color:        _badgeBg(data.status),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    _badgeLabel(data.status),
-                    style: TextStyle(
-                      color:         _badgeText(data.status),
-                      fontSize:      11,
-                      fontWeight:    FontWeight.bold,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
+            // ── 닉네임 ────────────────────────────────────
+            if (data.nickname.isNotEmpty) ...[
+              Text(
+                '${data.nickname}님,',
+                style: const TextStyle(
+                  color:      DT.gray,
+                  fontSize:   14,
+                  fontWeight: FontWeight.w500,
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      data.emoji,
-                      style: const TextStyle(fontSize: 48),
-                    ).animate(key: ValueKey(data.status))
-                        .scale(
-                          begin: const Offset(0.8, 0.8),
-                          curve: Curves.elasticOut,
-                          duration: 200.ms,
-                        )
-                        .rotate(begin: -0.05, end: 0, duration: 200.ms),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        data.title,
-                        style: const TextStyle(
-                          color:      DT.text,
-                          fontSize:   24,
-                          fontWeight: FontWeight.w600,
-                          height:     1.2,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              ),
+              const SizedBox(height: 8),
+            ],
+
+            // ── 큰 아이콘 (3단계) ─────────────────────────
+            Text(
+              data.emoji,
+              style: const TextStyle(fontSize: 64),
+            ).animate(key: ValueKey(ratio ~/ 1))
+                .scale(
+                  begin: const Offset(0.8, 0.8),
+                  curve: Curves.elasticOut,
+                  duration: 300.ms,
+                )
+                .rotate(begin: -0.05, end: 0, duration: 300.ms),
+
+            const SizedBox(height: 12),
+
+            // ── 답 텍스트 ─────────────────────────────────
+            Text(
+              data.title,
+              style: const TextStyle(
+                color:      DT.text,
+                fontSize:   26,
+                fontWeight: FontWeight.w700,
+                height:     1.2,
+              ),
             ),
 
-            // ── 서브 카피 ────────────────────────────────
+            // ── 서브 카피 ─────────────────────────────────
             if (data.subCopy.isNotEmpty) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Text(
                 data.subCopy,
                 style: const TextStyle(
                   color:    DT.gray,
-                  fontSize: 15,
-                  height:   1.6,
+                  fontSize: 14,
+                  height:   1.5,
                 ),
               ),
             ],
 
-            // ── 구분선 + 수치 + 카피 (데이터 없으면 숨김) ──
-            if (data.status != RiskLevel.unknown) ...[
+            // ── 수치 행 (데이터 있을 때) ───────────────────
+            if (data.status.index > 0) ...[
               const SizedBox(height: 20),
               Divider(
                 height:    1,
                 thickness: 1,
-                color:     _badgeText(data.status).withValues(alpha: 0.08),
+                color:     DT.gray.withValues(alpha: 0.15),
               ),
-              const SizedBox(height: 20),
-
-              // ── 오염물질 수치 (PM2.5 + PM10) ────────────
+              const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
@@ -193,10 +146,6 @@ class _StatusCardContent extends StatelessWidget {
                   ),
                 ],
               ),
-
-              // ── 오염물질 카피 (finalRatio 기반 단일 행) ──
-              const SizedBox(height: 8),
-              _PollutantCopy(ratio: data.finalRatio),
             ],
           ],
         ),
@@ -275,29 +224,6 @@ class _PollutantRow extends StatelessWidget {
                   letterSpacing: -0.5,
                 ),
               ),
-      ],
-    );
-  }
-}
-
-// ── 오염물질 카피 행 ─────────────────────────────────────
-
-class _PollutantCopy extends StatelessWidget {
-  final double ratio;
-  const _PollutantCopy({required this.ratio});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(pollutantEmoji(ratio), style: const TextStyle(fontSize: 14)),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            pollutantCopy(ratio),
-            style: const TextStyle(fontSize: 13, color: DT.text),
-          ),
-        ),
       ],
     );
   }

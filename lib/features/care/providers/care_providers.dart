@@ -23,7 +23,7 @@ final statusCardProvider = Provider<StatusCardData>((ref) {
       final tFinal      = profile.tFinal;
       final tFinalPm10  = tFinal * (80.0 / 35.0);
       final multiplier  = (35.0 / tFinal).clamp(1.0, 3.0);
-      final pm10ForCalc = profile.hasRespiratoryCondition ? pm10 : null;
+      final pm10ForCalc = pm10; // E-9: 모든 사용자 PM10 반영 (환경부 공식 max 결합)
       final ratioPm25   = tFinal > 0 ? pm25 / tFinal : 0.0;
       final ratioPm10   = (pm10ForCalc != null && tFinalPm10 > 0) ? pm10ForCalc / tFinalPm10 : 0.0;
       final finalRatio  = ratioPm25 > ratioPm10 ? ratioPm25 : ratioPm10;
@@ -44,10 +44,10 @@ final statusCardProvider = Provider<StatusCardData>((ref) {
       final double dominantTFinal;
       final DustGrade dominantGrade;
 
-      if (dominant == DominantPollutant.pm10 && pm10ForCalc != null) {
-        dominantValue  = pm10ForCalc;
+      if (dominant == DominantPollutant.pm10 && pm10 != null) {
+        dominantValue  = pm10;
         dominantTFinal = tFinal * (80.0 / 35.0);
-        dominantGrade  = DustStandards.getPm10Grade(pm10ForCalc);
+        dominantGrade  = DustStandards.getPm10Grade(pm10);
       } else {
         dominantValue  = pm25;
         dominantTFinal = tFinal;
@@ -56,8 +56,8 @@ final statusCardProvider = Provider<StatusCardData>((ref) {
 
       return StatusCardData(
         status:              status,
-        emoji:               _emoji(status),
-        title:               _title(status),
+        emoji:               _emoji3(finalRatio),
+        title:               _title3(finalRatio, tFinal),
         subCopy:             subCopy,
         dominantPollutant:   dominant,
         dominantValue:       dominantValue,
@@ -89,25 +89,24 @@ RiskLevel _resolveRiskLevel(double pm25, double tFinal) {
   return RiskLevel.critical;
 }
 
-// ── 카피 매트릭스 5단계 (§3.2) ──────────────────────────
+// ── E-7: finalRatio 기반 3단계 매핑 ─────────────────────
 
-String _emoji(RiskLevel s) => switch (s) {
-  RiskLevel.low      => '😊',
-  RiskLevel.normal   => '🙂',
-  RiskLevel.warning  => '😐',
-  RiskLevel.danger   => '😷',
-  RiskLevel.critical => '😨',
-  RiskLevel.unknown  => '⏳',
-};
+/// finalRatio → 3단계 이모지 (☺/😷/😨)
+String _emoji3(double ratio) {
+  if (ratio < 1.0) return '☺️';
+  if (ratio < 1.5) return '😷';
+  return '😨';
+}
 
-String _title(RiskLevel s) => switch (s) {
-  RiskLevel.low      => '마스크 안 챙겨도 돼요',
-  RiskLevel.normal   => '외출 시 가볍게 챙기세요',
-  RiskLevel.warning  => '마스크를 챙기세요',
-  RiskLevel.danger   => 'KF80 마스크가 필요해요',
-  RiskLevel.critical => 'KF94 마스크 + 외출 자제',
-  RiskLevel.unknown  => '데이터를 불러오는 중',
-};
+/// finalRatio + tFinal → 마스크 답 텍스트
+/// tFinal >= 30 → KF80, < 30 → KF94 (E-7 스펙)
+String _title3(double ratio, double tFinal) {
+  if (ratio < 1.0) return '지금은 OK';
+  if (ratio < 1.5) return '마스크 필요 (${tFinal >= 30 ? "KF80" : "KF94"})';
+  return '마스크 꼭 (${tFinal >= 30 ? "KF80" : "KF94"})';
+}
+
+// ── 카피 매트릭스 (RiskLevel 기반 — subCopy용으로만 유지) ──
 
 String _buildSubCopy(RiskLevel status, UserProfile profile) {
   if (status != RiskLevel.low &&
@@ -145,25 +144,28 @@ String _personalizedSubCopy(RiskLevel status, UserProfile profile) {
 // ── ProtectionAreaChart Provider ──────────────────────────
 
 final protectionChartProvider = FutureProvider<ProtectionChartData>((ref) async {
-  final profile       = ref.watch(profileProvider);
-  final dustAsync     = ref.watch(dustDataProvider);
-  final forecastAsync = ref.watch(tomorrowForecastProvider);
+  final profile           = ref.watch(profileProvider);
+  final dustAsync         = ref.watch(dustDataProvider);
+  final forecastAsync     = ref.watch(tomorrowForecastProvider);
+  final forecastPm10Async = ref.watch(tomorrowForecastPm10Provider);
 
-  final dust          = dustAsync.valueOrNull;
-  final forecastGrade = forecastAsync.valueOrNull;
+  final dust             = dustAsync.valueOrNull;
+  final forecastGrade    = forecastAsync.valueOrNull;
+  final forecastGradePm10 = forecastPm10Async.valueOrNull;
 
   // 실측값이 없으면 noData 반환 (placeholder 애니메이션은 로딩 상태에서 처리)
   if (dust == null) return ProtectionChartData.noData();
 
   final currentPm25 = dust.pm25Value?.toDouble() ?? 0.0;
-  final currentPm10 = dust.pm10Value;   // int? — 없으면 ratioPm10=0 처리됨
+  final currentPm10 = dust.pm10Value;
   final tFinalPm25  = profile.tFinal;
 
   final chartPoints = buildChartPoints(
-    tFinalPm25:   tFinalPm25,
-    currentPm25:  currentPm25,
-    currentPm10:  currentPm10,
-    forecastGrade: forecastGrade,
+    tFinalPm25:      tFinalPm25,
+    currentPm25:     currentPm25,
+    currentPm10:     currentPm10,
+    forecastGrade:   forecastGrade,
+    forecastGradePm10: forecastGradePm10,
   );
 
   final verdict = buildChartVerdict(chartPoints);

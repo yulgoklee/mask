@@ -4,7 +4,7 @@ import '../core/engine/threshold_engine.dart';
 import '../data/models/user_profile.dart';
 
 // ── ProfileStateHeader ─────────────────────────────────────
-// 이름 + 그룹 뱃지 ("민감 사용자" / "일반 사용자")
+// 이름 한 줄 (그룹 뱃지 제거 — E-5)
 
 class ProfileStateHeader extends StatelessWidget {
   final UserProfile profile;
@@ -13,41 +13,16 @@ class ProfileStateHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMain = profile.userGroup == UserGroup.main;
-    final badgeColor = isMain ? AppColors.coral : AppColors.textSecondary;
-    final badgeLabel = isMain ? '민감 사용자' : '일반 사용자';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          profile.displayName.isNotEmpty
-              ? '${profile.displayName}, 이렇게 알려드릴게요.'
-              : '이렇게 알려드릴게요.',
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-            height: 1.3,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: badgeColor.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            badgeLabel,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: badgeColor,
-            ),
-          ),
-        ),
-      ],
+    return Text(
+      profile.displayName.isNotEmpty
+          ? '${profile.displayName}, 이렇게 알려드릴게요.'
+          : '이렇게 알려드릴게요.',
+      style: const TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        color: AppColors.textPrimary,
+        height: 1.3,
+      ),
     );
   }
 }
@@ -345,25 +320,24 @@ class SensitivityActionGuide extends StatelessWidget {
   }
 
   String _guideText(UserProfile p, ThresholdBreakdown bd) {
-    if (p.userGroup == UserGroup.general) {
-      return '환경부 기준 35 μg/m³ 이상이면 마스크 착용을 권장해요.';
-    }
+    final name = p.nickname.isNotEmpty ? '${p.nickname}님' : '';
+    final prefix = name.isNotEmpty ? '$name, ' : '';
     if (bd.floorApplied) {
-      return '최고 수준 민감도가 적용됐어요. 외출 전 꼭 확인하세요.';
+      return '${prefix}최고 수준 민감도가 적용됐어요. 외출 전 꼭 확인하세요.';
     }
     if (bd.wSpecial > 0) {
-      return '임신 중에는 항상 마스크를 권장해요.';
+      return '${prefix}임신 중에는 항상 마스크를 권장해요.';
     }
     if (bd.wRespiratory > 0) {
-      return '환절기·꽃가루 많은 날 특히 주의해요.';
+      return '${prefix}환절기·꽃가루 많은 날 특히 주의해요.';
     }
     if (bd.wCardiovascular > 0) {
-      return '미세먼지 높은 날 야외 운동은 피하세요.';
+      return '${prefix}미세먼지 높은 날 야외 운동은 피하세요.';
     }
     if (bd.wSmoking > 0) {
-      return '외출 전 미세먼지 확인이 더 중요해요.';
+      return '${prefix}외출 전 미세먼지 확인이 더 중요해요.';
     }
-    return '공기가 나빠지기 전에 먼저 알려드릴게요.';
+    return '${prefix}공기가 나빠지기 전에 먼저 알려드릴게요.';
   }
 }
 

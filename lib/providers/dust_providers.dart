@@ -104,6 +104,21 @@ final tomorrowForecastProvider = FutureProvider<String?>((ref) async {
   return repo.getTomorrowForecast();
 });
 
+final tomorrowForecastPm10Provider = FutureProvider<String?>((ref) async {
+  final repo = ref.watch(dustRepositoryProvider);
+  return repo.getTomorrowForecastPm10();
+});
+
+/// 현재 저장된 측정소의 시도명 (예: "서울")
+/// E-1 헤더 위치 표시용 (sido + stationName → "서울 강남구")
+final stationSidoProvider = FutureProvider<String?>((ref) async {
+  final dustAsync = ref.watch(dustDataProvider);
+  final repo      = ref.watch(dustRepositoryProvider);
+  final dust      = dustAsync.valueOrNull;
+  if (dust == null) return null;
+  return repo.getSidoForStation(dust.stationName);
+});
+
 final hourlyDataProvider =
     FutureProvider.family<List<HourlyDustData>, String>(
   (ref, stationName) async {

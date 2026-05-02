@@ -129,17 +129,17 @@ void main() {
   });
 
   group('DustCalculator — shouldSendRealtime 경계값 (finalRatio >= 1.5)', () {
-    // 호흡기 프로필 사용 — PM10은 hasRespiratoryCondition=true 일 때만 계산에 반영됨
+    // E-9: PM10은 모든 사용자에게 반영됨 (hasRespiratoryCondition 분기 제거)
 
-    test('PM10=120, T_pm10=80 → ratio=1.50 → shouldSendRealtime=true', () {
-      // _sensitiveProfile (rhinitis:true) → PM10 계산 반영
-      // PM10=120, T_pm10=80.0 → ratio=1.5 → true
+    test('PM10=120, 민감 프로필 T_pm10≈68 → ratio≈1.76 → shouldSendRealtime=true', () {
+      // _sensitiveProfile: T_pm25=29.75 → T_pm10=29.75*(80/35)≈68.0
+      // ratioPm10=120/68≈1.76 → true
       final r = DustCalculator.calculate(_sensitiveProfile, _dust(5, pm10: 120));
       expect(r.shouldSendRealtime, true);
     });
 
-    test('PM10=100, pm25 낮음 → ratio=1.25 < 1.5 → shouldSendRealtime=false', () {
-      // PM10=100, T_pm10=80 → ratio=1.25 < 1.5 → false
+    test('PM10=100, 일반 프로필 T_pm10=80 → ratio=1.25 < 1.5 → shouldSendRealtime=false', () {
+      // E-9: 일반 프로필도 PM10 반영, ratioPm10=100/80=1.25 < 1.5 → false
       final r = DustCalculator.calculate(_defaultProfile, _dust(5, pm10: 100));
       expect(r.shouldSendRealtime, false);
     });
@@ -158,11 +158,17 @@ void main() {
     });
   });
 
-  group('DustCalculator — PM10 dominant 케이스', () {
-    test('PM10이 PM2.5보다 ratio 높으면 dominant=pm10', () {
-      // _sensitiveProfile (rhinitis:true) → PM10 계산 반영
-      // PM2.5=5 (ratio≈0.17), PM10=120 (ratio≈1.50) → pm10 dominant
+  group('DustCalculator — PM10 dominant 케이스 (E-9: 모든 사용자 PM10 반영)', () {
+    test('민감 프로필: PM10이 PM2.5보다 ratio 높으면 dominant=pm10', () {
+      // ratioPm25=5/29.75≈0.17, ratioPm10=120/68≈1.76 → pm10 dominant
       final r = DustCalculator.calculate(_sensitiveProfile, _dust(5, pm10: 120));
+      expect(r.dominantPollutant, DominantPollutant.pm10);
+    });
+
+    test('일반 프로필도 PM10 높으면 dominant=pm10 (E-9 신규)', () {
+      // _defaultProfile T_pm25=35, T_pm10=80
+      // ratioPm25=5/35≈0.14, ratioPm10=120/80=1.5 → pm10 dominant
+      final r = DustCalculator.calculate(_defaultProfile, _dust(5, pm10: 120));
       expect(r.dominantPollutant, DominantPollutant.pm10);
     });
 
@@ -172,7 +178,7 @@ void main() {
     });
 
     test('PM10이 낮으면 dominant=pm25', () {
-      // PM2.5=30 (ratio≈0.95), PM10=10 (ratio≈0.14) → pm25 dominant
+      // ratioPm25=30/35≈0.86, ratioPm10=10/80=0.125 → pm25 dominant
       final r = DustCalculator.calculate(_defaultProfile, _dust(30, pm10: 10));
       expect(r.dominantPollutant, DominantPollutant.pm25);
     });

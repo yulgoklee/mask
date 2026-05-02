@@ -66,6 +66,16 @@ class DustRepository {
     return _dataSource.getTomorrowForecast(sidoName: sido);
   }
 
+  /// 내일 PM10 예보 조회 (현재 측정소 기준 지역 필터링)
+  Future<String?> getTomorrowForecastPm10() async {
+    final station = _location.getSavedStation();
+    String? sido;
+    if (station != null) {
+      sido = await _dataSource.getSidoForStation(station);
+    }
+    return _dataSource.getTomorrowForecastPm10(sidoName: sido);
+  }
+
   /// 시간별 데이터 조회
   Future<List<HourlyDustData>> getHourlyData(String stationName) =>
       _dataSource.getHourlyData(stationName);

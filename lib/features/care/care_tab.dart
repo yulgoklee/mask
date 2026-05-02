@@ -7,12 +7,20 @@ import 'widgets/status_card.dart';
 import 'widgets/protection_area_chart.dart';
 import 'widgets/pollutant_detail_card.dart';
 
-// ── 갱신 시각 표시 ───────────────────────────────────────
-// dataTime.hour를 "HH:00 기준" 형식으로 반환 (24시간제).
-// 에어코리아 API가 정시(분=0) 단위로 데이터를 제공하므로 hour만 사용.
+// ── 위치 표시 (E-1) ──────────────────────────────────────
+// sido + stationName → "서울 강남구" 형식
+String locationLabel(String? sido, String stationName) {
+  if (sido == null || sido.isEmpty) return stationName;
+  if (stationName.startsWith(sido)) return stationName;
+  return '$sido $stationName';
+}
+
+// ── 갱신 시각 표시 (E-1) ────────────────────────────────
+// dataTime → "오전/오후 X시 기준" 형식 (12시간제)
 String dataTimeLabel(DateTime dt) {
-  final hh = dt.hour.toString().padLeft(2, '0');
-  return '$hh:00 기준';
+  final isAm  = dt.hour < 12;
+  final h12   = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+  return '${isAm ? "오전" : "오후"} $h12시 기준';
 }
 
 // ── 예보 오류 배너 ────────────────────────────────────────
@@ -101,16 +109,19 @@ class CareTab extends ConsumerWidget {
                       ),
                       const SizedBox(height: 2),
                       dustAsync.when(
-                        data: (dust) => dust != null
-                            ? Text(
-                                '${dust.stationName} · ${dataTimeLabel(dust.dataTime)}',
-                                style: const TextStyle(
-                                  fontSize:   12,
-                                  fontWeight: FontWeight.w500,
-                                  color:      DT.gray,
-                                ),
-                              )
-                            : const SizedBox.shrink(),
+                        data: (dust) {
+                          if (dust == null) return const SizedBox.shrink();
+                          final sidoAsync = ref.watch(stationSidoProvider);
+                          final sido = sidoAsync.valueOrNull;
+                          return Text(
+                            '${locationLabel(sido, dust.stationName)} · ${dataTimeLabel(dust.dataTime)}',
+                            style: const TextStyle(
+                              fontSize:   12,
+                              fontWeight: FontWeight.w500,
+                              color:      DT.gray,
+                            ),
+                          );
+                        },
                         loading: () => const SizedBox.shrink(),
                         error:   (_, __) => const SizedBox.shrink(),
                       ),

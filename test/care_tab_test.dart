@@ -4,28 +4,28 @@ import 'package:mask_alert/features/care/care_tab.dart';
 // ── dataTimeLabel 단위 테스트 ──────────────────────────────
 //
 // 검증 대상: care_tab.dart 의 dataTimeLabel(DateTime)
-//   에어코리아 측정 시각(정시)을 "HH:00 기준" 형식으로 반환.
+//   E-1: "오전/오후 X시 기준" 12시간제 형식으로 반환.
 
 void main() {
   group('dataTimeLabel (care_tab.dart)', () {
-    // ── 시간대별 24시간제 표기 ──────────────────────────────
-    test('자정(0시) → 00:00 기준',
-        () => expect(dataTimeLabel(DateTime(2024, 1, 1, 0)), '00:00 기준'));
+    // ── E-1: 12시간제 표기 ─────────────────────────────────
+    test('자정(0시) → 오전 12시 기준',
+        () => expect(dataTimeLabel(DateTime(2024, 1, 1, 0)), '오전 12시 기준'));
 
-    test('오전 1시 → 01:00 기준 (한 자리 시간 0-패딩)',
-        () => expect(dataTimeLabel(DateTime(2024, 1, 1, 1)), '01:00 기준'));
+    test('오전 1시 → 오전 1시 기준',
+        () => expect(dataTimeLabel(DateTime(2024, 1, 1, 1)), '오전 1시 기준'));
 
-    test('오전 7시 → 07:00 기준',
-        () => expect(dataTimeLabel(DateTime(2024, 1, 1, 7)), '07:00 기준'));
+    test('오전 7시 → 오전 7시 기준',
+        () => expect(dataTimeLabel(DateTime(2024, 1, 1, 7)), '오전 7시 기준'));
 
-    test('정오(12시) → 12:00 기준',
-        () => expect(dataTimeLabel(DateTime(2024, 1, 1, 12)), '12:00 기준'));
+    test('정오(12시) → 오후 12시 기준',
+        () => expect(dataTimeLabel(DateTime(2024, 1, 1, 12)), '오후 12시 기준'));
 
-    test('오후 1시 → 13:00 기준 (24시간제)',
-        () => expect(dataTimeLabel(DateTime(2024, 1, 1, 13)), '13:00 기준'));
+    test('오후 1시(13시) → 오후 1시 기준',
+        () => expect(dataTimeLabel(DateTime(2024, 1, 1, 13)), '오후 1시 기준'));
 
-    test('오후 11시 → 23:00 기준',
-        () => expect(dataTimeLabel(DateTime(2024, 1, 1, 23)), '23:00 기준'));
+    test('오후 11시(23시) → 오후 11시 기준',
+        () => expect(dataTimeLabel(DateTime(2024, 1, 1, 23)), '오후 11시 기준'));
 
     // ── 반환값 형식 검증 ────────────────────────────────────
     test('반환값에 \\n 없음 (단문 강제)', () {
@@ -43,11 +43,14 @@ void main() {
       }
     });
 
-    test('HH 부분이 항상 두 자리', () {
-      for (var h = 0; h < 10; h++) {
-        final result = dataTimeLabel(DateTime(2024, 1, 1, h));
-        expect(result.startsWith('0'), true,
-            reason: '$h시는 0-패딩되어야 합니다: $result');
+    test('오전/오후 구분 — 오전(0~11시), 오후(12~23시)', () {
+      for (var h = 0; h < 12; h++) {
+        expect(dataTimeLabel(DateTime(2024, 1, 1, h)).startsWith('오전'), true,
+            reason: '$h시는 오전이어야 합니다');
+      }
+      for (var h = 12; h < 24; h++) {
+        expect(dataTimeLabel(DateTime(2024, 1, 1, h)).startsWith('오후'), true,
+            reason: '$h시는 오후이어야 합니다');
       }
     });
   });
