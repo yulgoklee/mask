@@ -7,6 +7,7 @@ abstract class DustDataSource {
   Future<List<HourlyDustData>> getHourlyHistory(String stationName);
   Future<List<WeeklyForecastData>> getWeeklyForecast({String? sidoName});
   Future<String?> getTomorrowForecast({String? sidoName});
+  Future<String?> getTomorrowForecastPm10({String? sidoName});
   Future<String?> getSidoForStation(String stationName);
   Future<List<String>> searchStations(String keyword);
 }

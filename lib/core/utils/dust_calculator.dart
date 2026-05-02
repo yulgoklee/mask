@@ -34,10 +34,11 @@ class DustCalculator {
     }
 
     // ── Tier 1: final_ratio = max(PM2.5/T_pm25, PM10/T_pm10) ──
-    // PM10 max는 호흡기 환자(천식/비염/COPD/알레르기)에게만 적용
+    // E-9: 모든 사용자 PM10 반영 (환경부 공식 max 결합 — 서울 사망률 연구 근거)
+    // 호흡기 환자는 tFinal 낮음(W_resp 가중치)으로 자동으로 더 강하게 반응
     final tFinalPm25    = profile.tFinal;
     final pm10          = dust.pm10Value;
-    final pm10ForCalc   = profile.hasRespiratoryCondition ? pm10 : null;
+    final pm10ForCalc   = pm10;
     final ratio         = _computeFinalRatio(pm25: pm25, pm10: pm10ForCalc, tFinalPm25: tFinalPm25);
     final dominant      = _computeDominantPollutant(pm25: pm25, pm10: pm10ForCalc, tFinalPm25: tFinalPm25);
 
@@ -136,7 +137,7 @@ class DustCalculator {
     required String pm25Grade,
   }) {
     if (dominant == DominantPollutant.pm10 && pm10 != null) {
-      return 'PM10 $pm10μg/m³ · 지배 / PM2.5 $pm25μg/m³ · $pm25Grade';
+      return '미세먼지 $pm10μg/m³ · 지배 / 초미세먼지 $pm25μg/m³ · $pm25Grade';
     }
     return '초미세먼지 $pm25μg/m³ · $pm25Grade';
   }
@@ -229,11 +230,11 @@ class DustCalculator {
       case RiskLevel.normal:
         return '오늘은 보통 수준이에요.\n장시간 야외라면 마스크를 고려해보세요.';
       case RiskLevel.warning:
-        return '${p}오늘 마스크 챙겨가세요.\nPM2.5 $pm25μg/m³, 조금 나빠요.';
+        return '${p}오늘 마스크 챙겨가세요.\n초미세먼지 $pm25μg/m³, 조금 나빠요.';
       case RiskLevel.danger:
-        return '${p}지금 마스크 필수예요.\nPM2.5 $pm25μg/m³, 매우 나빠요.';
+        return '${p}지금 마스크 필수예요.\n초미세먼지 $pm25μg/m³, 매우 나빠요.';
       case RiskLevel.critical:
-        return '${p}오늘은 외출을 줄여주세요.\nPM2.5 $pm25μg/m³, 심각한 수준이에요.';
+        return '${p}오늘은 외출을 줄여주세요.\n초미세먼지 $pm25μg/m³, 심각한 수준이에요.';
       case RiskLevel.unknown:
         return '미세먼지 정보를 가져오고 있어요.';
     }

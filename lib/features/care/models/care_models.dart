@@ -222,6 +222,17 @@ double gradeToMidpoint(String? grade) => switch (grade) {
   _         => 25.0,
 };
 
+/// PM10 등급 문자열 → 보간 중앙값 (µg/m³)
+///
+/// 환경부 PM10 등급 기준 구간 중앙값 (E-9 자료 기반).
+double gradeToMidpointPm10(String? grade) => switch (grade) {
+  '좋음'    => 15.0,
+  '보통'    => 55.0,
+  '나쁨'    => 115.0,
+  '매우나쁨' => 200.0,
+  _         => 55.0,
+};
+
 /// 12시간 추세 기반 ChartVerdict 판정 (§3.3 v4)
 ///
 /// 판정 우선순위:
@@ -257,35 +268,44 @@ ChartVerdict buildChartVerdict(List<ChartPoint> points) {
 /// final_ratio 기반 ChartPoint 리스트 생성 (13개, h=0~12)
 ///
 /// - h=0 (현재): 실측 pm25/pm10 사용
-/// - h=1~12 (보간): cubic smoothstep, PM10 미반영 (ratioPm10=0)
-///   → tomorrowForecastProvider가 PM2.5 등급만 제공하기 때문 (§7 v4 명시)
+/// - h=1~12 (보간): cubic smoothstep
+///   - PM2.5: forecastGrade 기반 보간
+///   - PM10: forecastGradePm10 제공 시 보간, 없으면 0 (E-9)
 ///
-/// [tFinalPm25] : 개인화 PM2.5 임계치 (µg/m³)
-/// [currentPm25]: 현재 PM2.5 실측값 (µg/m³)
-/// [currentPm10]: 현재 PM10 실측값 (nullable — 없으면 ratioPm10=0)
-/// [forecastGrade]: 내일 PM2.5 등급 문자열 (nullable)
+/// [tFinalPm25]      : 개인화 PM2.5 임계치 (µg/m³)
+/// [currentPm25]     : 현재 PM2.5 실측값 (µg/m³)
+/// [currentPm10]     : 현재 PM10 실측값 (nullable)
+/// [forecastGrade]   : 내일 PM2.5 등급 문자열 (nullable)
+/// [forecastGradePm10]: 내일 PM10 등급 문자열 (nullable — 없으면 PM10 예보 미반영)
 List<ChartPoint> buildChartPoints({
   required double tFinalPm25,
   required double currentPm25,
   int? currentPm10,
   String? forecastGrade,
+  String? forecastGradePm10,
   int horizonHours = 12,
 }) {
-  final tFinalPm10   = tFinalPm25 * (80.0 / 35.0);
-  final forecastMid  = gradeToMidpoint(forecastGrade);
+  final tFinalPm10      = tFinalPm25 * (80.0 / 35.0);
+  final forecastMidPm25 = gradeToMidpoint(forecastGrade);
+  final forecastMidPm10 = gradeToMidpointPm10(forecastGradePm10);
+  final startPm10       = currentPm10?.toDouble() ?? forecastMidPm10;
 
   return List.generate(horizonHours + 1, (h) {
     final t      = h / horizonHours;
     final smooth = t * t * (3 - 2 * t); // cubic smoothstep
 
-    final interpPm25   = currentPm25 + (forecastMid - currentPm25) * smooth;
-    final ratioPm25    = interpPm25 / tFinalPm25;
+    final interpPm25 = currentPm25 + (forecastMidPm25 - currentPm25) * smooth;
+    final ratioPm25  = interpPm25 / tFinalPm25;
 
-    // 예보 구간에서는 PM10 데이터 없음 → ratioPm10 = 0
-    final rawPm10    = h == 0 ? currentPm10?.toDouble() : null;
-    final ratioPm10  = (h == 0 && currentPm10 != null)
-        ? currentPm10 / tFinalPm10
-        : 0.0;
+    final double ratioPm10;
+    if (h == 0) {
+      ratioPm10 = currentPm10 != null ? currentPm10 / tFinalPm10 : 0.0;
+    } else if (forecastGradePm10 != null) {
+      final interpPm10 = startPm10 + (forecastMidPm10 - startPm10) * smooth;
+      ratioPm10 = interpPm10 / tFinalPm10;
+    } else {
+      ratioPm10 = 0.0;
+    }
 
     final finalRatio = ratioPm25 > ratioPm10 ? ratioPm25 : ratioPm10;
 
@@ -293,7 +313,7 @@ List<ChartPoint> buildChartPoints({
       hour:       h.toDouble(),
       finalRatio: finalRatio.clamp(0.0, 10.0),
       rawPm25:    interpPm25.clamp(0.0, 500.0),
-      rawPm10:    rawPm10,
+      rawPm10:    h == 0 ? currentPm10?.toDouble() : null,
       isForecast: h > 0,
     );
   });
@@ -322,20 +342,16 @@ String? _nextDifferentLabel(String baseLabel, DateTime now) {
   return null;
 }
 
-/// 오염물질 ratio → 5단계 카피 (ALL 위험도에서 표시)
+/// finalRatio → 3단계 카피 (E-7: 개인 기준치 임계 1.0 기반)
 String pollutantCopy(double ratio) {
-  if (ratio < 0.5) return '여유롭게 숨 쉴 수 있어요';
-  if (ratio < 0.7) return '괜찮은 편이에요';
-  if (ratio < 1.0) return '조금 신경 써야 할 정도예요';
+  if (ratio < 1.0) return '지금은 마스크 없어도 돼요';
   if (ratio < 1.5) return '마스크가 필요해요';
-  return '꼭 마스크를 착용하세요';
+  return '마스크를 꼭 착용하세요';
 }
 
-/// 오염물질 ratio → 5단계 표정 (ALL 위험도에서 표시)
+/// finalRatio → 3단계 표정 (E-7)
 String pollutantEmoji(double ratio) {
-  if (ratio < 0.5) return '😊';
-  if (ratio < 0.7) return '🙂';
-  if (ratio < 1.0) return '😐';
+  if (ratio < 1.0) return '☺️';
   if (ratio < 1.5) return '😷';
   return '😨';
 }
@@ -352,12 +368,13 @@ String pollutantEmoji(double ratio) {
 String buildFlowText(List<ChartPoint> points, DateTime now) {
   if (points.isEmpty) return '예보 데이터를 불러오는 중이에요';
 
-  const kThreshold = 0.7;
+  // E-7: 임계 1.0 (개인 기준치 = finalRatio=1.0)
+  const kThreshold = 1.0;
   final allSafe = points.every((p) => p.finalRatio < kThreshold);
   final allWarn = points.every((p) => p.finalRatio >= kThreshold);
 
-  if (allSafe) return '12시간 동안 안전해요';
-  if (allWarn) return '오늘 종일 주의가 필요해요';
+  if (allSafe) return '12시간 동안 마스크 없어도 돼요';
+  if (allWarn) return '지금부터 마스크가 계속 필요해요';
 
   for (int i = 1; i < points.length; i++) {
     final prev = points[i - 1].finalRatio;
@@ -366,29 +383,29 @@ String buildFlowText(List<ChartPoint> points, DateTime now) {
     if (prev < kThreshold && curr >= kThreshold) {
       final before = hourLabel(i - 1, now);
       final after  = hourLabel(i, now);
-      if (i == 1) return '$after부터 주의가 필요해요';
+      if (i == 1) return '$after부터 마스크가 필요해요';
       if (before == after) {
         final next = _nextDifferentLabel(after, now);
         return next != null
-            ? '지금은 안전, $next부터 주의 😷'
-            : '오늘 종일 주의가 필요해요';
+            ? '$before까지 OK — $next부터 마스크 필요 😷'
+            : '지금부터 마스크가 계속 필요해요';
       }
-      return '$before까지 안전 → $after부터 주의';
+      return '$before까지 OK → $after부터 마스크 필요';
     }
 
     if (prev >= kThreshold && curr < kThreshold) {
       final before = hourLabel(i - 1, now);
       final after  = hourLabel(i, now);
-      if (i == 1) return '$after부터 나아질 거예요';
+      if (i == 1) return '$after부터 마스크 벗어도 돼요';
       if (before == after) {
         final next = _nextDifferentLabel(after, now);
         return next != null
-            ? '지금은 주의, $next부터 안전'
-            : '12시간 동안 안전해요';
+            ? '지금 마스크 필요 — $next부터 OK'
+            : '12시간 동안 마스크 없어도 돼요';
       }
-      return '$before까지 주의 → $after부터 안전';
+      return '$before까지 마스크 필요 → $after부터 OK';
     }
   }
 
-  return '12시간 동안 안전해요';
+  return '12시간 동안 마스크 없어도 돼요';
 }

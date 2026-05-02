@@ -65,7 +65,7 @@ class _PollutantDetailCardState extends ConsumerState<PollutantDetailCard> {
               children: [
                 Expanded(
                   child: _PollutantBox(
-                    name:      'PM2.5',
+                    name:      '초미세먼지',
                     value:     data.pm25,
                     unit:      'µg/m³',
                     grade:     data.pm25Grade,
@@ -75,7 +75,7 @@ class _PollutantDetailCardState extends ConsumerState<PollutantDetailCard> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _PollutantBox(
-                    name:      'PM10',
+                    name:      '미세먼지',
                     value:     data.pm10,
                     unit:      'µg/m³',
                     grade:     data.pm10Grade,
