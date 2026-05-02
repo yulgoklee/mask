@@ -399,6 +399,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 onTap: (_saving ||
                         (_currentPage == 0 && !(_nickname?.trim().isNotEmpty ?? false)) ||
                         (_currentPage == 1 && !_birthYearEdited) ||
+                        // Q4(호흡기): 최소 1개 선택 또는 "없어요"
+                        (_currentPage == 3 && !_hasRhinitis && !_hasAsthma && !_hasCopd && !_hasAllergy && !_hasNoneRespiratory) ||
+                        // Q5(심혈관): 최소 1개 선택 또는 "없어요"
+                        (_currentPage == 4 && !_hasHypertension && !_hasHeartDisease && !_hasStroke && !_hasNoneCardiovascular) ||
                         // Q6(흡연): 반드시 선택
                         (_currentPage == 5 && _smokingStatusChoice == null) ||
                         // Q6-1(흡연 종류): 현재 흡연 중인 경우 최소 1개 선택
