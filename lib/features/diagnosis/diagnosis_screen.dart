@@ -4,7 +4,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/engine/threshold_engine.dart';
 import '../../data/models/user_profile.dart';
 import '../../providers/profile_providers.dart';
-import 'result_screen.dart';
+import 'package:go_router/go_router.dart';
 
 /// 민감도 진단 화면 — 3파트 step-by-step 카드 (v2)
 ///
@@ -304,10 +304,7 @@ class _ResultPage extends StatelessWidget {
             child: ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ResultScreen()),
-                );
+                context.go('/diagnosis_result');
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,

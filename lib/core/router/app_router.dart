@@ -13,8 +13,8 @@ import '../../features/onboarding/permission_screen.dart';
 import '../../features/onboarding/roadmap_screen.dart';
 import '../../features/onboarding/disclaimer_screen.dart';
 import '../../features/onboarding/welcome_screen.dart';
+import '../../features/profile/profile_edit_screen.dart';
 import '../../features/profile_tab/profile_tab.dart';
-import '../../features/my_body_info/my_body_info_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/report_tab/report_tab.dart';
 import '../../features/splash/splash_screen.dart';
@@ -146,7 +146,7 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/my-body-info',
-      pageBuilder: (_, state) => _slideUpPage(state, const MyBodyInfoScreen()),
+      redirect: (_, __) => '/profile/edit',
     ),
     GoRoute(
       path: '/notifications',
@@ -158,7 +158,8 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/profile/edit',
-      redirect: (_, __) => '/my-body-info',
+      pageBuilder: (_, state) =>
+          _slideUpPage(state, const ProfileEditScreen()),
     ),
 
     // ── 메인 3탭 ShellRoute ──────────────────────────────────
