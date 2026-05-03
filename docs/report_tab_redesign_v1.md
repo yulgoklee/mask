@@ -150,7 +150,7 @@ class NotificationWithAqiContext {
 | 3 | 주중-주말 차이 | 평균 final_ratio 차이 ≥ 0.15 | `weekdayWeekend` |
 | 4 | 평균 요약 | 위 1~3 모두 해당 없음, 데이터는 있음 | `avgSummary` |
 | 5 | 모두 안전 | 전 기간 final_ratio < 1.0 | `allSafe` |
-| 6 | 데이터 없음 | AQI 기록도 알림 로그도 없음 | 슬롯 숨김 |
+| 6 | 데이터 없음 | AQI 기록도 알림 로그도 없음 | InsightData null → InsightCard에서 placeholder 카피 (v1.1 변경 — 사용자 검수 후 reverse) |
 
 > **주중-주말 기준**: 월~금 평균 final_ratio와 토~일 평균 final_ratio 의 절대값 차이 ≥ 0.15.
 > ratio 0.15는 T_final=35 기준 약 5.25µg/m³ 차이에 해당한다.
@@ -272,7 +272,7 @@ PM2.5 일평균 {pm25}µg/m³으로,
 
 | 케이스 | 조건 | 처리 |
 |---|---|---|
-| G-1 | AQI 기록 없음, 알림 로그 없음 | 슬롯 자체 숨김 (null 반환) |
+| G-1 | AQI 기록 없음, 알림 로그 없음 | InsightEngine.compute → null 반환. InsightCard에서 placeholder 카피 표시 (카드 박스 보임, 미주 없음). 카피: "기록이 모이는 중이에요. 한 주가 채워지면 여기에 발견을 적어둘게요." |
 | G-2 | AQI 기록 있음, 알림 로그 없음 | envPeak / avgSummary / allSafe 중 선정 |
 | G-3 | AQI 기록 없음, 알림 로그 있음 | notification.pm25Value / pm10Value 사용 |
 | G-4 | 알림 있으나 hasAqiContext=false 전부 | notification 컬럼값으로 fallback |
@@ -376,7 +376,9 @@ final ratio = DustCalculator.computeHistoricalFinalRatio(
 **표시 규칙**
 
 - 데이터 있음 + 카테고리 결정됨 → 표시.
-- 데이터 없음 (G-1 케이스) → **슬롯 자체 미렌더링**. 기대감 카피나 placeholder 없음 (Lead 결정 5번).
+- 데이터 없음 (G-1, InsightData null) → **카드 박스는 표시, 본문은 placeholder 카피, 미주 없음**.
+  - placeholder 본문: "기록이 모이는 중이에요. 한 주가 채워지면 여기에 발견을 적어둘게요."
+  - v1.1 변경 — Lead 결정 5번(슬롯 숨김) reverse. 디바이스 검수에서 빈 화면이 정보 부재 신호가 아니라 단순 누락처럼 느껴졌음. 외유내강 톤(사실 + 자연스러운 미래 동작, 직접 약속·칭찬 ✕)으로 placeholder 추가.
 
 **카피 길이 가이드**
 

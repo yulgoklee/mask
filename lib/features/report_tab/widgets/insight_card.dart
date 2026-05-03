@@ -8,10 +8,16 @@ import '../providers/report_providers.dart';
 //
 // §4.3 "인사이트 카드" 위젯.
 // insightProvider → InsightData? 를 받아 렌더링.
-// null이면 SizedBox.shrink() — 슬롯 자체 미렌더링.
+// data null이면 placeholder 카피 표시 (첫 주·데이터 부족).
+// loading/error는 SizedBox.shrink — 깜빡거림 방지.
 
 class InsightCard extends ConsumerWidget {
   const InsightCard({super.key});
+
+  /// 데이터 없는 첫 주 placeholder 카피.
+  /// 차터 §7.5 톤 규칙: 사실 + 자연스러운 미래 동작. 직접 약속·칭찬 ✕.
+  static const String _emptyBodyText =
+      '기록이 모이는 중이에요. 한 주가 채워지면 여기에 발견을 적어둘게요.';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -20,10 +26,10 @@ class InsightCard extends ConsumerWidget {
     return asyncData.when(
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
-      data: (data) {
-        if (data == null) return const SizedBox.shrink();
-        return _InsightContent(data: data);
-      },
+      data: (data) => _InsightContent(
+        bodyText: data?.bodyText ?? _emptyBodyText,
+        footnoteText: data?.footnoteText,
+      ),
     );
   }
 }
@@ -31,9 +37,10 @@ class InsightCard extends ConsumerWidget {
 // ── 카드 본문 ─────────────────────────────────────────────
 
 class _InsightContent extends StatelessWidget {
-  final InsightData data;
+  final String bodyText;
+  final String? footnoteText;
 
-  const _InsightContent({required this.data});
+  const _InsightContent({required this.bodyText, this.footnoteText});
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +66,7 @@ class _InsightContent extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            data.bodyText,
+            bodyText,
             style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.normal,
@@ -67,10 +74,10 @@ class _InsightContent extends StatelessWidget {
               height: 1.6,
             ),
           ),
-          if (data.footnoteText != null) ...[
+          if (footnoteText != null) ...[
             const SizedBox(height: 8),
             Text(
-              data.footnoteText!,
+              footnoteText!,
               style: const TextStyle(
                 fontSize: 12,
                 color: DT.gray,

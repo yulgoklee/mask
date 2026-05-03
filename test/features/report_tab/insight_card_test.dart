@@ -85,22 +85,24 @@ void main() {
     });
   });
 
-  // ── B: InsightData null → SizedBox.shrink ───────────
+  // ── B: InsightData null → placeholder 카드 표시 ──────
 
-  group('B: InsightData null — 슬롯 미렌더링', () {
-    testWidgets('null이면 InsightCard 위젯 트리에서 카드 없음', (tester) async {
+  group('B: InsightData null — placeholder 카드 표시', () {
+    testWidgets('null이면 카드 제목 + placeholder 카피 표시', (tester) async {
       await tester.pumpWidget(_buildWidget(data: null));
       await tester.pump();
 
-      // 카드 제목 없음
-      expect(find.text('이번 주의 발견'), findsNothing);
+      expect(find.text('이번 주의 발견'), findsOneWidget);
+      expect(
+        find.text('기록이 모이는 중이에요. 한 주가 채워지면 여기에 발견을 적어둘게요.'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('null이면 Container(카드 박스) 렌더링 안 됨', (tester) async {
+    testWidgets('null이면 카드 박스 렌더링됨 (Container white + 16px radius)', (tester) async {
       await tester.pumpWidget(_buildWidget(data: null));
       await tester.pump();
 
-      // BoxDecoration(color: white, borderRadius: 16px) Container 없음
       bool hasCardBox = false;
       tester.widgetList<Container>(find.byType(Container)).forEach((c) {
         final deco = c.decoration;
@@ -110,7 +112,14 @@ void main() {
           hasCardBox = true;
         }
       });
-      expect(hasCardBox, isFalse);
+      expect(hasCardBox, isTrue);
+    });
+
+    testWidgets('null이면 미주(footnote) 없음 (µg 패턴 미존재)', (tester) async {
+      await tester.pumpWidget(_buildWidget(data: null));
+      await tester.pump();
+
+      expect(find.textContaining('µg'), findsNothing);
     });
   });
 
