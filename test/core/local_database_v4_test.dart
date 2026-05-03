@@ -470,4 +470,253 @@ void main() {
       expect(result[1].hasAqiContext, false); // 3시간 차이 → 매칭 없음
     });
   });
+
+  // ── 단계 1 신규: getDailyAqiAverages 쿼리 검증 ──────────────
+
+  group('getDailyAqiAverages', () {
+    late Database db;
+    const station = '서울';
+
+    setUp(() async {
+      db = await _openV4Db();
+    });
+
+    tearDown(() async {
+      await db.close();
+    });
+
+    /// 헬퍼: getDailyAqiAverages SQL 재현
+    Future<List<Map<String, dynamic>>> _getDailyAqiAverages(
+      Database db, {
+      required String stationName,
+      required int days,
+    }) async {
+      final since = DateTime.now()
+          .subtract(Duration(days: days))
+          .toIso8601String();
+      return db.rawQuery('''
+        SELECT
+          DATE(data_time) AS day,
+          AVG(CAST(pm25_value AS REAL)) AS pm25_avg,
+          AVG(CAST(pm10_value AS REAL)) AS pm10_avg,
+          COUNT(*) AS record_count
+        FROM aqi_records
+        WHERE station_name = ?
+          AND data_time >= ?
+          AND pm25_value IS NOT NULL
+        GROUP BY DATE(data_time)
+        ORDER BY day ASC
+      ''', [stationName, since]);
+    }
+
+    test('일별 평균 정확성 — 동일 날짜 2개 레코드 평균', () async {
+      final day = DateTime.now().subtract(const Duration(days: 1));
+      final dayStr = '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
+
+      // 같은 날 2개 레코드
+      await db.insert('aqi_records', {
+        'station_name': station,
+        'pm25_value': 20,
+        'pm10_value': 40,
+        'data_time': '${dayStr}T09:00:00',
+        'fetched_at': '${dayStr}T09:00:00',
+      });
+      await db.insert('aqi_records', {
+        'station_name': station,
+        'pm25_value': 30,
+        'pm10_value': 60,
+        'data_time': '${dayStr}T15:00:00',
+        'fetched_at': '${dayStr}T15:00:00',
+      });
+
+      final rows = await _getDailyAqiAverages(
+        db,
+        stationName: station,
+        days: 7,
+      );
+
+      expect(rows.length, 1);
+      expect(rows[0]['day'], dayStr);
+      // pm25_avg = (20 + 30) / 2 = 25
+      expect((rows[0]['pm25_avg'] as num).toDouble(), closeTo(25.0, 0.01));
+      // pm10_avg = (40 + 60) / 2 = 50
+      expect((rows[0]['pm10_avg'] as num).toDouble(), closeTo(50.0, 0.01));
+    });
+
+    test('NULL pm10 포함 케이스 — pm25_avg만 반환, pm10_avg null', () async {
+      final day = DateTime.now().subtract(const Duration(days: 1));
+      final dayStr = '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
+
+      // pm10_value = NULL인 레코드
+      await db.insert('aqi_records', {
+        'station_name': station,
+        'pm25_value': 25,
+        'pm10_value': null,
+        'data_time': '${dayStr}T09:00:00',
+        'fetched_at': '${dayStr}T09:00:00',
+      });
+
+      final rows = await _getDailyAqiAverages(
+        db,
+        stationName: station,
+        days: 7,
+      );
+
+      expect(rows.length, 1);
+      // pm10_avg = AVG(NULL) = NULL
+      expect(rows[0]['pm10_avg'], isNull);
+      // pm25_avg = 25.0
+      expect((rows[0]['pm25_avg'] as num).toDouble(), closeTo(25.0, 0.01));
+    });
+
+    test('다른 측정소 데이터 제외', () async {
+      final day = DateTime.now().subtract(const Duration(days: 1));
+      final dayStr = '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
+
+      await db.insert('aqi_records', {
+        'station_name': '부산',  // 다른 측정소
+        'pm25_value': 50,
+        'pm10_value': 100,
+        'data_time': '${dayStr}T09:00:00',
+        'fetched_at': '${dayStr}T09:00:00',
+      });
+
+      final rows = await _getDailyAqiAverages(
+        db,
+        stationName: station, // '서울' 기준
+        days: 7,
+      );
+
+      expect(rows.length, 0);
+    });
+
+    test('범위 밖 데이터 제외 — days=1이면 1일 전까지만', () async {
+      final old = DateTime.now().subtract(const Duration(days: 10));
+      final oldStr = '${old.year}-${old.month.toString().padLeft(2, '0')}-${old.day.toString().padLeft(2, '0')}';
+
+      await db.insert('aqi_records', {
+        'station_name': station,
+        'pm25_value': 40,
+        'pm10_value': 80,
+        'data_time': '${oldStr}T09:00:00',
+        'fetched_at': '${oldStr}T09:00:00',
+      });
+
+      final rows = await _getDailyAqiAverages(
+        db,
+        stationName: station,
+        days: 3, // 3일 이내만 — 10일 전 데이터는 제외
+      );
+
+      expect(rows.length, 0);
+    });
+  });
+
+  // ── 단계 1 신규: getLogsGroupedByDate 쿼리 검증 ─────────────
+
+  group('getLogsGroupedByDate', () {
+    late Database db;
+
+    setUp(() async {
+      db = await _openV4Db();
+    });
+
+    tearDown(() async {
+      await db.close();
+    });
+
+    /// 헬퍼: getLogsGroupedByDate SQL 재현 (local_database.dart와 동일)
+    Future<Map<String, List<NotificationLog>>> _getLogsGroupedByDate(
+      Database db, {
+      int days = 7,
+    }) async {
+      final since = DateTime.now()
+          .subtract(Duration(days: days - 1))
+          .toIso8601String();
+      final rows = await db.query(
+        'notification_logs',
+        where: 'triggered_at >= ?',
+        whereArgs: [since],
+        orderBy: 'triggered_at ASC',
+      );
+      final result = <String, List<NotificationLog>>{};
+      for (final row in rows) {
+        final log = NotificationLog.fromMap(row);
+        final key = log.triggeredAt.toIso8601String().substring(0, 10);
+        result.putIfAbsent(key, () => []).add(log);
+      }
+      return result;
+    }
+
+    test('날짜 그룹핑 정확성 — 서로 다른 날짜는 다른 그룹', () async {
+      final day1 = DateTime.now().subtract(const Duration(days: 2));
+      final day2 = DateTime.now().subtract(const Duration(days: 1));
+
+      await db.insert('notification_logs', {
+        'triggered_at': day1.toIso8601String(),
+        'notification_type': 'dangerEntry',
+        'pm25_value': 40,
+        'user_action': 'maskWorn',
+      });
+      await db.insert('notification_logs', {
+        'triggered_at': day2.toIso8601String(),
+        'notification_type': 'morning',
+        'pm25_value': 25,
+        'user_action': 'none',
+      });
+
+      final grouped = await _getLogsGroupedByDate(db, days: 7);
+
+      expect(grouped.length, 2); // 2개 날짜 그룹
+      final day1Key = day1.toIso8601String().substring(0, 10);
+      final day2Key = day2.toIso8601String().substring(0, 10);
+      expect(grouped[day1Key]?.length, 1);
+      expect(grouped[day2Key]?.length, 1);
+      expect(grouped[day1Key]!.first.userAction, UserAction.maskWorn);
+    });
+
+    test('같은 날짜 복수 로그 — 동일 그룹에 포함', () async {
+      final day = DateTime.now().subtract(const Duration(days: 1));
+
+      await db.insert('notification_logs', {
+        'triggered_at':
+            day.copyWith(hour: 9).toIso8601String(),
+        'notification_type': 'morning',
+        'pm25_value': 20,
+        'user_action': 'none',
+      });
+      await db.insert('notification_logs', {
+        'triggered_at':
+            day.copyWith(hour: 18).toIso8601String(),
+        'notification_type': 'evening',
+        'pm25_value': 30,
+        'user_action': 'maskWorn',
+      });
+
+      final grouped = await _getLogsGroupedByDate(db, days: 7);
+      final dayKey = day.toIso8601String().substring(0, 10);
+
+      expect(grouped.length, 1); // 1개 날짜 그룹
+      expect(grouped[dayKey]?.length, 2); // 같은 날 2개 로그
+    });
+
+    test('범위 밖 로그 제외 — days=7이면 7일 내만', () async {
+      final old = DateTime.now().subtract(const Duration(days: 10));
+
+      await db.insert('notification_logs', {
+        'triggered_at': old.toIso8601String(),
+        'notification_type': 'morning',
+        'pm25_value': 20,
+        'user_action': 'none',
+      });
+
+      final grouped = await _getLogsGroupedByDate(db, days: 7);
+      expect(grouped.isEmpty, true);
+    });
+
+    test('빈 DB → 빈 맵 반환', () async {
+      final grouped = await _getLogsGroupedByDate(db, days: 7);
+      expect(grouped.isEmpty, true);
+    });
+  });
 }
