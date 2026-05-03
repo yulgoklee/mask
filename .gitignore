@@ -6,6 +6,10 @@
 *.keystore
 android/key.properties
 
+# Local-only docs (Lead 작업용 가이드/차터)
+CLAUDE.md
+project_charter.md
+
 # Miscellaneous
 *.class
 *.log
