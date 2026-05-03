@@ -23,6 +23,7 @@ class NotificationLog {
   final DateTime triggeredAt;
   final NotificationType notificationType;
   final int? pm25Value;
+  final int? pm10Value;
   final double? tFinal;
   final UserAction userAction;
 
@@ -37,6 +38,7 @@ class NotificationLog {
     required this.triggeredAt,
     required this.notificationType,
     this.pm25Value,
+    this.pm10Value,
     this.tFinal,
     this.userAction = UserAction.none,
     this.maskType,
@@ -51,6 +53,7 @@ class NotificationLog {
         'triggered_at': triggeredAt.toIso8601String(),
         'notification_type': notificationType.name,
         'pm25_value': pm25Value,
+        'pm10_value': pm10Value,
         't_final': tFinal,
         'user_action': userAction.name,
         'mask_type': maskType,
@@ -65,6 +68,7 @@ class NotificationLog {
           orElse: () => NotificationType.dangerEntry,
         ),
         pm25Value: m['pm25_value'] as int?,
+        pm10Value: m['pm10_value'] as int?,
         tFinal: (m['t_final'] as num?)?.toDouble(),
         userAction: UserAction.values.firstWhere(
           (e) => e.name == m['user_action'],

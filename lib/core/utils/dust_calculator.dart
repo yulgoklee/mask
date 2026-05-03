@@ -118,6 +118,32 @@ class DustCalculator {
     return ratioPm25 > ratioPm10 ? ratioPm25 : ratioPm10;
   }
 
+  /// 과거 시점의 final_ratio를 현재 프로필 기준으로 재계산.
+  ///
+  /// 리포트 인사이트 카드에서 과거 AQI 기록에 현재 T_final을 적용해
+  /// 당시 위험 수준을 소급 평가할 때 사용한다.
+  ///
+  /// ```
+  /// final_ratio = max(pm25 / T_final, pm10 / (T_final × 80/35))
+  /// ```
+  ///
+  /// [tFinalPm25] 현재 프로필의 개인 PM2.5 임계치 (> 0 이어야 함)
+  /// [pm25]       과거 시점 PM2.5 측정값 (null 또는 0이면 0.0 으로 처리)
+  /// [pm10]       과거 시점 PM10 측정값 (null이면 PM10 비율을 0.0 으로 처리)
+  static double computeHistoricalFinalRatio({
+    required double tFinalPm25,
+    required int? pm25,
+    required int? pm10,
+  }) {
+    if (tFinalPm25 <= 0) return 0.0;
+    final safePm25 = (pm25 ?? 0).clamp(0, double.maxFinite.toInt());
+    return _computeFinalRatio(
+      pm25: safePm25,
+      pm10: pm10,
+      tFinalPm25: tFinalPm25,
+    );
+  }
+
   static DominantPollutant _computeDominantPollutant({
     required int pm25,
     required int? pm10,

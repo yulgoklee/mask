@@ -144,6 +144,7 @@ class NotificationScheduler {
       );
 
       final pm25 = dust.pm25Value ?? 0;
+      final pm10 = dust.pm10Value;
       final gradeName = _gradeLabel(DustStandards.getPm25Grade(pm25));
       final maskType = result.maskType;
 
@@ -215,6 +216,7 @@ class NotificationScheduler {
               : null,
           onSuccess: () => _markSent(prefs, 'morning'),
           pm25: pm25,
+          pm10: pm10,
           tFinal: tFinalValue,
           prefs: prefs,
           setting: setting,
@@ -267,6 +269,7 @@ class NotificationScheduler {
               : null,
           onSuccess: () => _markSent(prefs, 'forecast'),
           pm25: pm25,
+          pm10: pm10,
           tFinal: tFinalValue,
           prefs: prefs,
           setting: setting,
@@ -308,6 +311,7 @@ class NotificationScheduler {
               : null,
           onSuccess: () => _markSent(prefs, 'return'),
           pm25: pm25,
+          pm10: pm10,
           tFinal: tFinalValue,
           prefs: prefs,
           setting: setting,
@@ -336,6 +340,7 @@ class NotificationScheduler {
           smallIcon: NotificationService.iconWarning,
           onSuccess: () => _markSentHour(prefs, 'realtime'),
           pm25: pm25,
+          pm10: pm10,
           tFinal: tFinalValue,
           prefs: prefs,
           setting: setting,
@@ -433,6 +438,7 @@ Future<void> _sendNotification({
   String? smallIcon,
   required VoidCallback onSuccess,
   int? pm25,
+  int? pm10,
   double? tFinal,
   SharedPreferences? prefs,
   NotificationSetting? setting,
@@ -450,6 +456,7 @@ Future<void> _sendNotification({
         triggeredAt: DateTime.now(),
         notificationType: _notifTypeFromString(type),
         pm25Value: pm25,
+        pm10Value: pm10,
         tFinal: tFinal,
         userAction: UserAction.suppressedByQuietHours,
       ));
@@ -471,6 +478,7 @@ Future<void> _sendNotification({
       triggeredAt: DateTime.now(),
       notificationType: _notifTypeFromString(type),
       pm25Value: pm25,
+      pm10Value: pm10,
       tFinal: tFinal,
       userAction: UserAction.none,
     ));
