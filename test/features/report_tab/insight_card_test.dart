@@ -154,10 +154,10 @@ void main() {
     });
   });
 
-  // ── D: Loading / Error 상태 ──────────────────────────
+  // ── D: Loading / Error 상태 (v1.2 always-visible) ──────
 
-  group('D: Loading / Error 상태', () {
-    testWidgets('Loading 중 → 카드 미표시 (SizedBox.shrink)', (tester) async {
+  group('D: Loading / Error 상태 — placeholder 표시', () {
+    testWidgets('Loading 중 → placeholder 카드 표시', (tester) async {
       await tester.runAsync(() async {
         await tester.pumpWidget(
           ProviderScope(
@@ -175,11 +175,15 @@ void main() {
           ),
         );
         await tester.pump();
-        expect(find.text('이번 주의 발견'), findsNothing);
+        expect(find.text('이번 주의 발견'), findsOneWidget);
+        expect(
+          find.text('기록이 모이는 중이에요. 한 주가 채워지면 여기에 발견을 적어둘게요.'),
+          findsOneWidget,
+        );
       });
     });
 
-    testWidgets('Error → 카드 미표시 (SizedBox.shrink)', (tester) async {
+    testWidgets('Error → placeholder 카드 표시', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -194,7 +198,11 @@ void main() {
       );
       await tester.pump();
       await tester.pump();
-      expect(find.text('이번 주의 발견'), findsNothing);
+      expect(find.text('이번 주의 발견'), findsOneWidget);
+      expect(
+        find.text('기록이 모이는 중이에요. 한 주가 채워지면 여기에 발견을 적어둘게요.'),
+        findsOneWidget,
+      );
     });
   });
 }
