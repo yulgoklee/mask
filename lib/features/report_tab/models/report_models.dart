@@ -1,3 +1,28 @@
+import '../../../data/models/notification_log.dart';
+
+/// 알림 발송 시점의 AQI 환경 컨텍스트를 포함한 조인 결과
+///
+/// [notification]  알림 로그 원본
+/// [aqiPm25]       조인된 aqi_records의 PM2.5 (1시간 이내 매칭 없으면 null)
+/// [aqiPm10]       조인된 aqi_records의 PM10  (1시간 이내 매칭 없으면 null)
+/// [aqiDataTime]   조인된 aqi_records의 측정 시각 (null이면 컨텍스트 없음)
+class NotificationWithAqiContext {
+  final NotificationLog notification;
+  final int? aqiPm25;
+  final int? aqiPm10;
+  final DateTime? aqiDataTime;
+
+  const NotificationWithAqiContext({
+    required this.notification,
+    this.aqiPm25,
+    this.aqiPm10,
+    this.aqiDataTime,
+  });
+
+  /// 1시간 이내 AQI 컨텍스트가 존재하는지 여부
+  bool get hasAqiContext => aqiDataTime != null;
+}
+
 enum ReportPeriod { today, threeDays, sevenDays }
 
 extension ReportPeriodX on ReportPeriod {

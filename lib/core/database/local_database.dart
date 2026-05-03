@@ -2,17 +2,20 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../../data/models/aqi_record.dart';
 import '../../data/models/notification_log.dart';
+import '../../features/report_tab/models/report_models.dart'
+    show NotificationWithAqiContext;
 
 /// SQLite 로컬 데이터베이스 서비스
 ///
 /// 테이블 구성:
-/// - aqi_records      : 시간별 AQI 폴링 기록 (최근 7일만 유지)
+/// - aqi_records      : 시간별 AQI 폴링 기록 (최근 14일만 유지)
 /// - notification_logs: 알림 발송 및 사용자 액션 기록 (최근 90일)
 ///                      notification_logs가 모든 통계의 단일 SoT
 ///                      v2: mask_type, snooze_until 컬럼 추가 / defense_daily 제거
+///                      v4: notification_logs에 pm10_value 컬럼 추가 / aqi 보존 14일로 확장
 class LocalDatabase {
   static const _dbName = 'mask_alert.db';
-  static const _dbVersion = 3;
+  static const _dbVersion = 4;
 
   Database? _db;
 
@@ -54,6 +57,7 @@ class LocalDatabase {
         triggered_at      TEXT NOT NULL,
         notification_type TEXT NOT NULL,
         pm25_value        INTEGER,
+        pm10_value        INTEGER,
         t_final           REAL,
         user_action       TEXT NOT NULL DEFAULT 'none',
         mask_type         TEXT,
@@ -88,10 +92,13 @@ class LocalDatabase {
         'ON notification_logs(triggered_at)',
       );
     }
-    // v3 → v4 예시 (추후 작성):
-    //   if (oldVersion < 4) {
-    //     await db.execute('ALTER TABLE aqi_records ADD COLUMN source TEXT');
-    //   }
+    // v3 → v4: notification_logs에 pm10_value 컬럼 추가 (리포트 인사이트용)
+    //           aqi_records 보존 기간 14일로 확장 (SQL 수정 없이 _pruneAqiRecords 변경)
+    if (oldVersion < 4) {
+      await db.execute(
+        'ALTER TABLE notification_logs ADD COLUMN pm10_value INTEGER',
+      );
+    }
   }
 
   // ── AQI Records ─────────────────────────────────────────────
@@ -119,9 +126,9 @@ class LocalDatabase {
     return rows.map(AqiRecord.fromMap).toList();
   }
 
-  /// 7일 초과 데이터 자동 삭제
+  /// 14일 초과 데이터 자동 삭제
   Future<void> _pruneAqiRecords(Database db) async {
-    final cutoff = DateTime.now().subtract(const Duration(days: 7)).toIso8601String();
+    final cutoff = DateTime.now().subtract(const Duration(days: 14)).toIso8601String();
     await db.delete('aqi_records', where: 'fetched_at < ?', whereArgs: [cutoff]);
   }
 
@@ -390,6 +397,85 @@ class LocalDatabase {
       orderBy: 'triggered_at ASC',
     );
     return rows.map(NotificationLog.fromMap).toList();
+  }
+
+  // ── 리포트 인사이트 조인 쿼리 ────────────────────────────────
+
+  /// 특정 기간 내 알림 로그 + 가장 가까운 AQI 레코드 조인.
+  ///
+  /// triggered_at 시점에 [stationName]의 data_time과 가장 가까운 aqi_records 행을
+  /// 매칭한다. 시간 차이가 1시간을 초과하면 AQI 컨텍스트 없음(null)으로 반환.
+  ///
+  /// SQLite julianday() 기준: 1일 = 1.0, 1시간 = 1/24 ≈ 0.04167
+  Future<List<NotificationWithAqiContext>> getNotificationsWithAqiContext({
+    required DateTime start,
+    required DateTime end,
+    required String stationName,
+  }) async {
+    final db = await database;
+    final startStr = start.toIso8601String();
+    final endStr   = end.toIso8601String();
+
+    // 알림 로그를 기준으로 LEFT JOIN.
+    // 각 알림에 대해 동일 station의 aqi_records 중 시간 차이가 가장 작은 행을 선택.
+    // 1시간(= julianday 차이 1/24) 초과 매칭은 제외 → NULL 컨텍스트로 반환.
+    final rows = await db.rawQuery('''
+      SELECT
+        n.id                 AS n_id,
+        n.triggered_at       AS n_triggered_at,
+        n.notification_type  AS n_notification_type,
+        n.pm25_value         AS n_pm25_value,
+        n.pm10_value         AS n_pm10_value,
+        n.t_final            AS n_t_final,
+        n.user_action        AS n_user_action,
+        n.mask_type          AS n_mask_type,
+        n.snooze_until       AS n_snooze_until,
+        a.pm25_value         AS a_pm25_value,
+        a.pm10_value         AS a_pm10_value,
+        a.data_time          AS a_data_time
+      FROM notification_logs n
+      LEFT JOIN aqi_records a ON
+        a.station_name = ?
+        AND ABS(julianday(n.triggered_at) - julianday(a.data_time)) <= (1.0 / 24.0)
+        AND a.id = (
+          SELECT a2.id FROM aqi_records a2
+          WHERE a2.station_name = ?
+          ORDER BY ABS(julianday(n.triggered_at) - julianday(a2.data_time)) ASC
+          LIMIT 1
+        )
+      WHERE n.triggered_at >= ?
+        AND n.triggered_at <= ?
+      ORDER BY n.triggered_at ASC
+    ''', [stationName, stationName, startStr, endStr]);
+
+    return rows.map((row) {
+      final log = NotificationLog(
+        id: row['n_id'] as int?,
+        triggeredAt: DateTime.parse(row['n_triggered_at'] as String),
+        notificationType: NotificationType.values.firstWhere(
+          (e) => e.name == row['n_notification_type'],
+          orElse: () => NotificationType.dangerEntry,
+        ),
+        pm25Value: row['n_pm25_value'] as int?,
+        pm10Value: row['n_pm10_value'] as int?,
+        tFinal: (row['n_t_final'] as num?)?.toDouble(),
+        userAction: UserAction.values.firstWhere(
+          (e) => e.name == row['n_user_action'],
+          orElse: () => UserAction.none,
+        ),
+        maskType: row['n_mask_type'] as String?,
+        snoozeUntil: row['n_snooze_until'] != null
+            ? DateTime.parse(row['n_snooze_until'] as String)
+            : null,
+      );
+      final aqiDataTimeStr = row['a_data_time'] as String?;
+      return NotificationWithAqiContext(
+        notification: log,
+        aqiPm25: row['a_pm25_value'] as int?,
+        aqiPm10: row['a_pm10_value'] as int?,
+        aqiDataTime: aqiDataTimeStr != null ? DateTime.parse(aqiDataTimeStr) : null,
+      );
+    }).toList();
   }
 
   // ── 유틸 ─────────────────────────────────────────────────────

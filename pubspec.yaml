@@ -1,7 +1,7 @@
 name: mask_alert
 description: 개인 건강 프로필 기반 맞춤형 미세먼지 마스크 착용 알림 앱
 publish_to: 'none'
-version: 1.0.5+7
+version: 1.0.5+8
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -76,6 +76,7 @@ dev_dependencies:
   flutter_lints: ^3.0.0
   mocktail: ^1.0.4
   flutter_launcher_icons: ^0.14.4
+  sqflite_common_ffi: ^2.3.4+1
 
 flutter_launcher_icons:
   android: true
