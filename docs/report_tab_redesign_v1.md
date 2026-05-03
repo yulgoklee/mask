@@ -334,13 +334,13 @@ PM2.5 일평균 {pm25}µg/m³으로,
 **마스크 행동 표시**
 
 - 마스크 착용 기록이 있는 날: 원 외곽에 2px 링.
-- 링 색상: DT.text 또는 DT.primary 중 하나. §10 Claude Design 의뢰에서 결정.
+- **링 색상: DT.text (#111827)** — Claude Design 결정. 5가지 연한 배경에서 또렷이 보이고, primary(#2563EB)는 오늘 dot과 의미 충돌.
 - 마스크 기록 없는 날: 링 없음.
 
 **오늘 강조**
 
-- 오늘 날짜에 해당하는 원 안에 작은 점(4px circle, DT.primary).
-- 요일 라벨도 DT.primary + FontWeight.bold.
+- **dot only** — Claude Design 결정. 원 안에 작은 점(4px circle, DT.primary).
+- 요일 라벨은 강조 ✕ (gray 그대로). dot + 라벨 강조 동시 적용은 과함.
 
 **데이터 누락 날**
 
@@ -368,7 +368,7 @@ final ratio = DustCalculator.computeHistoricalFinalRatio(
 │                                    │
 │  {인사이트 카피 — 3~4줄}            │   ← 15px Regular, DT.text, height: 1.6
 │                                    │
-│  ─────────────────                 │   ← 구분선 (선택 — §10 의뢰 참고)
+│                                    │   ← 구분선 없음 (Claude Design 결정 — 폰트 크기 차이로 충분)
 │  PM2.5 {xx}µg/m³ · 5월 1일 (수)   │   ← 12px, DT.gray (미주)
 └────────────────────────────────────┘
 ```
@@ -381,7 +381,7 @@ final ratio = DustCalculator.computeHistoricalFinalRatio(
 **카피 길이 가이드**
 
 - 본문: 2~4문장. 50~80자 내외.
-- 줄바꿈: `\n` 하드코딩 금지. 위젯 자연 wrap 허용.
+- 줄바꿈: `\n` 하드코딩 금지. 위젯 자연 wrap 허용. (Claude Design 검증: `text-wrap: pretty` + `word-break: keep-all` 패턴, 320/414px 폭에서 깨짐 없음.)
 - 미주: "PM2.5 {xx}µg/m³ · {월}월 {일}일 ({요일})" 형태.
 
 **시각 스펙**
@@ -404,8 +404,8 @@ final ratio = DustCalculator.computeHistoricalFinalRatio(
 ```
 
 - 좌측 padding: 16px (페이지 기본 여백)
-- 상하 padding: 8px
-- 색상: DT.gray, 14px Regular
+- **상하 padding: 12px** — Claude Design 결정 (마지막 layer 무게 확보)
+- **색상: DT.text 14px Regular** — Claude Design 결정 (gray→text로 본문톤 유지, 별도 카드 박스 없이 존재감 확보)
 
 **임계값 매트릭스**
 
