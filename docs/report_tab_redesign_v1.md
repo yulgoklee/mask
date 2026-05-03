@@ -376,9 +376,13 @@ final ratio = DustCalculator.computeHistoricalFinalRatio(
 **표시 규칙**
 
 - 데이터 있음 + 카테고리 결정됨 → 표시.
-- 데이터 없음 (G-1, InsightData null) → **카드 박스는 표시, 본문은 placeholder 카피, 미주 없음**.
+- **카드 슬롯은 항상 표시** (v1.2 — WeeklyOverviewCard와 동일한 always-visible 패턴):
+  - data 있음 → 실제 인사이트 (본문 + 미주)
+  - data null / loading / error → placeholder 카피 (미주 없음)
   - placeholder 본문: "기록이 모이는 중이에요. 한 주가 채워지면 여기에 발견을 적어둘게요."
-  - v1.1 변경 — Lead 결정 5번(슬롯 숨김) reverse. 디바이스 검수에서 빈 화면이 정보 부재 신호가 아니라 단순 누락처럼 느껴졌음. 외유내강 톤(사실 + 자연스러운 미래 동작, 직접 약속·칭찬 ✕)으로 placeholder 추가.
+- 변경 이력:
+  - v1.1: Lead 결정 5번(슬롯 숨김) reverse. data null 시 placeholder 표시.
+  - v1.2: loading/error 경로도 placeholder 표시. 슬롯이 깜빡이는 일 없이 항상 보이도록 — 디바이스에서 첫 진입 시 슬롯이 안 뜨는 이슈 해결.
 
 **카피 길이 가이드**
 

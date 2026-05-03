@@ -8,13 +8,14 @@ import '../providers/report_providers.dart';
 //
 // §4.3 "인사이트 카드" 위젯.
 // insightProvider → InsightData? 를 받아 렌더링.
-// data null이면 placeholder 카피 표시 (첫 주·데이터 부족).
-// loading/error는 SizedBox.shrink — 깜빡거림 방지.
+// 슬롯은 **항상 표시** (v1.2 — WeeklyOverviewCard와 동일한 always-visible 패턴):
+//   - data 있음 → 실제 인사이트 (본문 + 미주)
+//   - data null / loading / error → placeholder 카피 (미주 없음)
 
 class InsightCard extends ConsumerWidget {
   const InsightCard({super.key});
 
-  /// 데이터 없는 첫 주 placeholder 카피.
+  /// 데이터 없는 첫 주·로딩·에러 시 placeholder 카피.
   /// 차터 §7.5 톤 규칙: 사실 + 자연스러운 미래 동작. 직접 약속·칭찬 ✕.
   static const String _emptyBodyText =
       '기록이 모이는 중이에요. 한 주가 채워지면 여기에 발견을 적어둘게요.';
@@ -24,8 +25,8 @@ class InsightCard extends ConsumerWidget {
     final asyncData = ref.watch(insightProvider);
 
     return asyncData.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      loading: () => const _InsightContent(bodyText: _emptyBodyText),
+      error: (_, __) => const _InsightContent(bodyText: _emptyBodyText),
       data: (data) => _InsightContent(
         bodyText: data?.bodyText ?? _emptyBodyText,
         footnoteText: data?.footnoteText,
