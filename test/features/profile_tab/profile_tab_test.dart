@@ -11,6 +11,10 @@ import 'package:mask_alert/providers/profile_providers.dart';
 // ── Fake repo ─────────────────────────────────────────────
 
 class _FakeProfileRepo extends Fake implements ProfileRepository {
+  final NotificationSetting notifSetting;
+
+  _FakeProfileRepo({this.notifSetting = const NotificationSetting()});
+
   UserProfile _profile = const UserProfile(
     nickname: '테스트',
     birthYear: 1990,
@@ -32,8 +36,7 @@ class _FakeProfileRepo extends Fake implements ProfileRepository {
   @override
   Future<void> saveProfile(UserProfile p) async => _profile = p;
   @override
-  Future<NotificationSetting> loadNotificationSetting() async =>
-      const NotificationSetting();
+  Future<NotificationSetting> loadNotificationSetting() async => notifSetting;
   @override
   Future<void> saveNotificationSetting(NotificationSetting s) async {}
   @override
@@ -57,7 +60,11 @@ void _setTallView(WidgetTester tester) {
   addTearDown(tester.view.resetDevicePixelRatio);
 }
 
-Widget _buildWithRouter() {
+Widget _buildWithRouter({NotificationSetting? notifSetting}) {
+  final repo = _FakeProfileRepo(
+    notifSetting: notifSetting ?? const NotificationSetting(),
+  );
+
   final router = GoRouter(
     initialLocation: '/profile',
     routes: [
@@ -82,7 +89,7 @@ Widget _buildWithRouter() {
 
   return ProviderScope(
     overrides: [
-      profileRepositoryProvider.overrideWith((_) => _FakeProfileRepo()),
+      profileRepositoryProvider.overrideWith((_) => repo),
     ],
     child: MaterialApp.router(routerConfig: router),
   );
@@ -129,9 +136,9 @@ void main() {
     });
   });
 
-  // ── c. 보기 영역 렌더링 ────────────────────────────────
+  // ── c. 카드 1: 페르소나 위젯 렌더링 ───────────────────────
 
-  group('c: 보기 영역 렌더링', () {
+  group('c: 페르소나 카드 렌더링', () {
     testWidgets('ThresholdCompareCard 존재 — "일반인 기준" 텍스트', (tester) async {
       await tester.pumpWidget(_buildWithRouter());
       await tester.pumpAndSettle();
@@ -154,15 +161,66 @@ void main() {
     });
   });
 
-  // ── d. 내 몸 정보 수정 진입점 (v2: "프로필 수정하기" → "내 몸 정보 수정") ─
+  // ── d. 카드 2: 내 알림 요약 카드 렌더링 ──────────────────
 
-  group('d: 내 몸 정보 수정 진입점', () {
-    testWidgets('"내 몸 정보 수정" 레이블 표시', (tester) async {
+  group('d: 내 알림 요약 카드 렌더링', () {
+    testWidgets('"🔔 내 알림" 카드 제목 표시', (tester) async {
+      _setTallView(tester);
+      await tester.pumpWidget(_buildWithRouter());
+      await tester.pumpAndSettle();
+
+      expect(find.text('🔔 내 알림'), findsOneWidget);
+    });
+
+    testWidgets('"변경 →" 텍스트 표시', (tester) async {
+      _setTallView(tester);
+      await tester.pumpWidget(_buildWithRouter());
+      await tester.pumpAndSettle();
+
+      expect(find.text('변경 →'), findsOneWidget);
+    });
+
+    testWidgets('알림 카드 탭 → /notifications 화면으로 이동', (tester) async {
+      _setTallView(tester);
+      await tester.pumpWidget(_buildWithRouter());
+      await tester.pumpAndSettle();
+
+      // "🔔 내 알림" 텍스트를 탭
+      await tester.tap(find.text('🔔 내 알림'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('알림 설정 화면'), findsOneWidget);
+    });
+
+    testWidgets('"변경 →" 탭 → /notifications 화면으로 이동', (tester) async {
+      _setTallView(tester);
+      await tester.pumpWidget(_buildWithRouter());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('변경 →'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('알림 설정 화면'), findsOneWidget);
+    });
+  });
+
+  // ── e. 한 줄 링크: 내 몸 정보 수정 ─────────────────────
+
+  group('e: 내 몸 정보 수정 링크', () {
+    testWidgets('"내 몸 정보 수정" 텍스트 표시', (tester) async {
       _setTallView(tester);
       await tester.pumpWidget(_buildWithRouter());
       await tester.pumpAndSettle();
 
       expect(find.text('내 몸 정보 수정'), findsOneWidget);
+    });
+
+    testWidgets('chevron_right 아이콘 표시', (tester) async {
+      _setTallView(tester);
+      await tester.pumpWidget(_buildWithRouter());
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
     });
 
     testWidgets('내 몸 정보 수정 탭 → /profile/edit 화면으로 이동', (tester) async {
@@ -178,42 +236,24 @@ void main() {
     });
   });
 
-  // ── e. 제거된 항목 확인 ────────────────────────────────
+  // ── f. 제거된 항목 확인 ──────────────────────────────────
 
-  group('e: 제거된 항목', () {
-    testWidgets('"알림 설정" 버튼 없음', (tester) async {
-      await tester.pumpWidget(_buildWithRouter());
-      await tester.pumpAndSettle();
-
-      expect(find.text('알림 설정'), findsNothing);
-    });
-
-    testWidgets('버전 정보 텍스트 없음', (tester) async {
-      await tester.pumpWidget(_buildWithRouter());
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('v1.0'), findsNothing);
-    });
-  });
-
-  // ── f. 현재 상태 섹션 제거 확인 (v2: 방해 금지 → 알림 설정 화면으로 이동) ─
-
-  group('f: 제거된 섹션 확인', () {
-    testWidgets('"현재 상태" 섹션 헤더 없음', (tester) async {
+  group('f: 제거된 항목', () {
+    testWidgets('"방해 금지" 섹션 없음 (이동됨)', (tester) async {
       _setTallView(tester);
       await tester.pumpWidget(_buildWithRouter());
       await tester.pumpAndSettle();
 
-      expect(find.text('현재 상태'), findsNothing);
-    });
-
-    testWidgets('"방해 금지" 섹션 프로필 탭에서 제거됨 (알림 설정 화면으로 이동)', (tester) async {
-      _setTallView(tester);
-      await tester.pumpWidget(_buildWithRouter());
-      await tester.pumpAndSettle();
-
-      // v2: 방해 금지는 /notifications 화면으로 이동됨
+      // 방해금지는 알림 설정 화면으로 이동됨
       expect(find.text('방해 금지'), findsNothing);
+    });
+
+    testWidgets('"프로필 수정하기" 구 버튼 없음 (→ "내 몸 정보 수정"으로 교체)', (tester) async {
+      _setTallView(tester);
+      await tester.pumpWidget(_buildWithRouter());
+      await tester.pumpAndSettle();
+
+      expect(find.text('프로필 수정하기'), findsNothing);
     });
   });
 }
