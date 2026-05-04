@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart' hide ShimmerEffect;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import '../../core/constants/app_tokens.dart';
 import '../../core/constants/design_tokens.dart';
 import '../../providers/location_providers.dart';
 import 'models/report_models.dart';
@@ -103,8 +104,8 @@ class ReportSummaryCard extends ConsumerWidget {
       loading: () => Skeletonizer(
         enabled: true,
         effect: const ShimmerEffect(
-          baseColor: Color(0xFFE5E7EB),
-          highlightColor: Color(0xFFF9FAFB),
+          baseColor: DT.border,
+          highlightColor: DT.background,
           duration: Duration(milliseconds: 1200),
         ),
         child: const _SummaryContent(
@@ -137,9 +138,7 @@ class _SummaryContent extends StatelessWidget {
       decoration: BoxDecoration(
         color: DT.gradeCardBg(data.dominantGrade),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(offset: Offset(0, 4), blurRadius: 16, color: Color(0x0A000000)),
-        ],
+        boxShadow: AppTokens.shadowCard,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

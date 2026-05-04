@@ -56,6 +56,16 @@ class AppTokens {
     ),
   ];
 
+  /// 카드 표준 그림자 — care/report 탭의 카드들이 공통 사용.
+  /// 이전엔 `BoxShadow(offset: Offset(0, 4), blurRadius: 16, color: Color(0x0A000000))` 패턴으로 인라인됐었음.
+  static List<BoxShadow> get shadowCard => const [
+    BoxShadow(
+      color: Color(0x0A000000),
+      blurRadius: 16,
+      offset: Offset(0, 4),
+    ),
+  ];
+
   // ── 타이포그래피 (Typography) ────────────────────────────
 
   static const TextStyle headingXl = TextStyle(

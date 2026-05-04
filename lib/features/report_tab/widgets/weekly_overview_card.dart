@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/constants/app_tokens.dart';
 import '../../../core/constants/design_tokens.dart';
 import '../models/report_models.dart';
 import '../providers/report_providers.dart';
@@ -21,9 +22,7 @@ class WeeklyOverviewCard extends ConsumerWidget {
       decoration: BoxDecoration(
         color: DT.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(offset: Offset(0, 4), blurRadius: 16, color: Color(0x0A000000)),
-        ],
+        boxShadow: AppTokens.shadowCard,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

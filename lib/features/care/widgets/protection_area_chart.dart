@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/constants/app_tokens.dart';
 import '../../../core/constants/design_tokens.dart';
 import '../models/care_models.dart';
 import '../providers/care_providers.dart';
@@ -35,12 +36,10 @@ class _ChartCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color:        DT.white,
-        borderRadius: BorderRadius.all(Radius.circular(16)),
-        boxShadow: [
-          BoxShadow(offset: Offset(0, 4), blurRadius: 16, color: Color(0x0A000000)),
-        ],
+        borderRadius: const BorderRadius.all(Radius.circular(16)),
+        boxShadow: AppTokens.shadowCard,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
