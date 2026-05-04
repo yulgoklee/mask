@@ -2,8 +2,6 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../../data/models/aqi_record.dart';
 import '../../data/models/notification_log.dart';
-import '../../features/report_tab/models/report_models.dart'
-    show NotificationWithAqiContext;
 
 /// SQLite 로컬 데이터베이스 서비스
 ///
