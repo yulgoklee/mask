@@ -2,8 +2,6 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_profile.dart';
 import '../models/notification_setting.dart';
-import '../models/temporary_state.dart';
-import '../models/today_situation.dart';
 import 'profile_data_source.dart';
 import '../../core/constants/app_constants.dart';
 
@@ -14,8 +12,6 @@ class LocalProfileDataSource implements ProfileDataSource {
   static const String _notifKey      = AppConstants.prefNotificationSetting;
   static const String _onboardedKey  = AppConstants.prefOnboardingCompleted;
   static const String _tutorialKey   = AppConstants.prefTutorialSeen;
-  static const String _tempStatesKey = AppConstants.prefTemporaryStates;
-  static const String _todaySitKey   = AppConstants.prefTodaySituation;
 
   final SharedPreferences _prefs;
 
@@ -37,69 +33,6 @@ class LocalProfileDataSource implements ProfileDataSource {
   @override
   Future<void> saveProfile(UserProfile profile) async {
     await _prefs.setString(_profileKey, jsonEncode(profile.toJson()));
-  }
-
-  // ── Tier 2 — 기간 상태 ───────────────────────────────────
-
-  @override
-  Future<List<TemporaryState>> loadTemporaryStates() async {
-    final raw = _prefs.getString(_tempStatesKey);
-    if (raw == null) return [];
-    try {
-      final list = jsonDecode(raw) as List<dynamic>;
-      return list
-          .map((e) => TemporaryState.fromJson(e as Map<String, dynamic>))
-          .where((s) => s.isActive) // 만료된 상태는 로드 시 자동 제거
-          .toList();
-    } catch (_) {
-      return [];
-    }
-  }
-
-  @override
-  Future<void> saveTemporaryStates(List<TemporaryState> states) async {
-    final active = states.where((s) => s.isActive).toList();
-    await _prefs.setString(
-      _tempStatesKey,
-      jsonEncode(active.map((s) => s.toJson()).toList()),
-    );
-  }
-
-  // ── Tier 3 — 오늘의 상황 ─────────────────────────────────
-
-  @override
-  Future<List<TodaySituation>> loadTodaySituations() async {
-    final raw = _prefs.getString(_todaySitKey);
-    if (raw == null) return [];
-    try {
-      final decoded = jsonDecode(raw);
-      // 이전 버전 호환: 단일 객체로 저장된 경우
-      if (decoded is Map<String, dynamic>) {
-        final sit = TodaySituation.fromJson(decoded);
-        return sit.isActive ? [sit] : [];
-      }
-      // 새 버전: 배열로 저장
-      final list = decoded as List<dynamic>;
-      return list
-          .map((e) => TodaySituation.fromJson(e as Map<String, dynamic>))
-          .where((s) => s.isActive)
-          .toList();
-    } catch (_) {
-      return [];
-    }
-  }
-
-  @override
-  Future<void> saveTodaySituations(List<TodaySituation> situations) async {
-    final active = situations.where((s) => s.isActive).toList();
-    if (active.isEmpty) {
-      await _prefs.remove(_todaySitKey);
-    } else {
-      await _prefs.setString(
-        _todaySitKey,
-        jsonEncode(active.map((s) => s.toJson()).toList()),
-      );
-    }
   }
 
   // ── 알림 설정 ─────────────────────────────────────────────

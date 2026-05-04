@@ -13,7 +13,6 @@ import 'threshold_config.dart';
 ///   W_respiratory    = min(천식+COPD+비염+알레르기, respiratoryCap 0.30)
 ///   W_cardiovascular = min(고혈압+심장+뇌졸중, cardiovascularCap 0.25)
 ///   W_smoking        = 현재 0.20 / 과거 0.10 / 비흡연 0
-///   W_special        = 임신 0.20 (고정)
 class ThresholdEngine {
   final ThresholdConfig config;
 
@@ -38,8 +37,7 @@ class ThresholdEngine {
   double computeWHealth(UserProfile profile) {
     return _computeWRespiratory(profile)
         + _computeWCardiovascular(profile)
-        + _computeWSmoking(profile)
-        + _computeWSpecial(profile);
+        + _computeWSmoking(profile);
   }
 
   /// 호흡기 카테고리 (상한: respiratoryCap)
@@ -73,15 +71,6 @@ class ThresholdEngine {
       case SmokingStatus.former:  return _weight(hw, 'smoking_former');
       case SmokingStatus.never:   return 0.0;
     }
-  }
-
-  /// 특별 상태 가중치 (임신 — gender 가드 유지)
-  double _computeWSpecial(UserProfile profile) {
-    if ((profile.gender == 'female' || profile.gender.isEmpty) &&
-        profile.isPregnant) {
-      return _weight(config.healthWeights, 'pregnancy');
-    }
-    return 0.0;
   }
 
   double _weight(List<HealthWeightEntry> entries, String key) =>
@@ -151,8 +140,7 @@ class ThresholdEngine {
     final wRespiratory   = _computeWRespiratory(profile);
     final wCardiovascular = _computeWCardiovascular(profile);
     final wSmoking       = _computeWSmoking(profile);
-    final wSpecial       = _computeWSpecial(profile);
-    final wTotal         = wAge + wRespiratory + wCardiovascular + wSmoking + wSpecial;
+    final wTotal         = wAge + wRespiratory + wCardiovascular + wSmoking;
     final tFinalRaw      = config.tBase * (1.0 - wTotal);
     final tFinal         = tFinalRaw.clamp(config.tFloor, config.tBase);
     return ThresholdBreakdown(
@@ -160,7 +148,6 @@ class ThresholdEngine {
       wRespiratory:      wRespiratory,
       wCardiovascular:   wCardiovascular,
       wSmoking:          wSmoking,
-      wSpecial:          wSpecial,
       wTotal:            wTotal,
       tFinalRaw:         tFinalRaw,
       tFinal:            tFinal,
@@ -175,7 +162,6 @@ class ThresholdBreakdown {
   final double wRespiratory;
   final double wCardiovascular;
   final double wSmoking;
-  final double wSpecial;
   final double wTotal;    // 전체 가중치 합
   final double tFinalRaw; // clamp 적용 전 원본값
   final double tFinal;    // clamp 적용 후 최종값
@@ -186,14 +172,13 @@ class ThresholdBreakdown {
     required this.wRespiratory,
     required this.wCardiovascular,
     required this.wSmoking,
-    required this.wSpecial,
     required this.wTotal,
     required this.tFinalRaw,
     required this.tFinal,
     required this.maskType,
   });
 
-  double get wHealth => wRespiratory + wCardiovascular + wSmoking + wSpecial;
+  double get wHealth => wRespiratory + wCardiovascular + wSmoking;
 
   bool get floorApplied => tFinalRaw < 15.0;
 
@@ -201,6 +186,6 @@ class ThresholdBreakdown {
   String toString() =>
       'T_final=$tFinal (raw=$tFinalRaw, '
       'W_age=$wAge W_resp=$wRespiratory W_cardio=$wCardiovascular '
-      'W_smoke=$wSmoking W_special=$wSpecial '
+      'W_smoke=$wSmoking '
       'W_total=$wTotal${floorApplied ? ' → floor 적용' : ''}, mask=$maskType)';
 }

@@ -75,7 +75,6 @@ class ThresholdConfig {
   //   - Lancet GBD 2019: 전 세계 천식 부담 1/3이 PM2.5 기인
   //   - AHA 2021 Scientific Statement: 대기오염과 심혈관 질환 위험
   //   - NEJM 2017 Medicare cohort: 65세+ 단기 노출 시 사망률 +7.3%/10μg
-  //   - 임신부 메타분석: PM2.5 노출 증가 시 조산 +12%, 저체중아 +11%
   //   - WHO: 흡연자 폐 손상 누적 — PM2.5 취약성 복합 가중
 
   static const ThresholdConfig defaults = ThresholdConfig(
@@ -107,9 +106,6 @@ class ThresholdConfig {
       HealthWeightEntry(key: 'smoking_current', weight: 0.20, label: '현재 흡연'),
       HealthWeightEntry(key: 'smoking_former',  weight: 0.10, label: '과거 흡연'),
 
-      // ── 특별 상태 (고정값) ─────────────────────────────────────
-      // 임신부 메타분석: 태아 저산소증·조산 위험
-      HealthWeightEntry(key: 'pregnancy',    weight: 0.20, label: '임신'),
     ],
     ageWeights: {
       'under_12':  0.10,

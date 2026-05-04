@@ -70,17 +70,6 @@ class MyBodyInfoScreen extends ConsumerWidget {
               onTap: () => _showActivityTagsSheet(context, ref, profile),
             ),
           ]),
-          const SizedBox(height: 16),
-
-          // ── 현재 상황 ───────────────────────────────────────
-          const _SectionHeader('현재 상황'),
-          _InfoSection(children: [
-            _InfoRow(
-              title: '임신',
-              value: profile.isPregnant ? '예' : '아니오',
-              onTap: () => _showPregnantSheet(context, ref, profile),
-            ),
-          ]),
           const SizedBox(height: 24),
         ],
       ),
@@ -493,56 +482,6 @@ void _showActivityTagsSheet(BuildContext context, WidgetRef ref, UserProfile pro
     },
   );
 }
-
-// ── 바텀시트 h: 임신 ─────────────────────────────────────
-
-void _showPregnantSheet(BuildContext context, WidgetRef ref, UserProfile profile) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    useRootNavigator: true,
-    backgroundColor: Colors.transparent,
-    builder: (ctx) {
-      bool isPregnant = profile.isPregnant;
-      return StatefulBuilder(
-        builder: (ctx, setState) => _sheetShell(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('임신', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: DT.text)),
-              const SizedBox(height: 4),
-              const Text('임신 중이면 더 낮은 기준을 적용해요.',
-                  style: TextStyle(fontSize: 13, color: DT.gray)),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('임신 중이에요', style: TextStyle(fontSize: 15, color: DT.text)),
-                  Switch(
-                    value: isPregnant,
-                    onChanged: (v) => setState(() => isPregnant = v),
-                    activeThumbColor: DT.primary,
-                    activeTrackColor: DT.primaryLt,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              _actionRow(
-                onSave: () {
-                  _save(ctx, ref, profile.copyWith(isPregnant: isPregnant));
-                  Navigator.pop(ctx);
-                },
-                onCancel: () => Navigator.pop(ctx),
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-}
-
 
 // ── UI 컴포넌트 ───────────────────────────────────────────
 

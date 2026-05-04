@@ -17,7 +17,6 @@ UserProfile _profile({
       hypertension: false,
       heartDisease: false,
       stroke: false,
-      isPregnant: false,
       smokingStatus: SmokingStatus.never,
       activityTags: const [],
       discomfortLevel: 1,

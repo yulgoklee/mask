@@ -62,9 +62,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   bool _smokesHeated    = false;
   bool _smokesVaping    = false;
 
-  // ── Q7: 임신 (female/미선택만 유효, male이면 페이지 자체 제외) ──
-  bool _isPregnant = false;
-
   // ── Q8: 마스크 불편도 ───────────────────────────────────────
   int _discomfortLevel = 1;
 
@@ -77,14 +74,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   bool get _includeSmokingType =>
       _smokingStatusChoice == SmokingStatus.current;
 
-  /// Q7(임신) 포함 여부 — male이면 완전 제외
-  bool get _includePregnancy => _genderStr != 'male';
-
   /// 전체 페이지 수 (조건부 페이지 반영)
   int get _totalPages {
     int n = 7; // Q1~Q6 + Q8(불편도) 고정
     if (_includeSmokingType) n++;
-    if (_includePregnancy) n++;
     return n;
   }
 
@@ -107,10 +100,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         DiagQ3Gender(
           questionNumber: 3,
           value: _genderStr,
-          onChanged: (v) => setState(() {
-            _genderStr = v;
-            if (v == 'male') _isPregnant = false;
-          }),
+          onChanged: (v) => setState(() => _genderStr = v),
         ),
 
         // ── Q4: 호흡기 (다중 체크박스) ──────────────────────
@@ -172,15 +162,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               _smokesHeated    = h;
               _smokesVaping    = v;
             }),
-          ),
-
-        // ── Q7: 임신 (female/미선택만) ─────────────────────
-        if (_includePregnancy)
-          DiagQ6Pregnancy(
-            questionNumber: _includeSmokingType ? 8 : 7,
-            value: _isPregnant,
-            genderStr: _genderStr,
-            onChanged: (v) => setState(() => _isPregnant = v),
           ),
 
         // ── Q8: 마스크 불편도 ───────────────────────────────
@@ -346,7 +327,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         hypertension:    _hasHypertension,
         heartDisease:    _hasHeartDisease,
         stroke:          _hasStroke,
-        isPregnant:      _isPregnant,
         smokingStatus:   _smokingStatusChoice ?? SmokingStatus.never,
         smokesCigarette: _smokesCigarette,
         smokesHeated:    _smokesHeated,

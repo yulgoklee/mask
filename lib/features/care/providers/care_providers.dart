@@ -136,7 +136,6 @@ String _personalizedSubCopy(RiskLevel status, UserProfile profile) {
   if (profile.heartDisease) return isHighRisk ? '심장 질환이 있으시니 KF94를 권해요.' : '심장 질환이 있으시니 마스크를 챙기세요.';
   if (profile.stroke)       return '뇌졸중 이력이 있으시니 마스크를 챙기세요.';
   if (profile.hypertension) return '고혈압이 있으시니 마스크를 챙기세요.';
-  if (profile.isPregnant)   return '태아 건강을 위해 KF94를 권해요.';
   if (profile.smokingStatus == SmokingStatus.current) return '흡연 중이시니 마스크를 꼭 챙기세요.';
   return _defaultSubCopy(status);
 }

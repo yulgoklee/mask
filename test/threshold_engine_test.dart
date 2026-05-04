@@ -17,7 +17,6 @@ UserProfile _profile({
   bool hypertension    = false,
   bool heartDisease    = false,
   bool stroke          = false,
-  bool isPregnant      = false,
   SmokingStatus smokingStatus = SmokingStatus.never,
 }) =>
     UserProfile(
@@ -31,7 +30,6 @@ UserProfile _profile({
       hypertension:  hypertension,
       heartDisease:  heartDisease,
       stroke:        stroke,
-      isPregnant:    isPregnant,
       smokingStatus: smokingStatus,
       activityTags:  [],
       discomfortLevel: 1,
@@ -156,25 +154,6 @@ void main() {
     });
   });
 
-  // ── computeWHealth — 임신 ─────────────────────────────────────
-
-  group('computeWHealth — 임신', () {
-    test('임신 (female) → 0.20', () {
-      final p = _profile(gender: 'female', isPregnant: true);
-      expect(_engine.computeWHealth(p), closeTo(0.20, 0.001));
-    });
-
-    test('임신 (gender 미선택/empty) → 0.20', () {
-      final p = _profile(gender: '', isPregnant: true);
-      expect(_engine.computeWHealth(p), closeTo(0.20, 0.001));
-    });
-
-    test('임신 (남성) → 0.0 (gender 가드)', () {
-      final p = _profile(gender: 'male', isPregnant: true);
-      expect(_engine.computeWHealth(p), closeTo(0.0, 0.001));
-    });
-  });
-
   // ── computeTFinal — 케이스 시뮬레이션 ─────────────────────────────
 
   group('computeTFinal — 케이스 시뮬레이션', () {
@@ -202,17 +181,16 @@ void main() {
       expect(p.tFinal, closeTo(22.4, 0.01));
     });
 
-    test('극단 누적 (1946년생/80세, 비염+천식+임신+현재흡연) → clamp(15)', () {
+    test('극단 누적 (1946년생/80세, 비염+천식+현재흡연) → clamp(15)', () {
       final p = _profile(
         birthYear:     1946,
         gender:        'female',
         rhinitis:      true,
         asthma:        true,
-        isPregnant:    true,
         smokingStatus: SmokingStatus.current,
       );
-      // W_age=0.13, W_resp=0.30(cap), W_smoke=0.20, W_special=0.20 → W_total≥0.83
-      // raw < 15 → clamp
+      // W_age=0.13, W_resp=0.30(cap), W_smoke=0.20 → W_total=0.63
+      // raw=35×0.37=12.95 < 15 → clamp
       expect(p.tFinal, closeTo(15.0, 0.01));
     });
   });
@@ -234,7 +212,6 @@ void main() {
         copd:          true,
         hypertension:  true,
         heartDisease:  true,
-        isPregnant:    true,
         smokingStatus: SmokingStatus.current,
       );
       expect(_engine.computeTFinal(p), greaterThanOrEqualTo(15.0));
@@ -255,7 +232,7 @@ void main() {
       final profiles = [
         _profile(rhinitis: true),
         _profile(rhinitis: true, asthma: true),
-        _profile(birthYear: 1960, gender: 'female', isPregnant: true),
+        _profile(birthYear: 1960, gender: 'female', smokingStatus: SmokingStatus.former),
       ];
       for (final p in profiles) {
         final ratio = _engine.computeTFinalPm10(p) / _engine.computeTFinal(p);
@@ -289,7 +266,6 @@ void main() {
         copd:          true,
         hypertension:  true,
         heartDisease:  true,
-        isPregnant:    true,
         smokingStatus: SmokingStatus.current,
       );
       final bd = _engine.breakdown(p);
@@ -303,11 +279,11 @@ void main() {
       expect(bd.floorApplied, isFalse);
     });
 
-    test('wHealth getter = wRespiratory + wCardiovascular + wSmoking + wSpecial', () {
+    test('wHealth getter = wRespiratory + wCardiovascular + wSmoking', () {
       final p = _profile(rhinitis: true, heartDisease: true, smokingStatus: SmokingStatus.former);
       final bd = _engine.breakdown(p);
       expect(bd.wHealth,
-          closeTo(bd.wRespiratory + bd.wCardiovascular + bd.wSmoking + bd.wSpecial, 0.0001));
+          closeTo(bd.wRespiratory + bd.wCardiovascular + bd.wSmoking, 0.0001));
     });
   });
 }

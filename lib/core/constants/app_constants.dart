@@ -70,10 +70,6 @@ class AppConstants {
   static const String prefSavedLng              = 'saved_lng';
   static const String prefLastGpsUpdateMs       = 'bg_last_gps_update_ms';
 
-  // ── 프로필 부가 데이터 ────────────────────────────────────
-  static const String prefTemporaryStates       = 'temporary_states';
-  static const String prefTodaySituation        = 'today_situation';
-
   // ── 기타 ──────────────────────────────────────────────────
   static const String prefAnonymousUserId       = 'anonymous_user_id';
 

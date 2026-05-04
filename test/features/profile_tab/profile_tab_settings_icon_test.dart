@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mask_alert/data/models/notification_setting.dart';
-import 'package:mask_alert/data/models/temporary_state.dart';
-import 'package:mask_alert/data/models/today_situation.dart';
 import 'package:mask_alert/data/models/user_profile.dart';
 import 'package:mask_alert/data/repositories/profile_repository.dart';
 import 'package:mask_alert/features/profile_tab/profile_tab.dart';
@@ -24,7 +22,6 @@ class _FakeProfileRepo extends Fake implements ProfileRepository {
     hypertension: false,
     heartDisease: false,
     stroke: false,
-    isPregnant: false,
     smokingStatus: SmokingStatus.never,
     activityTags: [],
     discomfortLevel: 0,
@@ -39,14 +36,6 @@ class _FakeProfileRepo extends Fake implements ProfileRepository {
       const NotificationSetting();
   @override
   Future<void> saveNotificationSetting(NotificationSetting s) async {}
-  @override
-  Future<List<TemporaryState>> loadTemporaryStates() async => [];
-  @override
-  Future<void> saveTemporaryStates(List<TemporaryState> s) async {}
-  @override
-  Future<List<TodaySituation>> loadTodaySituations() async => [];
-  @override
-  Future<void> saveTodaySituations(List<TodaySituation> s) async {}
   @override
   Future<bool> isOnboardingCompleted() async => false;
   @override
@@ -203,15 +192,15 @@ void main() {
     });
   });
 
-  // ── f. 현재 상태 섹션 렌더링 ──────────────────────────
+  // ── f. 현재 상태 섹션 없음 (제거됨) ──────────────────────
 
-  group('f: 현재 상태 섹션', () {
-    testWidgets('"현재 상태" 섹션 헤더 표시', (tester) async {
+  group('f: 현재 상태 섹션 제거 확인', () {
+    testWidgets('"현재 상태" 섹션 헤더 없음', (tester) async {
       _setTallView(tester);
       await tester.pumpWidget(_buildWithRouter());
       await tester.pumpAndSettle();
 
-      expect(find.text('현재 상태'), findsOneWidget);
+      expect(find.text('현재 상태'), findsNothing);
     });
 
     testWidgets('"방해 금지" 섹션 헤더 표시', (tester) async {

@@ -15,7 +15,6 @@ void main() {
       expect(p.hypertension, false);
       expect(p.heartDisease, false);
       expect(p.stroke, false);
-      expect(p.isPregnant, false);
       expect(p.smokingStatus, SmokingStatus.never);
       expect(p.activityTags, isEmpty);
       expect(p.discomfortLevel, 1);
@@ -35,7 +34,6 @@ void main() {
         hypertension: false,
         heartDisease: false,
         stroke: false,
-        isPregnant: true,
         smokingStatus: SmokingStatus.never,
         activityTags: [ActivityTag.commute, ActivityTag.exercise],
         discomfortLevel: 0,
@@ -47,7 +45,6 @@ void main() {
       expect(restored.gender, profile.gender);
       expect(restored.asthma, profile.asthma);
       expect(restored.rhinitis, profile.rhinitis);
-      expect(restored.isPregnant, profile.isPregnant);
       expect(restored.smokingStatus, profile.smokingStatus);
       expect(restored.activityTags, profile.activityTags);
       expect(restored.discomfortLevel, profile.discomfortLevel);
@@ -70,7 +67,7 @@ void main() {
         nickname: '지수', birthYear: 1990, gender: 'male',
         asthma: false, rhinitis: false, copd: false, allergy: false,
         hypertension: false, heartDisease: false, stroke: false,
-        isPregnant: false, smokingStatus: SmokingStatus.never,
+        smokingStatus: SmokingStatus.never,
         activityTags: [], discomfortLevel: 1,
       );
       expect(p.displayName, '지수님');
@@ -86,7 +83,7 @@ void main() {
         nickname: '', birthYear: 2015, gender: 'male',
         asthma: false, rhinitis: false, copd: false, allergy: false,
         hypertension: false, heartDisease: false, stroke: false,
-        isPregnant: false, smokingStatus: SmokingStatus.never,
+        smokingStatus: SmokingStatus.never,
         activityTags: [], discomfortLevel: 1,
       );
       expect(p.isVulnerableAge, true);
@@ -96,7 +93,7 @@ void main() {
         nickname: '', birthYear: 1950, gender: 'male',
         asthma: false, rhinitis: false, copd: false, allergy: false,
         hypertension: false, heartDisease: false, stroke: false,
-        isPregnant: false, smokingStatus: SmokingStatus.never,
+        smokingStatus: SmokingStatus.never,
         activityTags: [], discomfortLevel: 1,
       );
       expect(p.isVulnerableAge, true);
@@ -116,15 +113,15 @@ void main() {
       expect(p.tFinal, closeTo(29.75, 0.01));
     });
 
-    test('천식+임신 (female, 1990년생) → W_health=0.40 → T_final=21.0', () {
+    test('천식+현재흡연 (female, 1990년생) → W_health=0.40 → T_final=21.0', () {
       const p = UserProfile(
         nickname: '', birthYear: 1990, gender: 'female',
         asthma: true, rhinitis: false, copd: false, allergy: false,
         hypertension: false, heartDisease: false, stroke: false,
-        isPregnant: true, smokingStatus: SmokingStatus.never,
+        smokingStatus: SmokingStatus.current,
         activityTags: [], discomfortLevel: 0,
       );
-      // W_respiratory=0.20 (asthma), W_special=0.20 (pregnancy) → W_total=0.40
+      // W_respiratory=0.20 (asthma), W_smoking=0.20 (current) → W_total=0.40
       // raw = 35 × 0.60 = 21.0
       expect(p.tFinal, closeTo(21.0, 0.01));
     });
@@ -134,7 +131,7 @@ void main() {
         nickname: '', birthYear: 1950, gender: 'female',
         asthma: true, rhinitis: true, copd: true, allergy: true,
         hypertension: true, heartDisease: true, stroke: true,
-        isPregnant: true, smokingStatus: SmokingStatus.current,
+        smokingStatus: SmokingStatus.current,
         activityTags: [], discomfortLevel: 0,
       );
       expect(p.tFinal, closeTo(15.0, 0.01));
@@ -166,7 +163,7 @@ void main() {
         nickname: '', birthYear: 1990, gender: '',
         asthma: false, rhinitis: false, copd: false, allergy: false,
         hypertension: false, heartDisease: false, stroke: false,
-        isPregnant: false, smokingStatus: SmokingStatus.current,
+        smokingStatus: SmokingStatus.current,
         smokesCigarette: true, smokesHeated: false, smokesVaping: true,
         activityTags: [], discomfortLevel: 1,
       );
@@ -181,7 +178,7 @@ void main() {
         'nickname': '', 'birthYear': 1990, 'gender': '',
         'asthma': false, 'rhinitis': false, 'copd': false, 'allergy': false,
         'hypertension': false, 'heartDisease': false, 'stroke': false,
-        'isPregnant': false, 'smokingStatus': 'current',
+        'smokingStatus': 'current',
         'smokesCigarette': true, 'smokesHeated': false, 'smokesVaping': true,
         'activityTags': <String>[], 'discomfortLevel': 1,
       };
@@ -196,7 +193,7 @@ void main() {
         nickname: '', birthYear: 1990, gender: '',
         asthma: false, rhinitis: false, copd: false, allergy: false,
         hypertension: false, heartDisease: false, stroke: false,
-        isPregnant: false, smokingStatus: SmokingStatus.current,
+        smokingStatus: SmokingStatus.current,
         smokesCigarette: true, smokesHeated: true, smokesVaping: false,
         activityTags: [], discomfortLevel: 1,
       );
@@ -211,7 +208,7 @@ void main() {
         'nickname': '', 'birthYear': 1990, 'gender': '',
         'asthma': false, 'rhinitis': false, 'copd': false, 'allergy': false,
         'hypertension': false, 'heartDisease': false, 'stroke': false,
-        'isPregnant': false, 'smokingStatus': 'current',
+        'smokingStatus': 'current',
         'activityTags': <String>[], 'discomfortLevel': 1,
         // smokesCigarette/smokesHeated/smokesVaping 없음 — 구버전 호환
       };

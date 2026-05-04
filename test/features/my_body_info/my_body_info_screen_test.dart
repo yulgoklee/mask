@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mask_alert/data/models/notification_setting.dart';
-import 'package:mask_alert/data/models/temporary_state.dart';
-import 'package:mask_alert/data/models/today_situation.dart';
 import 'package:mask_alert/data/models/user_profile.dart';
 import 'package:mask_alert/data/repositories/profile_repository.dart';
 import 'package:mask_alert/features/my_body_info/my_body_info_screen.dart';
@@ -29,18 +27,6 @@ class _FakeProfileRepo extends Fake implements ProfileRepository {
 
   @override
   Future<void> saveNotificationSetting(NotificationSetting s) async {}
-
-  @override
-  Future<List<TemporaryState>> loadTemporaryStates() async => [];
-
-  @override
-  Future<void> saveTemporaryStates(List<TemporaryState> states) async {}
-
-  @override
-  Future<List<TodaySituation>> loadTodaySituations() async => [];
-
-  @override
-  Future<void> saveTodaySituations(List<TodaySituation> s) async {}
 
   @override
   Future<bool> isOnboardingCompleted() async => false;
@@ -71,7 +57,6 @@ const _base = UserProfile(
   hypertension: false,
   heartDisease: false,
   stroke: false,
-  isPregnant: false,
   smokingStatus: SmokingStatus.never,
   activityTags: [],
   discomfortLevel: 2,
@@ -113,25 +98,31 @@ void main() {
       expect(find.text('내 몸 정보'), findsOneWidget);
     });
 
-    testWidgets('3개 섹션 헤더 표시', (tester) async {
+    testWidgets('섹션 헤더 표시', (tester) async {
       await tester.pumpWidget(_buildApp());
       await tester.pump();
 
       expect(find.text('기본 정보'), findsOneWidget);
       expect(find.text('건강 상태'), findsOneWidget);
-      expect(find.text('현재 상황'), findsOneWidget);
     });
 
-    testWidgets('6개 항목 타이틀 표시', (tester) async {
+    testWidgets('기본 항목 타이틀 표시', (tester) async {
       await tester.pumpWidget(_buildApp());
       await tester.pump();
 
       for (final title in [
         '닉네임', '출생 연도', '성별',
-        '호흡기', '활동 유형', '임신',
+        '호흡기', '활동 유형',
       ]) {
         expect(find.text(title), findsOneWidget, reason: '$title not found');
       }
+    });
+
+    testWidgets('임신 항목 없음', (tester) async {
+      await tester.pumpWidget(_buildApp());
+      await tester.pump();
+
+      expect(find.text('임신'), findsNothing);
     });
 
     testWidgets('민감도/야외활동/피부시술 항목 없음', (tester) async {
@@ -181,12 +172,6 @@ void main() {
       await tester.pumpWidget(_buildApp());
       await tester.pump();
       expect(find.text('없음'), findsOneWidget);
-    });
-
-    testWidgets('임신 아니오 표시', (tester) async {
-      await tester.pumpWidget(_buildApp());
-      await tester.pump();
-      expect(find.text('아니오'), findsOneWidget);
     });
   });
 
@@ -250,17 +235,6 @@ void main() {
       expect(find.text('산책'), findsOneWidget);
       expect(find.text('운동'), findsOneWidget);
     });
-
-    testWidgets('임신 항목 탭 → 스위치 바텀시트 열림', (tester) async {
-      await tester.pumpWidget(_buildApp());
-      await tester.pump();
-
-      await tester.tap(find.text('임신'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('임신 중이에요'), findsOneWidget);
-      expect(find.byType(Switch), findsOneWidget);
-    });
   });
 
   // ── d. 값 수정 → 저장 → 프로필 반영 ──────────────────────
@@ -317,24 +291,6 @@ void main() {
 
       expect(container.read(profileProvider).activityTags,
           contains(ActivityTag.commute));
-    });
-
-    testWidgets('d-임신: ON으로 변경 저장 반영', (tester) async {
-      final (container, widget) = _buildWithContainer();
-      addTearDown(container.dispose);
-      await tester.pumpWidget(widget);
-      await tester.pump();
-
-      await tester.tap(find.text('임신'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byType(Switch));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('저장'));
-      await tester.pumpAndSettle();
-
-      expect(container.read(profileProvider).isPregnant, isTrue);
     });
   });
 
