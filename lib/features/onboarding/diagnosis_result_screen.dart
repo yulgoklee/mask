@@ -7,7 +7,8 @@ import '../../widgets/app_button.dart';
 import '../../widgets/sensitivity_widgets.dart';
 
 class DiagnosisResultScreen extends ConsumerStatefulWidget {
-  const DiagnosisResultScreen({super.key});
+  final bool isRediag;
+  const DiagnosisResultScreen({super.key, this.isRediag = false});
 
   @override
   ConsumerState<DiagnosisResultScreen> createState() =>
@@ -43,7 +44,7 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen>
     final profile = ref.watch(profileProvider);
 
     return PopScope(
-      canPop: false,
+      canPop: widget.isRediag,
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: SafeArea(
@@ -78,9 +79,10 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen>
 
                       // ── CTA ─────────────────────────────────────
                       AppButton.primary(
-                        label: '위치 설정으로 →',
-                        onTap: () =>
-                            context.go('/location_setup', extra: true),
+                        label: widget.isRediag ? '확인' : '위치 설정으로 →',
+                        onTap: () => widget.isRediag
+                            ? context.go('/profile')
+                            : context.go('/location_setup', extra: true),
                       ),
                       const SizedBox(height: 24),
                     ],

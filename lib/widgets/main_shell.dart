@@ -7,10 +7,10 @@ import '../core/services/background_service.dart';
 import '../core/services/notification_deep_link.dart';
 import '../providers/providers.dart';
 
-/// go_router ShellRoute Shell — 케어 / 리포트 / 프로필 3탭
+/// go_router StatefulShellRoute Shell — 케어 / 리포트 / 프로필 3탭
 class MainShell extends ConsumerStatefulWidget {
-  final Widget child;
-  const MainShell({required this.child, super.key});
+  final StatefulNavigationShell navigationShell;
+  const MainShell({required this.navigationShell, super.key});
 
   @override
   ConsumerState<MainShell> createState() => _MainShellState();
@@ -18,7 +18,6 @@ class MainShell extends ConsumerStatefulWidget {
 
 class _MainShellState extends ConsumerState<MainShell>
     with WidgetsBindingObserver {
-  static const _tabs = ['/care', '/report', '/profile'];
 
   @override
   void initState() {
@@ -49,22 +48,16 @@ class _MainShellState extends ConsumerState<MainShell>
     }
   }
 
-  int _locationToIndex(String location) {
-    if (location.startsWith('/report'))  return 1;
-    if (location.startsWith('/profile')) return 2;
-    return 0;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final location = GoRouterState.of(context).uri.path;
-    final idx      = _locationToIndex(location);
-
     return Scaffold(
-      body: widget.child,
+      body: widget.navigationShell,
       bottomNavigationBar: _SpecNavBar(
-        selectedIndex: idx,
-        onTap: (i) => context.go(_tabs[i]),
+        selectedIndex: widget.navigationShell.currentIndex,
+        onTap: (i) => widget.navigationShell.goBranch(
+          i,
+          initialLocation: i == widget.navigationShell.currentIndex,
+        ),
       ),
     );
   }

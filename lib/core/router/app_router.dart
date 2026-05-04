@@ -21,8 +21,7 @@ import '../../features/splash/splash_screen.dart';
 import '../../features/tutorial/tutorial_screen.dart';
 import '../../widgets/main_shell.dart';
 
-final _rootNavigatorKey  = GlobalKey<NavigatorState>();
-final _shellNavigatorKey = GlobalKey<NavigatorState>();
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 CustomTransitionPage<void> _fadePage(GoRouterState state, Widget child) =>
     CustomTransitionPage(
@@ -105,7 +104,10 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/onboarding',
-      pageBuilder: (_, state) => _slidePage(state, const OnboardingScreen()),
+      pageBuilder: (_, state) {
+        final isRediag = state.uri.queryParameters['rediag'] == 'true';
+        return _slidePage(state, OnboardingScreen(isRediag: isRediag));
+      },
     ),
     GoRoute(
       path: '/analysis_loading',
@@ -113,7 +115,11 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/diagnosis_result',
-      pageBuilder: (_, state) => _slidePage(state, const DiagnosisResultScreen()),
+      pageBuilder: (_, state) {
+        final extra = state.extra;
+        final isRediag = extra is Map && extra['rediag'] == true;
+        return _slidePage(state, DiagnosisResultScreen(isRediag: isRediag));
+      },
     ),
     GoRoute(
       path: '/dashboard',
@@ -162,23 +168,29 @@ final appRouter = GoRouter(
           _slideUpPage(state, const ProfileEditScreen()),
     ),
 
-    // ── 메인 3탭 ShellRoute ──────────────────────────────────
-    ShellRoute(
-      navigatorKey: _shellNavigatorKey,
-      builder: (context, state, child) => MainShell(child: child),
-      routes: [
-        GoRoute(
-          path: '/care',
-          pageBuilder: (_, state) => _fadePage(state, const CareTab()),
-        ),
-        GoRoute(
-          path: '/report',
-          pageBuilder: (_, state) => _fadePage(state, const ReportTab()),
-        ),
-        GoRoute(
-          path: '/profile',
-          pageBuilder: (_, state) => _fadePage(state, const ProfileTab()),
-        ),
+    // ── 메인 3탭 StatefulShellRoute ──────────────────────────
+    StatefulShellRoute.indexedStack(
+      builder: (context, state, navigationShell) =>
+          MainShell(navigationShell: navigationShell),
+      branches: [
+        StatefulShellBranch(routes: [
+          GoRoute(
+            path: '/care',
+            pageBuilder: (_, state) => _fadePage(state, const CareTab()),
+          ),
+        ]),
+        StatefulShellBranch(routes: [
+          GoRoute(
+            path: '/report',
+            pageBuilder: (_, state) => _fadePage(state, const ReportTab()),
+          ),
+        ]),
+        StatefulShellBranch(routes: [
+          GoRoute(
+            path: '/profile',
+            pageBuilder: (_, state) => _fadePage(state, const ProfileTab()),
+          ),
+        ]),
       ],
     ),
   ],

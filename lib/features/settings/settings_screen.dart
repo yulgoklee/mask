@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/design_tokens.dart';
-import '../diagnosis/diagnosis_screen.dart';
 
 const _kPrivacyPolicyUrl = 'https://yulgoklee.github.io/mask/';
 
@@ -68,12 +67,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               _SettingsRow(
                 title: '재진단 받기',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const DiagnosisScreen(),
-                    fullscreenDialog: true,
-                  ),
-                ),
+                onTap: () => context.push('/onboarding?rediag=true'),
               ),
             ],
           ),

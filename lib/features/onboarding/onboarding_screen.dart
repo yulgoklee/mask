@@ -21,7 +21,8 @@ final _analytics = FirebaseAnalytics.instance;
 /// 총: 9단계(female+현재흡연) / 8단계(female비흡연 or male+현재흡연) / 7단계(male비흡연)
 /// 완료 → analysis_loading_screen → dashboard
 class OnboardingScreen extends ConsumerStatefulWidget {
-  const OnboardingScreen({super.key});
+  final bool isRediag;
+  const OnboardingScreen({super.key, this.isRediag = false});
 
   @override
   ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -178,6 +179,38 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   void initState() {
     super.initState();
     _analytics.logEvent(name: 'onboarding_start');
+
+    if (widget.isRediag) {
+      // 기존 프로필 데이터 미리 채우기
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final profile = ref.read(profileProvider);
+        setState(() {
+          _nickname        = profile.nickname;
+          _birthYear       = profile.birthYear;
+          _birthYearEdited = true;
+          _genderStr       = profile.gender.isNotEmpty ? profile.gender : null;
+          _hasRhinitis     = profile.rhinitis;
+          _hasAsthma       = profile.asthma;
+          _hasCopd         = profile.copd;
+          _hasAllergy      = profile.allergy;
+          _hasNoneRespiratory =
+              !(_hasRhinitis || _hasAsthma || _hasCopd || _hasAllergy);
+          _hasHypertension   = profile.hypertension;
+          _hasHeartDisease   = profile.heartDisease;
+          _hasStroke         = profile.stroke;
+          _hasNoneCardiovascular =
+              !(_hasHypertension || _hasHeartDisease || _hasStroke);
+          _smokingStatusChoice = profile.smokingStatus;
+          _smokesCigarette     = profile.smokesCigarette;
+          _smokesHeated        = profile.smokesHeated;
+          _smokesVaping        = profile.smokesVaping;
+          _discomfortLevel     = profile.discomfortLevel;
+          // Q3(성별)부터 시작
+          _currentPage = 2;
+        });
+        _pageController.jumpToPage(2);
+      });
+    }
   }
 
   @override
@@ -240,7 +273,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     await _analytics.logEvent(name: 'onboarding_completed');
 
     if (mounted) {
-      context.go('/analysis_loading');
+      if (widget.isRediag) {
+        context.go('/diagnosis_result', extra: {'rediag': true});
+      } else {
+        context.go('/analysis_loading');
+      }
     }
   }
 
@@ -359,6 +396,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               totalPages: _totalPages,
               onBack: _prevPage,
               onSkip: _skipOnboarding,
+              isRediag: widget.isRediag,
             ),
 
             // ── PageView ───────────────────────────────────────
@@ -379,6 +417,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 onTap: (_saving ||
                         (_currentPage == 0 && !(_nickname?.trim().isNotEmpty ?? false)) ||
                         (_currentPage == 1 && !_birthYearEdited) ||
+                        // Q3(성별): 반드시 선택
+                        (_currentPage == 2 && (_genderStr == null || _genderStr!.isEmpty)) ||
                         // Q4(호흡기): 최소 1개 선택 또는 "없어요"
                         (_currentPage == 3 && !_hasRhinitis && !_hasAsthma && !_hasCopd && !_hasAllergy && !_hasNoneRespiratory) ||
                         // Q5(심혈관): 최소 1개 선택 또는 "없어요"
@@ -413,12 +453,14 @@ class OnboardingProgressRow extends StatelessWidget {
   final int totalPages;
   final VoidCallback onBack;
   final VoidCallback onSkip;
+  final bool isRediag;
 
   const OnboardingProgressRow({
     required this.currentPage,
     required this.totalPages,
     required this.onBack,
     required this.onSkip,
+    this.isRediag = false,
   });
 
   @override
@@ -470,7 +512,7 @@ class OnboardingProgressRow extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          if (currentPage >= 2)
+          if (currentPage >= 2 && !isRediag)
             GestureDetector(
               onTap: onSkip,
               child: const Text(
