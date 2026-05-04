@@ -16,7 +16,6 @@ double _multiplierFor(UserProfile profile) {
 UserProfile _profile({
   bool rhinitis = false,
   bool asthma   = false,
-  bool isPregnant = false,
 }) =>
     UserProfile(
       nickname: '', birthYear: 1990, gender: 'female',
@@ -27,7 +26,6 @@ UserProfile _profile({
       hypertension: false,
       heartDisease: false,
       stroke:       false,
-      isPregnant:   isPregnant,
       smokingStatus: SmokingStatus.never,
       activityTags: [], discomfortLevel: 1,
     );
@@ -78,12 +76,6 @@ void main() {
     test('천식 (T_final=28.0) → multiplier=1.25', () {
       // W_health=asthma(0.20) → tFinal=35*(1-0.20)=28.0
       expect(_multiplierFor(_profile(asthma: true)),
-          closeTo(35.0 / 28.0, 0.001));
-    });
-
-    test('임신 (T_final=28.0) → multiplier=1.25', () {
-      // W_health=pregnancy(0.20, female only) → tFinal=28.0
-      expect(_multiplierFor(_profile(isPregnant: true)),
           closeTo(35.0 / 28.0, 0.001));
     });
 

@@ -187,13 +187,6 @@ class SensitivityBreakdown extends StatelessWidget {
             weight: bd.wSmoking,
             cap: 0.20,
           ),
-          const SizedBox(height: 14),
-          _BreakdownRow(
-            label: '특별 상태',
-            sublabel: _specialSublabel(profile),
-            weight: bd.wSpecial,
-            cap: 0.20,
-          ),
           const Divider(height: 28, color: AppColors.divider),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -325,9 +318,6 @@ class SensitivityActionGuide extends StatelessWidget {
     if (bd.floorApplied) {
       return '${prefix}최고 수준 민감도가 적용됐어요. 외출 전 꼭 확인하세요.';
     }
-    if (bd.wSpecial > 0) {
-      return '${prefix}임신 중에는 항상 마스크를 권장해요.';
-    }
     if (bd.wRespiratory > 0) {
       return '${prefix}환절기·꽃가루 많은 날 특히 주의해요.';
     }
@@ -377,6 +367,3 @@ String _smokingSublabel(UserProfile p) {
   }
 }
 
-String _specialSublabel(UserProfile p) {
-  return p.isPregnant ? '임신 중' : '해당 없음';
-}

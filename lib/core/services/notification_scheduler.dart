@@ -11,8 +11,6 @@ import '../../data/models/forecast_models.dart';
 import '../../data/models/notification_log.dart';
 import '../../data/models/user_profile.dart';
 import '../../data/models/notification_setting.dart';
-import '../../data/models/temporary_state.dart';
-import '../../data/models/today_situation.dart';
 import '../config/app_config.dart';
 import '../constants/app_constants.dart';
 import '../constants/dust_standards.dart';
@@ -99,59 +97,19 @@ class NotificationScheduler {
         return;
       }
 
-      // ── Tier 2: 기간 상태 로드 ─────────────────────────
-      final tempStatesRaw = prefs.getString(AppConstants.prefTemporaryStates);
-      final temporaryStates = tempStatesRaw != null
-          ? (jsonDecode(tempStatesRaw) as List<dynamic>)
-              .map((e) => TemporaryState.fromJson(e as Map<String, dynamic>))
-              .where((s) => s.isActive)
-              .toList()
-          : <TemporaryState>[];
-
-      // ── Tier 3: 오늘의 상황 로드 (List) ──────────────────
-      final todaySitRaw = prefs.getString(AppConstants.prefTodaySituation);
-      List<TodaySituation> todaySituations = [];
-      if (todaySitRaw != null) {
-        try {
-          final decoded = jsonDecode(todaySitRaw);
-          if (decoded is Map<String, dynamic>) {
-            // 이전 버전 호환: 단일 객체
-            final sit = TodaySituation.fromJson(decoded);
-            if (sit.isActive) todaySituations = [sit];
-          } else if (decoded is List) {
-            todaySituations = decoded
-                .map((e) => TodaySituation.fromJson(e as Map<String, dynamic>))
-                .where((s) => s.isActive)
-                .toList();
-          }
-        } catch (e, st) {
-          AppLogger.error(e, st, reason: 'schedule_list_load');
-        }
-      }
-
       // ── 계산 ────────────────────────────────────────────
       final notifService = NotificationService();
       await notifService.initialize();
 
-      // 공기 자체 기준만으로 계산한 결과 (Tier 1만)
-      final baseResult = DustCalculator.calculate(profile, dust);
-      // Tier 2/3 포함 최종 결과
-      final result = DustCalculator.calculate(
-        profile,
-        dust,
-        temporaryStates: temporaryStates,
-        todaySituations: todaySituations,
-      );
+      final result = DustCalculator.calculate(profile, dust);
 
       final pm25 = dust.pm25Value ?? 0;
       final pm10 = dust.pm10Value;
       final gradeName = _gradeLabel(DustStandards.getPm25Grade(pm25));
       final maskType = result.maskType;
 
-      // 가장 유의미한 활성 상태명 (본문에 표기)
-      final stateNote = _primaryStateNote(temporaryStates, todaySituations);
-      // 공기 자체는 괜찮지만 상태 때문에 마스크 필요한 경우
-      final stateOnlyMask = result.maskRequired && !baseResult.maskRequired;
+      const String? stateNote = null;
+      const bool stateOnlyMask = false;
 
       // ── 개인 임계치(T_final) 트리거 여부 계산 ─────────────────
       // 게이트 제거 — 모든 사용자에게 개인 tFinal 적용 (Phase 3 분할 C)
@@ -232,13 +190,12 @@ class NotificationScheduler {
         final forecastGrade = await service.getTomorrowForecast(sidoName: sido);
         final tomorrowGrade = forecastGrade ?? '보통';
 
-        // 취약 상태 기준으로 내일 예보 마스크 필요 여부 재계산
+        // T_final 기준으로 내일 예보 마스크 필요 여부 재계산
         final forecastCheck = DustCalculator.forecastCheck(
           gradeName: tomorrowGrade,
           profile: profile,
-          temporaryStates: temporaryStates,
         );
-        // 예보에서 stateOnly 여부: 등급만으론 마스크 불필요하지만 상태로 필요
+        // 예보에서 stateOnly 여부: 등급만으론 마스크 불필요하지만 T_final로 필요
         final forecastStateOnly = forecastCheck.maskRequired &&
             !(tomorrowGrade == '나쁨' || tomorrowGrade == '매우나쁨');
 
@@ -768,16 +725,6 @@ bool _needsAnyScheduledAlert(
       !_sentToday(prefs, 'return')) return true;
 
   return false;
-}
-
-/// 가장 유의미한 활성 상태 이름 반환
-/// 우선순위: Tier 2 (기간 상태) > Tier 3 (오늘의 상황)
-String? _primaryStateNote(
-    List<TemporaryState> temporaryStates,
-    List<TodaySituation> todaySituations) {
-  if (temporaryStates.isNotEmpty) return temporaryStates.first.label;
-  if (todaySituations.isNotEmpty) return todaySituations.first.label;
-  return null;
 }
 
 /// 알림 type 문자열 → NotificationType enum 변환

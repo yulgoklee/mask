@@ -4,8 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:mask_alert/data/models/notification_setting.dart';
-import 'package:mask_alert/data/models/temporary_state.dart';
-import 'package:mask_alert/data/models/today_situation.dart';
 import 'package:mask_alert/data/models/user_profile.dart';
 import 'package:mask_alert/data/repositories/profile_repository.dart';
 import 'package:mask_alert/features/profile/profile_edit_screen.dart';
@@ -16,11 +14,9 @@ import 'package:mask_alert/providers/profile_providers.dart';
 
 class _FakeProfileRepo extends Fake implements ProfileRepository {
   UserProfile _profile;
-  List<TemporaryState> _states;
 
-  _FakeProfileRepo({UserProfile? initial, List<TemporaryState>? states})
-      : _profile = initial ?? _base,
-        _states = states ?? [];
+  _FakeProfileRepo({UserProfile? initial})
+      : _profile = initial ?? _base;
 
   @override
   Future<UserProfile> loadProfile() async => _profile;
@@ -31,16 +27,6 @@ class _FakeProfileRepo extends Fake implements ProfileRepository {
       const NotificationSetting();
   @override
   Future<void> saveNotificationSetting(NotificationSetting s) async {}
-  @override
-  Future<List<TemporaryState>> loadTemporaryStates() async =>
-      List.of(_states);
-  @override
-  Future<void> saveTemporaryStates(List<TemporaryState> s) async =>
-      _states = s;
-  @override
-  Future<List<TodaySituation>> loadTodaySituations() async => [];
-  @override
-  Future<void> saveTodaySituations(List<TodaySituation> s) async {}
   @override
   Future<bool> isOnboardingCompleted() async => false;
   @override
@@ -66,7 +52,6 @@ const _base = UserProfile(
   hypertension: false,
   heartDisease: false,
   stroke: false,
-  isPregnant: false,
   smokingStatus: SmokingStatus.never,
   activityTags: [],
   discomfortLevel: 1,

@@ -9,7 +9,7 @@ enum SmokingStatus {
 
 /// 사용자 그룹 (알림/케어 카피 분기용)
 enum UserGroup {
-  main,    // 취약 사용자 (호흡기/심혈관/임신/60+/현재흡연)
+  main,    // 취약 사용자 (호흡기/심혈관/60+/현재흡연)
   general, // 일반 사용자
 }
 
@@ -42,7 +42,6 @@ class UserProfile {
   final bool stroke;
 
   // ── 기타 건강 상태 ──────────────────────────────────────────
-  final bool isPregnant;          // female only
   final SmokingStatus smokingStatus;
 
   // ── 흡연 종류 (smokingStatus == current 일 때만 의미 있음) ──
@@ -69,7 +68,6 @@ class UserProfile {
     required this.hypertension,
     required this.heartDisease,
     required this.stroke,
-    required this.isPregnant,
     required this.smokingStatus,
     this.smokesCigarette = false,
     this.smokesHeated    = false,
@@ -102,7 +100,6 @@ class UserProfile {
   bool get isMainUser =>
       hasRespiratoryCondition ||
       hasCardiovascularCondition ||
-      isPregnant ||
       age >= 60 ||
       smokingStatus == SmokingStatus.current;
 
@@ -112,7 +109,7 @@ class UserProfile {
   /// 최종 PM2.5 알림 임계치 (μg/m³)
   ///
   /// 공식: clamp(35 × (1 − W_age − W_health), 15, 35)
-  /// W_health = W_respiratory + W_cardiovascular + W_smoking + W_special
+  /// W_health = W_respiratory + W_cardiovascular + W_smoking
   double get tFinal => const ThresholdEngine().computeTFinal(this);
 
   // ── 팩토리 ────────────────────────────────────────────────
@@ -128,7 +125,6 @@ class UserProfile {
         hypertension:   false,
         heartDisease:   false,
         stroke:         false,
-        isPregnant:     false,
         smokingStatus:  SmokingStatus.never,
         activityTags:   [],
         discomfortLevel: 1,
@@ -147,7 +143,6 @@ class UserProfile {
     bool? hypertension,
     bool? heartDisease,
     bool? stroke,
-    bool? isPregnant,
     SmokingStatus? smokingStatus,
     bool? smokesCigarette,
     bool? smokesHeated,
@@ -168,7 +163,6 @@ class UserProfile {
       hypertension:      hypertension      ?? this.hypertension,
       heartDisease:      heartDisease      ?? this.heartDisease,
       stroke:            stroke            ?? this.stroke,
-      isPregnant:        isPregnant        ?? this.isPregnant,
       smokingStatus:     smokingStatus     ?? this.smokingStatus,
       smokesCigarette:   smokesCigarette   ?? this.smokesCigarette,
       smokesHeated:      smokesHeated      ?? this.smokesHeated,
@@ -193,7 +187,6 @@ class UserProfile {
         'hypertension':      hypertension,
         'heartDisease':      heartDisease,
         'stroke':            stroke,
-        'isPregnant':        isPregnant,
         'smokingStatus':     smokingStatus.name,
         'smokesCigarette':   smokesCigarette,
         'smokesHeated':      smokesHeated,
@@ -220,7 +213,6 @@ class UserProfile {
       hypertension: json['hypertension'] as bool? ?? false,
       heartDisease: json['heartDisease'] as bool? ?? false,
       stroke:       json['stroke']       as bool? ?? false,
-      isPregnant:   json['isPregnant']   as bool? ?? false,
       smokingStatus: SmokingStatus.values.byName(
           json['smokingStatus'] as String? ?? 'never'),
       smokesCigarette: json['smokesCigarette'] as bool? ?? false,

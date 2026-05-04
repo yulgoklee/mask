@@ -25,7 +25,6 @@ const _sampleProfile = UserProfile(
   hypertension: false,
   heartDisease: false,
   stroke: false,
-  isPregnant: false,
   smokingStatus: SmokingStatus.never,
   activityTags: [ActivityTag.commute],
   discomfortLevel: 0,
@@ -51,7 +50,6 @@ void main() {
       expect(loaded.birthYear,     _sampleProfile.birthYear);
       expect(loaded.gender,        _sampleProfile.gender);
       expect(loaded.asthma,        _sampleProfile.asthma);
-      expect(loaded.isPregnant,    _sampleProfile.isPregnant);
       expect(loaded.activityTags,  _sampleProfile.activityTags);
     });
 
@@ -138,7 +136,7 @@ void main() {
         nickname: '', birthYear: 1990, gender: '',
         asthma: false, rhinitis: false, copd: false, allergy: false,
         hypertension: false, heartDisease: false, stroke: false,
-        isPregnant: false, smokingStatus: SmokingStatus.current,
+        smokingStatus: SmokingStatus.current,
         smokesCigarette: true, smokesHeated: false, smokesVaping: true,
         activityTags: [], discomfortLevel: 1,
       );
@@ -154,7 +152,7 @@ void main() {
           '{"nickname":"","birthYear":1990,"gender":"",'
           '"asthma":false,"rhinitis":false,"copd":false,"allergy":false,'
           '"hypertension":false,"heartDisease":false,"stroke":false,'
-          '"isPregnant":false,"smokingStatus":"current",'
+          '"smokingStatus":"current",'
           '"activityTags":[],"discomfortLevel":1}';
       final repo = await _buildRepo({'user_profile': legacyJson});
       final loaded = await repo.loadProfile();

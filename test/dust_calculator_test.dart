@@ -8,7 +8,7 @@ const _defaultProfile = UserProfile(
   nickname: '', birthYear: 1990, gender: 'male',
   asthma: false, rhinitis: false, copd: false, allergy: false,
   hypertension: false, heartDisease: false, stroke: false,
-  isPregnant: false, smokingStatus: SmokingStatus.never,
+  smokingStatus: SmokingStatus.never,
   activityTags: [], discomfortLevel: 1,
 );
 
@@ -17,7 +17,7 @@ const _sensitiveProfile = UserProfile(
   nickname: '', birthYear: 1990, gender: 'male',
   asthma: false, rhinitis: true, copd: false, allergy: false,
   hypertension: false, heartDisease: false, stroke: false,
-  isPregnant: false, smokingStatus: SmokingStatus.never,
+  smokingStatus: SmokingStatus.never,
   activityTags: [], discomfortLevel: 1,
 );
 

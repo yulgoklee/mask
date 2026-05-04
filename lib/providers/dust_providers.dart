@@ -79,18 +79,11 @@ final dustDataProvider = FutureProvider<DustData?>((ref) async {
 final dustCalculationProvider = Provider<DustCalculationResult?>((ref) {
   final dustAsync = ref.watch(dustDataProvider);
   final profile = ref.watch(profileProvider);
-  final temporaryStates = ref.watch(temporaryStatesProvider);
-  final todaySituations = ref.watch(todaySituationProvider);
 
   return dustAsync.when(
     data: (dust) {
       if (dust == null) return null;
-      return DustCalculator.calculate(
-        profile,
-        dust,
-        temporaryStates: temporaryStates,
-        todaySituations: todaySituations,
-      );
+      return DustCalculator.calculate(profile, dust);
     },
     loading: () => null,
     error: (_, __) => null,

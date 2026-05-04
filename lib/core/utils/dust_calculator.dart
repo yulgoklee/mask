@@ -1,7 +1,5 @@
 import '../../data/models/dust_data.dart';
 import '../../data/models/user_profile.dart';
-import '../../data/models/temporary_state.dart';
-import '../../data/models/today_situation.dart';
 import '../constants/dust_standards.dart';
 
 // 예보 체크 결과 레코드 타입
@@ -9,17 +7,12 @@ typedef ForecastCheckResult = ({bool maskRequired, String? maskType});
 
 /// 개인 프로필 기반 위험도 계산 및 알림 판단
 ///
-/// 3-tier 구조:
-///   Tier 1 — T_final 비율 기반 5단계 위험도
-///   Tier 2 — 기간 상태  (임신, 시술 후, 항암 등)
-///   Tier 3 — 오늘의 상황 (야외 운동, 몸 상태 안 좋음)
+/// Tier 1 — T_final 비율 기반 5단계 위험도
 class DustCalculator {
   static DustCalculationResult calculate(
     UserProfile profile,
-    DustData dust, {
-    List<TemporaryState> temporaryStates = const [],
-    List<TodaySituation> todaySituations = const [],
-  }) {
+    DustData dust,
+  ) {
     final pm25 = dust.pm25Value;
     if (pm25 == null) {
       return const DustCalculationResult(
@@ -51,45 +44,18 @@ class DustCalculator {
 
     // maskRequired는 새 RiskLevel.danger 시작점(1.0)과 일치.
     // 새 warning(0.7~1.0)은 "조심" 단계로 마스크 권장 아님.
-    var maskRequired = ratio >= 1.0;
-    var maskType     = ratio >= 1.5 ? 'KF94' : ratio >= 1.0 ? 'KF80' : null;
+    final maskRequired = ratio >= 1.0;
+    final maskType     = ratio >= 1.5 ? 'KF94' : ratio >= 1.0 ? 'KF80' : null;
 
     final shouldSendRealtime = ratio >= 1.5;
 
-    // ── Tier 2: 기간 상태 ────────────────────────────────────
     final actualGrade = DustStandards.getPm25Grade(pm25);
-    String? tier2Note;
-    for (final state in temporaryStates.where((s) => s.isActive)) {
-      final needsMask = state.alwaysMask ||
-          actualGrade.index >= state.maskThresholdGrade.index;
-      if (needsMask) {
-        maskRequired = true;
-        maskType = _stricterMaskType(maskType, state.maskType);
-        tier2Note ??= state.label;
-      }
-    }
 
-    // ── Tier 3: 오늘의 상황 ──────────────────────────────────
-    String? tier3Note;
-    for (final situation in todaySituations.where((s) => s.isActive)) {
-      final needsMask =
-          actualGrade.index >= situation.maskThresholdGrade.index;
-      if (needsMask) {
-        maskRequired = true;
-        maskType = _stricterMaskType(maskType, situation.maskType);
-        tier3Note ??= situation.label;
-      }
-    }
-
-    // ── 개인화 노트 (우선순위: Tier2 > Tier3 > Tier1) ───────────
-    final personalNote =
-        tier2Note ?? tier3Note ?? _buildPersonalNote(profile);
+    // ── 개인화 노트 (Tier 1) ─────────────────────────────────
+    final personalNote = _buildPersonalNote(profile);
 
     // ── heroText ──────────────────────────────────────────────
-    final baseHeroText = _buildHeroText(riskLevel);
-    final heroText = (!_gradeRequiresMask(riskLevel) && maskRequired)
-        ? '오늘 마스크 챙기세요'
-        : baseHeroText;
+    final heroText = _buildHeroText(riskLevel);
 
     return DustCalculationResult(
       riskLevel: riskLevel,
@@ -170,11 +136,10 @@ class DustCalculator {
 
   // ── 예보 등급 기반 마스크 판단 (내일 예보 알림용) ────────────
 
-  /// 내일 예보 등급 + 취약 상태를 고려해 마스크 필요 여부 계산
+  /// 내일 예보 등급 + 개인 T_final 기준으로 마스크 필요 여부 계산
   static ForecastCheckResult forecastCheck({
     required String gradeName,
     required UserProfile profile,
-    List<TemporaryState> temporaryStates = const [],
   }) {
     final actualGrade = DustGrade.fromString(gradeName) ?? DustGrade.good;
 
@@ -190,15 +155,6 @@ class DustCalculator {
       maskRequired = true;
       final sType = gradeValue >= tFinal * 1.5 ? 'KF94' : 'KF80';
       maskType = _stricterMaskType(maskType, sType);
-    }
-
-    // Tier 2 — 기간 상태 임계치 확인
-    for (final state in temporaryStates.where((s) => s.isActive)) {
-      if (state.alwaysMask ||
-          actualGrade.index >= state.maskThresholdGrade.index) {
-        maskRequired = true;
-        maskType = _stricterMaskType(maskType, state.maskType);
-      }
     }
 
     return (maskRequired: maskRequired, maskType: maskType);
@@ -226,11 +182,6 @@ class DustCalculator {
       case RiskLevel.unknown:  return '데이터를 불러오는 중이에요';
     }
   }
-
-  static bool _gradeRequiresMask(RiskLevel risk) =>
-      risk == RiskLevel.warning ||
-      risk == RiskLevel.danger ||
-      risk == RiskLevel.critical;
 
   /// 긴박 UI(펄스, 강조 등)가 필요한 등급 여부.
   /// danger 이상에서만 true — warning(0.7~1.0)은 "조심" 수준으로 긴박 UI 제외.
