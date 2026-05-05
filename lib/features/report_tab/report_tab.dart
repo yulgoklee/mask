@@ -118,7 +118,18 @@ class ReportSummaryCard extends ConsumerWidget {
           ),
         ),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, __) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: DT.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: AppTokens.shadowCard,
+        ),
+        child: const Text(
+          '요약을 불러오지 못했어요. 잠시 후 다시 시도해주세요.',
+          style: TextStyle(fontSize: 14, color: DT.gray, height: 1.5),
+        ),
+      ),
       data: (data) => AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
         child: _SummaryContent(key: const ValueKey('summary'), data: data),
