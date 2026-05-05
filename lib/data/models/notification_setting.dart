@@ -36,7 +36,7 @@ class NotificationSetting {
     this.realtimeAlertEnabled = true,
     this.quietHoursEnabled = false,
     this.quietHoursStartHour = 22,
-    this.quietHoursEndHour = 7,
+    this.quietHoursEndHour = 6,
   });
 
   NotificationSetting copyWith({
@@ -101,6 +101,6 @@ class NotificationSetting {
         realtimeAlertEnabled: json['realtimeAlertEnabled'] as bool? ?? true,
         quietHoursEnabled:   json['quietHoursEnabled']   as bool? ?? false,
         quietHoursStartHour: json['quietHoursStartHour'] as int?  ?? 22,
-        quietHoursEndHour:   json['quietHoursEndHour']   as int?  ?? 7,
+        quietHoursEndHour:   json['quietHoursEndHour']   as int?  ?? 6,
       );
 }

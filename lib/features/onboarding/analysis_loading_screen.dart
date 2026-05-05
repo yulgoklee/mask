@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/engine/threshold_engine.dart';
 import '../../providers/providers.dart';
 
 /// 온보딩 완료 후 분석 로딩 화면
@@ -73,8 +72,6 @@ class _AnalysisLoadingScreenState
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
-    final bd = const ThresholdEngine().breakdown(profile);
-    final tFinal = profile.tFinal;
     final name = profile.displayName;
 
     return Scaffold(
@@ -138,9 +135,6 @@ class _AnalysisLoadingScreenState
                 ),
 
                 const SizedBox(height: 56),
-
-                // ── 결과 미리보기 칩 ────────────────────────────
-                _ResultChip(wTotal: bd.wTotal, tFinal: tFinal),
               ],
             ),
           ),
@@ -150,60 +144,3 @@ class _AnalysisLoadingScreenState
   }
 }
 
-/// 분석 완료 예정 결과를 미리 보여주는 작은 카드
-class _ResultChip extends StatelessWidget {
-  final double wTotal;
-  final double tFinal;
-
-  const _ResultChip({required this.wTotal, required this.tFinal});
-
-  @override
-  Widget build(BuildContext context) {
-    final label = wTotal >= 0.4 ? '매우 민감' : wTotal >= 0.2 ? '약간 민감' : '일반';
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: AppColors.coral.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              '민감도 $label',
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: AppColors.coral,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            '알림 기준 ${tFinal.toStringAsFixed(1)} μg/m³',
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

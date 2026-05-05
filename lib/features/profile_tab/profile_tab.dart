@@ -6,6 +6,7 @@ import '../../core/constants/design_tokens.dart';
 import '../../providers/profile_providers.dart';
 import '../../widgets/sensitivity_widgets.dart';
 import 'widgets/notification_summary_card.dart';
+import 'widgets/persona_alert_card.dart';
 
 class ProfileTab extends ConsumerWidget {
   const ProfileTab({super.key});
@@ -48,6 +49,8 @@ class ProfileTab extends ConsumerWidget {
           ThresholdCompareCard(profile: profile),
           const SizedBox(height: 16),
           SensitivityBreakdown(profile: profile),
+          const SizedBox(height: 12),
+          PersonaAlertCard(profile: profile),
           const SizedBox(height: 12),
           SensitivityActionGuide(profile: profile),
           const SizedBox(height: 20),

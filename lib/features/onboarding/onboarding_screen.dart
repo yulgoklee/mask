@@ -235,12 +235,50 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   void _prevPage() {
+    // 재진단 모드에서 Q3(index 2) 이하로는 뒤로 이동 불가
+    if (widget.isRediag && _currentPage <= 2) return;
     if (_currentPage > 0) {
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
       setState(() => _currentPage--);
+    }
+  }
+
+  Future<void> _cancelRediag() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTokens.radiusLg)),
+        title: const Text('재진단을 취소하시겠어요?',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+        content: const Text(
+          '입력한 내용은 저장되지 않아요.',
+          style: TextStyle(fontSize: 14, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('계속 진행',
+                style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('취소'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      context.go('/profile');
     }
   }
 
@@ -383,7 +421,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     return PopScope(
       canPop: false, // 항상 직접 처리 — Q1에서 뒤로가기 차단, Q2+에서는 이전 질문으로
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && _currentPage > 0) _prevPage();
+        if (didPop) return;
+        // 재진단 모드에서 Q1·Q2(index 0·1·2) 범위는 시스템 뒤로가기로도 진입 불가
+        if (widget.isRediag && _currentPage <= 2) return;
+        if (_currentPage > 0) _prevPage();
       },
       child: Scaffold(
       backgroundColor: AppColors.bgOnboarding,
@@ -397,6 +438,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               onBack: _prevPage,
               onSkip: _skipOnboarding,
               isRediag: widget.isRediag,
+              onCancel: widget.isRediag ? _cancelRediag : null,
             ),
 
             // ── PageView ───────────────────────────────────────
@@ -454,6 +496,7 @@ class OnboardingProgressRow extends StatelessWidget {
   final VoidCallback onBack;
   final VoidCallback onSkip;
   final bool isRediag;
+  final VoidCallback? onCancel;
 
   const OnboardingProgressRow({
     required this.currentPage,
@@ -461,6 +504,7 @@ class OnboardingProgressRow extends StatelessWidget {
     required this.onBack,
     required this.onSkip,
     this.isRediag = false,
+    this.onCancel,
   });
 
   @override
@@ -512,7 +556,18 @@ class OnboardingProgressRow extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          if (currentPage >= 2 && !isRediag)
+          if (isRediag)
+            GestureDetector(
+              onTap: onCancel,
+              child: const Text(
+                '취소',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            )
+          else if (currentPage >= 2)
             GestureDetector(
               onTap: onSkip,
               child: const Text(
