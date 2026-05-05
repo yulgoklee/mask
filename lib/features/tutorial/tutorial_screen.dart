@@ -1,10 +1,10 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/app_logger.dart';
 import '../../providers/providers.dart';
+import '../../widgets/app_button.dart';
 
 class TutorialScreen extends ConsumerStatefulWidget {
   const TutorialScreen({super.key});
@@ -68,10 +68,9 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
               alignment: Alignment.centerRight,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(0, 12, 20, 0),
-                child: TextButton(
-                  onPressed: _done,
-                  child: const Text('건너뛰기',
-                      style: TextStyle(color: AppColors.textSecondary)),
+                child: AppButton.text(
+                  label: '건너뛰기',
+                  onTap: _done,
                 ),
               ),
             ),
@@ -113,33 +112,18 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                   const SizedBox(height: 24),
 
                   // 다음 / 시작하기 버튼
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (_currentPage < _pages.length - 1) {
-                          _pageController.nextPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                        } else {
-                          _done();
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _pages[_currentPage].color,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        _currentPage < _pages.length - 1 ? '다음' : '시작하기',
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w600),
-                      ),
-                    ),
+                  AppButton.primary(
+                    label: _currentPage < _pages.length - 1 ? '다음' : '시작하기',
+                    onTap: () {
+                      if (_currentPage < _pages.length - 1) {
+                        _pageController.nextPage(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      } else {
+                        _done();
+                      }
+                    },
                   ),
                 ],
               ),

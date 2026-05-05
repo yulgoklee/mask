@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // 브랜드 색상 — Sky Blue + Coral 테마
-  static const Color primary      = Color(0xFF42A5F5);  // Sky Blue (버튼·포인트용)
-  static const Color primaryLight = Color(0xFFA2D2FF);  // Sky Blue Light (틴트 배경)
-  static const Color splashBackground = Color(0xFFE8F1FB); // 스플래시 배경 - 아이콘 배경과 통일
+  // 브랜드 색상 — Blue 600 + Coral 테마
+  // (사이클 #5: DT.primary와 같은 값으로 통일. 점진적으로 사용처도 DT 토큰으로 마이그레이션 예정)
+  static const Color primary      = Color(0xFF2563EB);  // Blue 600 (= DT.primary, 외유내강 톤)
+  static const Color primaryLight = Color(0xFFDBEAFE);  // Blue 100 (= DT.primaryLt)
+  static const Color splashBackground = Color(0xFFE8F1FB); // 스플래시 배경 - 아이콘 배경과 통일 (별도 결정)
   static const Color secondary    = Color(0xFFFF865E);  // Coral (강조·배지)
   static const Color coral        = Color(0xFFFF865E);  // Coral (별칭)
 

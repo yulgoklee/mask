@@ -8,6 +8,7 @@ import '../../core/services/background_service.dart';
 import '../../core/services/notification_scheduler.dart';
 import '../../core/services/notification_service.dart';
 import '../../providers/providers.dart';
+import '../../widgets/app_button.dart';
 import '../../widgets/notif_card.dart';
 
 class NotificationScreen extends ConsumerStatefulWidget {
@@ -279,24 +280,14 @@ class _NotifTestCardState extends ConsumerState<_NotifTestCard> {
             style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _sending ? null : _sendTest,
-              icon: _sending
-                  ? const SizedBox(
-                      width: 16, height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Icon(Icons.notifications_active_outlined, size: 18),
-              label: Text(_sending ? '발송 중...' : '지금 한 번 받아보기'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
+          AppButton.primary(
+            label: _sending ? '발송 중...' : '지금 한 번 받아보기',
+            onTap: _sending ? null : _sendTest,
+            isLoading: _sending,
+            leading: _sending
+                ? null
+                : const Icon(Icons.notifications_active_outlined,
+                    size: 18, color: Colors.white),
           ),
           if (_result != null) ...[
             const SizedBox(height: 10),
