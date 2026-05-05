@@ -513,49 +513,6 @@ class _BreakdownRow extends StatelessWidget {
   }
 }
 
-// ── SensitivityActionGuide ─────────────────────────────────
-// 가장 강한 요인 기준 한 줄 행동 가이드
-
-class SensitivityActionGuide extends StatelessWidget {
-  final UserProfile profile;
-
-  const SensitivityActionGuide({super.key, required this.profile});
-
-  @override
-  Widget build(BuildContext context) {
-    final bd = const ThresholdEngine().breakdown(profile);
-    final guide = _guideText(profile, bd);
-
-    return Text(
-      guide,
-      style: TextStyle(
-        fontSize: 14,
-        color: AppColors.textPrimary.withValues(alpha: 0.65),
-        height: 1.5,
-        fontWeight: FontWeight.w500,
-      ),
-    );
-  }
-
-  String _guideText(UserProfile p, ThresholdBreakdown bd) {
-    final name = p.nickname.isNotEmpty ? '${p.nickname}님' : '';
-    final prefix = name.isNotEmpty ? '$name, ' : '';
-    if (bd.floorApplied) {
-      return '${prefix}최고 수준 민감도가 적용됐어요. 외출 전 꼭 확인하세요.';
-    }
-    if (bd.wRespiratory > 0) {
-      return '${prefix}환절기·꽃가루 많은 날 특히 주의해요.';
-    }
-    if (bd.wCardiovascular > 0) {
-      return '${prefix}미세먼지 높은 날 야외 운동은 피하세요.';
-    }
-    if (bd.wSmoking > 0) {
-      return '${prefix}외출 전 미세먼지 확인이 더 중요해요.';
-    }
-    return '${prefix}공기가 나빠지기 전에 먼저 알려드릴게요.';
-  }
-}
-
 // ── 헬퍼 함수 ──────────────────────────────────────────────
 
 String _ageGroupLabel(int age) {

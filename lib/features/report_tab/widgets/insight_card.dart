@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_tokens.dart';
 import '../../../core/constants/design_tokens.dart';
-import '../models/report_models.dart';
 import '../providers/report_providers.dart';
 
 // ── InsightCard ───────────────────────────────────────────

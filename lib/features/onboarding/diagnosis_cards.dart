@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/design_tokens.dart';
 import '../../core/constants/location_stations.dart';
 import '../../data/models/user_profile.dart';
 
