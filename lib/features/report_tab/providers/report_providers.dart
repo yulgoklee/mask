@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/dust_calculator.dart';
 import '../../../data/models/notification_log.dart';
 import '../../../providers/core_providers.dart';
@@ -15,8 +16,15 @@ final reportSummaryProvider = FutureProvider<ReportSummaryData>((ref) async {
   final db      = ref.watch(localDatabaseProvider);
   final station = ref.watch(locationStateProvider).station ?? '';
   final profile = ref.watch(profileProvider);
+  final prefs   = ref.watch(sharedPreferencesProvider);
 
   const days = 7;
+
+  final firstActiveDateStr =
+      prefs.getString(AppConstants.prefFirstActiveDate);
+  final firstActiveDate = firstActiveDateStr != null
+      ? DateTime.tryParse(firstActiveDateStr)
+      : null;
 
   final [dailies, grouped] = await Future.wait([
     db.getDailyAqiAverages(stationName: station, days: days),
@@ -34,6 +42,15 @@ final reportSummaryProvider = FutureProvider<ReportSummaryData>((ref) async {
   for (int i = 0; i < days; i++) {
     final date = DateTime.now().subtract(Duration(days: days - 1 - i));
     final key  = _dayKey(date);
+
+    // firstActiveDate 이전 날짜는 집계에서 제외
+    if (firstActiveDate != null) {
+      final dateOnly = DateTime(date.year, date.month, date.day);
+      final activeOnly = DateTime(
+          firstActiveDate.year, firstActiveDate.month, firstActiveDate.day);
+      if (dateOnly.isBefore(activeOnly)) continue;
+    }
+
     final row  = dailyRows.firstWhere(
       (r) => r['day'] == key,
       orElse: () => {},
@@ -124,8 +141,15 @@ final weeklyOverviewProvider = FutureProvider<List<DayCircleData>>((ref) async {
   final db      = ref.watch(localDatabaseProvider);
   final station = ref.watch(locationStateProvider).station;
   final profile = ref.watch(profileProvider);
+  final prefs   = ref.watch(sharedPreferencesProvider);
 
   final now = DateTime.now();
+
+  final firstActiveDateStr =
+      prefs.getString(AppConstants.prefFirstActiveDate);
+  final firstActiveDate = firstActiveDateStr != null
+      ? DateTime.tryParse(firstActiveDateStr)
+      : null;
 
   final results = await Future.wait([
     db.getDailyAqiAverages(stationName: station ?? '', days: 7),
@@ -144,8 +168,13 @@ final weeklyOverviewProvider = FutureProvider<List<DayCircleData>>((ref) async {
     final key  = _dayKey(date);
     final row  = aqiByDay[key];
 
+    // firstActiveDate 이전 날짜는 데이터 없음(누락)으로 표시
+    final bool beforeActive = firstActiveDate != null &&
+        date.isBefore(DateTime(
+            firstActiveDate.year, firstActiveDate.month, firstActiveDate.day));
+
     final double? finalRatio;
-    if (row == null) {
+    if (beforeActive || row == null) {
       finalRatio = null;
     } else {
       final pm25 = (row['pm25_avg'] as num?)?.round();

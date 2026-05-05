@@ -46,7 +46,11 @@ class ProfileTab extends ConsumerWidget {
           // ── 카드 1: 페르소나 ───────────────────────────────
           ProfileStateHeader(profile: profile),
           const SizedBox(height: 16),
-          ThresholdCompareCard(profile: profile),
+          ThresholdCompareCard(
+            profile: profile,
+            showSubtitle: true,
+            expandable: true,
+          ),
           const SizedBox(height: 16),
           SensitivityBreakdown(profile: profile),
           const SizedBox(height: 12),
