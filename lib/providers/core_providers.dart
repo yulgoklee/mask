@@ -11,7 +11,7 @@ import '../core/services/remote_config_service.dart';
 
 // ── 기반 Provider ─────────────────────────────────────────
 
-/// 알림 딥링크 페이로드 타입 — HomeScreen이 소비 후 null로 초기화
+/// 알림 딥링크 페이로드 타입 — 케어 탭이 소비 후 null로 초기화
 /// 'risk' | 'relief' | 'scheduled' | null
 final pendingPayloadTypeProvider = StateProvider<String?>((ref) => null);
 
