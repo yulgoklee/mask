@@ -295,8 +295,6 @@ class DiagQ3Gender extends StatelessWidget {
           _qBadge('Q$questionNumber · 성별'),
           const SizedBox(height: 14),
           _qTitle(context, '성별을 알려주세요'),
-          const SizedBox(height: 8),
-          _qSubtitle(context, '여성인 경우 임신 관련 항목이 추가돼요.'),
           const SizedBox(height: 40),
           Row(
             children: List.generate(_options.length, (i) {
@@ -344,8 +342,6 @@ class DiagQ3Gender extends StatelessWidget {
               );
             }).toList(),
           ),
-          const SizedBox(height: 32),
-          _insightBox('성별 정보는 임신 여부 항목 표시 여부에만 사용돼요.'),
           const SizedBox(height: 32),
         ],
       ),

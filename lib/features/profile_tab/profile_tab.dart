@@ -51,8 +51,6 @@ class ProfileTab extends ConsumerWidget {
           SensitivityBreakdown(profile: profile),
           const SizedBox(height: 12),
           PersonaAlertCard(profile: profile),
-          const SizedBox(height: 12),
-          SensitivityActionGuide(profile: profile),
           const SizedBox(height: 20),
 
           // ── 카드 2: 내 알림 요약 ───────────────────────────

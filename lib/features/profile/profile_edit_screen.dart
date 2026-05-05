@@ -20,13 +20,11 @@ class ProfileEditScreen extends ConsumerStatefulWidget {
 
 class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   late UserProfile _draft;
-  late TextEditingController _nicknameCtrl;
 
   @override
   void initState() {
     super.initState();
     _draft = ref.read(profileProvider);
-    _nicknameCtrl = TextEditingController(text: _draft.nickname);
     // Re-sync once after the first frame: schedule as microtask so it runs
     // after profileProvider's async loadProfile().then() has fired.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -35,22 +33,14 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
         final loaded = ref.read(profileProvider);
         setState(() {
           _draft = loaded;
-          _nicknameCtrl.text = loaded.nickname;
         });
       });
     });
   }
 
-  @override
-  void dispose() {
-    _nicknameCtrl.dispose();
-    super.dispose();
-  }
-
   void _save() {
-    ref.read(profileProvider.notifier).update(
-          _draft.copyWith(nickname: _nicknameCtrl.text.trim()),
-        );
+    // nickname은 변경하지 않고 기존 값 그대로 보존
+    ref.read(profileProvider.notifier).update(_draft);
     Navigator.of(context).pop();
   }
 
@@ -95,44 +85,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           // ── 기본 정보 ─────────────────────────────────────
           _SectionLabel('기본 정보'),
           const SizedBox(height: 10),
-
-          _FieldLabel('닉네임'),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _nicknameCtrl,
-            readOnly: true,
-            maxLength: 10,
-            decoration: InputDecoration(
-              hintText: '닉네임 입력 (최대 10자)',
-              hintStyle: const TextStyle(color: AppColors.textHint),
-              filled: true,
-              fillColor: AppColors.surfaceVariant,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              counterText: '',
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            '현재는 변경할 수 없어요',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.textHint,
-            ),
-          ),
-          const SizedBox(height: 16),
 
           _FieldLabel('성별'),
           const SizedBox(height: 8),

@@ -674,8 +674,9 @@ Future<void> _checkSafeEntryAlert({
     // 마스크 알림이 T_final 이하 진입 전에 발송됐어야 유효
     if (lastMask.isAfter(belowSince)) return;
 
-    // 이미 이번 사이클에 안심 알림 발송했으면 스킵
-    if (_sentThisHour(prefs, 'safeEntry')) return;
+    // 이미 오늘 안심 알림 발송했으면 스킵
+    // (시간당 → 일별로 강화: PM2.5가 T_final 경계 여러 번 교차해도 안심 알림은 하루 1회)
+    if (_sentToday(prefs, 'safeEntry')) return;
 
     final content = NotificationService.safeEntryContent(
       profile: profile,
@@ -692,7 +693,7 @@ Future<void> _checkSafeEntryAlert({
       gradeColor: NotificationService.colorForGrade('좋음'),
       smallIcon: NotificationService.iconMask,
       onSuccess: () {
-        _markSentHour(prefs, 'safeEntry');
+        _markSent(prefs, 'safeEntry');
         // 이번 사이클 완료 → 추적 초기화 (다음 사이클 대비)
         prefs.remove('notif_below_tfinal_since');
         prefs.remove(AppConstants.prefLastMaskRequiredAt);
