@@ -88,66 +88,100 @@ Widget _buildCard(NotificationSetting notifSetting) {
 }
 
 void main() {
-  // ── 카피 룰 4 케이스 ─────────────────────────────────────
+  // ── 알림 항목 표시 케이스 ────────────────────────────────
 
-  group('카피 룰: 알림 요약 텍스트', () {
-    testWidgets('케이스 1: 모든 알림 켜짐 — "매일 오전 7시 · 전날 예보 · 귀가 후 · 실시간 경보"',
-        (tester) async {
+  group('알림 항목 표시: 활성 항목만 줄 단위 노출', () {
+    testWidgets('케이스 1: 모든 알림 켜짐 — 항목별 행 표시', (tester) async {
       const setting = NotificationSetting(
         morningAlertEnabled: true,
         morningAlertHour: 7,
         eveningForecastEnabled: true,
         eveningReturnEnabled: true,
         realtimeAlertEnabled: true,
+        quietHoursEnabled: false,
       );
       await tester.pumpWidget(_buildCard(setting));
       await tester.pumpAndSettle();
 
-      expect(
-        find.text('매일 오전 7시 · 전날 예보 · 귀가 후 · 실시간 경보'),
-        findsOneWidget,
-      );
+      expect(find.text('외출 전 알림'), findsOneWidget);
+      expect(find.text('전날 예보 알림'), findsOneWidget);
+      expect(find.text('귀가 후 알림'), findsOneWidget);
+      expect(find.text('실시간 경보'), findsOneWidget);
     });
 
-    testWidgets('케이스 2: 오전 알림 + 외출 전(전날 예보) 켜짐 — "매일 오전 7시 · 전날 예보"',
-        (tester) async {
+    testWidgets('케이스 2: 오전 알림 + 전날 예보만 켜짐', (tester) async {
       const setting = NotificationSetting(
         morningAlertEnabled: true,
         morningAlertHour: 7,
         eveningForecastEnabled: true,
         eveningReturnEnabled: false,
         realtimeAlertEnabled: false,
+        quietHoursEnabled: false,
       );
       await tester.pumpWidget(_buildCard(setting));
       await tester.pumpAndSettle();
 
-      expect(find.text('매일 오전 7시 · 전날 예보'), findsOneWidget);
+      expect(find.text('외출 전 알림'), findsOneWidget);
+      expect(find.text('전날 예보 알림'), findsOneWidget);
+      expect(find.text('귀가 후 알림'), findsNothing);
     });
 
-    testWidgets('케이스 3: 귀가 후만 켜짐 — "귀가 후"', (tester) async {
+    testWidgets('케이스 3: 귀가 후만 켜짐 — "귀가 후 알림" 행 표시', (tester) async {
       const setting = NotificationSetting(
         morningAlertEnabled: false,
         eveningForecastEnabled: false,
         eveningReturnEnabled: true,
         realtimeAlertEnabled: false,
+        quietHoursEnabled: false,
       );
       await tester.pumpWidget(_buildCard(setting));
       await tester.pumpAndSettle();
 
-      expect(find.text('귀가 후'), findsOneWidget);
+      expect(find.text('귀가 후 알림'), findsOneWidget);
+      expect(find.text('외출 전 알림'), findsNothing);
     });
 
-    testWidgets('케이스 4: 모두 꺼짐 — "받고 있는 알림이 없어요"', (tester) async {
+    testWidgets('케이스 4: 모두 꺼짐 — "받고 있는 알림이 없어요" 표시', (tester) async {
       const setting = NotificationSetting(
         morningAlertEnabled: false,
         eveningForecastEnabled: false,
         eveningReturnEnabled: false,
         realtimeAlertEnabled: false,
+        quietHoursEnabled: false,
       );
       await tester.pumpWidget(_buildCard(setting));
       await tester.pumpAndSettle();
 
       expect(find.text('받고 있는 알림이 없어요'), findsOneWidget);
+    });
+  });
+
+  // ── 방해금지 표시 ─────────────────────────────────────────
+
+  group('방해금지 표시', () {
+    testWidgets('방해금지 켜짐 — "방해금지" 행 표시', (tester) async {
+      const setting = NotificationSetting(
+        morningAlertEnabled: true,
+        quietHoursEnabled: true,
+        quietHoursStartHour: 22,
+        quietHoursEndHour: 6,
+      );
+      await tester.pumpWidget(_buildCard(setting));
+      await tester.pumpAndSettle();
+
+      expect(find.text('방해금지'), findsOneWidget);
+      expect(find.text('22:00 ~ 06:00'), findsOneWidget);
+    });
+
+    testWidgets('방해금지 꺼짐 — "방해금지" 행 미표시', (tester) async {
+      const setting = NotificationSetting(
+        morningAlertEnabled: true,
+        quietHoursEnabled: false,
+      );
+      await tester.pumpWidget(_buildCard(setting));
+      await tester.pumpAndSettle();
+
+      expect(find.text('방해금지'), findsNothing);
     });
   });
 
@@ -201,32 +235,36 @@ void main() {
   // ── 시간 포맷 확인 ───────────────────────────────────────
 
   group('시간 포맷', () {
-    testWidgets('오전 7시 → "매일 오전 7시"', (tester) async {
+    testWidgets('오전 7시 → "오전 7시" 표시', (tester) async {
       const setting = NotificationSetting(
         morningAlertEnabled: true,
         morningAlertHour: 7,
+        morningAlertMinute: 0,
         eveningForecastEnabled: false,
         eveningReturnEnabled: false,
         realtimeAlertEnabled: false,
+        quietHoursEnabled: false,
       );
       await tester.pumpWidget(_buildCard(setting));
       await tester.pumpAndSettle();
 
-      expect(find.text('매일 오전 7시'), findsOneWidget);
+      expect(find.text('오전 7시'), findsOneWidget);
     });
 
-    testWidgets('오후 6시(18) → "매일 오후 6시"', (tester) async {
+    testWidgets('오후 6시(18) → "오후 6시" 표시', (tester) async {
       const setting = NotificationSetting(
         morningAlertEnabled: true,
         morningAlertHour: 18,
+        morningAlertMinute: 0,
         eveningForecastEnabled: false,
         eveningReturnEnabled: false,
         realtimeAlertEnabled: false,
+        quietHoursEnabled: false,
       );
       await tester.pumpWidget(_buildCard(setting));
       await tester.pumpAndSettle();
 
-      expect(find.text('매일 오후 6시'), findsOneWidget);
+      expect(find.text('오후 6시'), findsOneWidget);
     });
   });
 }

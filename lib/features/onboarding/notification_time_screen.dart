@@ -5,6 +5,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_tokens.dart';
 import '../../core/services/app_logger.dart';
+import '../../data/models/notification_setting.dart';
 import '../../providers/providers.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/notif_card.dart';
@@ -158,6 +159,12 @@ class NotificationTimeScreen extends ConsumerWidget {
                               ));
                         }
                       },
+                    ),
+                    const SizedBox(height: 20),
+                    // ── 방해 금지 시간 ───────────────────────────
+                    _OnboardingQuietHoursCard(
+                      setting: setting,
+                      notifier: ref.read(notificationSettingProvider.notifier),
                     ),
                     const SizedBox(height: 20),
                   ],
@@ -317,5 +324,263 @@ class _SimulationButtonState extends ConsumerState<_SimulationButton> {
         _sent = true;
       });
     }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  온보딩용 방해 금지 시간 카드
+// ══════════════════════════════════════════════════════════════
+
+class _OnboardingQuietHoursCard extends ConsumerWidget {
+  final NotificationSetting setting;
+  final NotificationSettingNotifier notifier;
+
+  const _OnboardingQuietHoursCard({
+    required this.setting,
+    required this.notifier,
+  });
+
+  String _hourLabel(int hour) {
+    final period = hour < 12 ? '오전' : '오후';
+    final display = hour % 12 == 0 ? 12 : hour % 12;
+    return '$period $display시';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    const accentColor = Color(0xFF6366F1); // indigo — 방해 금지용
+    final enabled = setting.quietHoursEnabled;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+      decoration: BoxDecoration(
+        color: enabled
+            ? accentColor.withValues(alpha: 0.06)
+            : AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: enabled ? accentColor.withValues(alpha: 0.4) : AppColors.divider,
+          width: enabled ? 1.5 : 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── 헤더: 아이콘 + 텍스트 + 토글 ────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 12, 16),
+            child: Row(
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: enabled
+                        ? accentColor.withValues(alpha: 0.12)
+                        : AppColors.surfaceVariant,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Center(
+                    child: Text('🌙', style: TextStyle(fontSize: 22)),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '방해 금지',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: enabled
+                              ? AppColors.textPrimary
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      const Text(
+                        '이 시간엔 알림을 보내지 않아요',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Transform.scale(
+                  scale: 0.85,
+                  child: Switch(
+                    value: enabled,
+                    onChanged: (v) =>
+                        notifier.update(setting.copyWith(quietHoursEnabled: v)),
+                    activeThumbColor: accentColor,
+                    activeTrackColor: accentColor.withValues(alpha: 0.35),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ── 시간 선택 (활성 시만) ────────────────────────────
+          if (enabled) ...[
+            Divider(
+              height: 1,
+              color: accentColor.withValues(alpha: 0.2),
+              indent: 16,
+              endIndent: 16,
+            ),
+            // 시작 시간
+            GestureDetector(
+              onTap: () async {
+                final picked = await showCupertinoTimePicker(
+                  context,
+                  hour: setting.quietHoursStartHour,
+                  minute: 0,
+                  accentColor: accentColor,
+                );
+                if (picked != null) {
+                  notifier.update(setting.copyWith(
+                    quietHoursStartHour: picked.hour,
+                  ));
+                }
+              },
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.bedtime_outlined,
+                      size: 16,
+                      color: accentColor.withValues(alpha: 0.8),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '시작',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: accentColor.withValues(alpha: 0.9),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: accentColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        _hourLabel(setting.quietHoursStartHour),
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: accentColor,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 18,
+                      color: accentColor.withValues(alpha: 0.6),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Divider(
+              height: 1,
+              color: accentColor.withValues(alpha: 0.15),
+              indent: 16,
+              endIndent: 16,
+            ),
+            // 종료 시간
+            GestureDetector(
+              onTap: () async {
+                final picked = await showCupertinoTimePicker(
+                  context,
+                  hour: setting.quietHoursEndHour,
+                  minute: 0,
+                  accentColor: accentColor,
+                );
+                if (picked != null) {
+                  notifier.update(setting.copyWith(
+                    quietHoursEndHour: picked.hour,
+                  ));
+                }
+              },
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.wb_sunny_outlined,
+                      size: 16,
+                      color: accentColor.withValues(alpha: 0.8),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '종료',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: accentColor.withValues(alpha: 0.9),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: accentColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        _hourLabel(setting.quietHoursEndHour),
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: accentColor,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 18,
+                      color: accentColor.withValues(alpha: 0.6),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Divider(
+              height: 1,
+              color: accentColor.withValues(alpha: 0.2),
+              indent: 16,
+              endIndent: 16,
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+              child: Text(
+                '이 시간엔 알림을 보내지 않아요. 단, 매우 위험한 공기에선 예외예요.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: accentColor.withValues(alpha: 0.7),
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }

@@ -34,7 +34,7 @@ class NotificationSetting {
     this.eveningReturnHour = 18,
     this.eveningReturnMinute = 0,
     this.realtimeAlertEnabled = true,
-    this.quietHoursEnabled = false,
+    this.quietHoursEnabled = true,
     this.quietHoursStartHour = 22,
     this.quietHoursEndHour = 6,
   });
@@ -99,7 +99,7 @@ class NotificationSetting {
         eveningReturnHour: json['eveningReturnHour'] as int? ?? 18,
         eveningReturnMinute: json['eveningReturnMinute'] as int? ?? 0,
         realtimeAlertEnabled: json['realtimeAlertEnabled'] as bool? ?? true,
-        quietHoursEnabled:   json['quietHoursEnabled']   as bool? ?? false,
+        quietHoursEnabled:   json['quietHoursEnabled']   as bool? ?? true,
         quietHoursStartHour: json['quietHoursStartHour'] as int?  ?? 22,
         quietHoursEndHour:   json['quietHoursEndHour']   as int?  ?? 6,
       );

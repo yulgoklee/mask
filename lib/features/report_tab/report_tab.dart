@@ -132,7 +132,10 @@ class ReportSummaryCard extends ConsumerWidget {
       ),
       data: (data) => AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
-        child: _SummaryContent(key: const ValueKey('summary'), data: data),
+        child: _SummaryContent(
+          key: ValueKey('${data.dangerDays}_${data.maskWornDays}_${data.dominantGrade}'),
+          data: data,
+        ),
       ),
     );
   }
