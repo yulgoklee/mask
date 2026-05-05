@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_tokens.dart';
+import '../../core/constants/design_tokens.dart';
 import '../../core/services/app_logger.dart';
 import '../../data/models/notification_setting.dart';
 import '../../providers/providers.dart';
@@ -348,19 +349,21 @@ class _OnboardingQuietHoursCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    const accentColor = Color(0xFF6366F1); // indigo — 방해 금지용
+    // 방해 금지는 "차단" 의미 → 중립 회색 톤 사용
+    const accentColor = DT.gray;
+    const accentBg    = DT.grayLt;
     final enabled = setting.quietHoursEnabled;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOut,
       decoration: BoxDecoration(
-        color: enabled
-            ? accentColor.withValues(alpha: 0.06)
-            : AppColors.surface,
+        color: enabled ? accentBg : AppColors.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: enabled ? accentColor.withValues(alpha: 0.4) : AppColors.divider,
+          color: enabled
+              ? accentColor.withValues(alpha: 0.4)
+              : AppColors.divider,
           width: enabled ? 1.5 : 1,
         ),
       ),
@@ -377,7 +380,7 @@ class _OnboardingQuietHoursCard extends ConsumerWidget {
                   height: 46,
                   decoration: BoxDecoration(
                     color: enabled
-                        ? accentColor.withValues(alpha: 0.12)
+                        ? accentColor.withValues(alpha: 0.15)
                         : AppColors.surfaceVariant,
                     borderRadius: BorderRadius.circular(14),
                   ),
@@ -463,7 +466,7 @@ class _OnboardingQuietHoursCard extends ConsumerWidget {
                       '시작',
                       style: TextStyle(
                         fontSize: 13,
-                        color: accentColor.withValues(alpha: 0.9),
+                        color: accentColor,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -530,7 +533,7 @@ class _OnboardingQuietHoursCard extends ConsumerWidget {
                       '종료',
                       style: TextStyle(
                         fontSize: 13,
-                        color: accentColor.withValues(alpha: 0.9),
+                        color: accentColor,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -573,7 +576,7 @@ class _OnboardingQuietHoursCard extends ConsumerWidget {
                 '이 시간엔 알림을 보내지 않아요. 단, 매우 위험한 공기에선 예외예요.',
                 style: TextStyle(
                   fontSize: 12,
-                  color: accentColor.withValues(alpha: 0.7),
+                  color: accentColor.withValues(alpha: 0.8),
                   height: 1.4,
                 ),
               ),

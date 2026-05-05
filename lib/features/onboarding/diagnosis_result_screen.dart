@@ -67,7 +67,10 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen>
                       const SizedBox(height: 20),
 
                       // ── 메인 카드: 일반 vs 내 기준 ──────────────
-                      ThresholdCompareCard(profile: profile),
+                      ThresholdCompareCard(
+                        profile: profile,
+                        showSubtitle: true,
+                      ),
                       const SizedBox(height: 16),
 
                       // ── 결론 카드: 마스크 필요성 (결과지 전용) ───
@@ -77,10 +80,6 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen>
                       // ── 상태 분석: 5개 막대 ──────────────────────
                       SensitivityBreakdown(profile: profile),
                       const SizedBox(height: 16),
-
-                      // ── 행동 가이드: 한 줄 메시지 ────────────────
-                      SensitivityActionGuide(profile: profile),
-                      const SizedBox(height: 32),
 
                       // ── CTA ─────────────────────────────────────
                       AppButton.primary(

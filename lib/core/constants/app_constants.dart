@@ -76,4 +76,9 @@ class AppConstants {
   // ── 면책 동의 ─────────────────────────────────────────────
   /// 의료 면책 동의 일시 (ISO 8601 문자열, null이면 미동의)
   static const String prefDisclaimerAgreedAt    = 'disclaimer_agreed_at';
+
+  // ── 첫 활성 날짜 ──────────────────────────────────────────
+  /// 온보딩 완료 직후 기록되는 최초 사용 날짜 ('YYYY-MM-DD' 형식)
+  /// 리포트 탭 한 주 그림에서 이 날짜 이전 데이터를 누락 처리한다.
+  static const String prefFirstActiveDate       = 'first_active_date';
 }

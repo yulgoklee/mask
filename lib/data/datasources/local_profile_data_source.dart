@@ -84,6 +84,13 @@ class LocalProfileDataSource implements ProfileDataSource {
   @override
   Future<void> completeOnboarding() async {
     await _prefs.setBool(_onboardedKey, true);
+    // 첫 활성 날짜 — 아직 저장되지 않은 경우에만 기록 (재진단 시 덮어쓰지 않음)
+    if (_prefs.getString(AppConstants.prefFirstActiveDate) == null) {
+      final now = DateTime.now();
+      final dateStr =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      await _prefs.setString(AppConstants.prefFirstActiveDate, dateStr);
+    }
   }
 
   @override
