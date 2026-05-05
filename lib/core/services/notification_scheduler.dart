@@ -108,7 +108,7 @@ class NotificationScheduler {
       final gradeName = _gradeLabel(DustStandards.getPm25Grade(pm25));
       final maskType = result.maskType;
 
-      const String? stateNote = null;
+      final String? stateNote = _buildStateNote(profile);
       const bool stateOnlyMask = false;
 
       // ── 개인 임계치(T_final) 트리거 여부 계산 ─────────────────
@@ -731,8 +731,8 @@ bool _needsAnyScheduledAlert(
 NotificationType _notifTypeFromString(String type) {
   switch (type) {
     case 'morning':    return NotificationType.morning;
-    case 'forecast':
-    case 'return':     return NotificationType.evening;
+    case 'forecast':   return NotificationType.forecast;
+    case 'return':     return NotificationType.returning;
     case 'safeEntry':  return NotificationType.safeEntry;
     default:           return NotificationType.dangerEntry;
   }
@@ -755,4 +755,24 @@ String _gradeLabel(DustGrade grade) {
     case DustGrade.bad:     return '나쁨';
     case DustGrade.veryBad: return '매우나쁨';
   }
+}
+
+/// 사용자 프로필 기반 개인화 상태 메모 생성
+///
+/// 우선순위: 호흡기 > 심혈관 > 흡연 > 고령 (가장 영향 큰 것 1개만 표시)
+/// 해당 없으면 null 반환 (일반 카피 그대로 사용)
+String? _buildStateNote(UserProfile profile) {
+  if (profile.hasRespiratoryCondition) {
+    return '호흡기에 민감하시니 마스크 챙기세요';
+  }
+  if (profile.hasCardiovascularCondition) {
+    return '심혈관에 부담될 수 있어요';
+  }
+  if (profile.smokingStatus == SmokingStatus.current) {
+    return '흡연자분은 더 위험해요';
+  }
+  if (profile.age >= 60) {
+    return '고령이시니 외출 시 마스크 권장';
+  }
+  return null;
 }

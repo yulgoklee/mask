@@ -6,7 +6,9 @@ enum NotificationType {
   dangerEntry,  // T_final 초과 진입
   safeEntry,    // 안심 구간 복귀
   morning,      // 오전 정기 알림
-  evening,      // 저녁 정기 알림
+  forecast,     // 전날 예보 알림
+  returning,    // 귀가 알림 ('return'은 Dart 키워드라 'returning'으로)
+  evening,      // 저녁 정기 알림 (deprecated — backward compat용, 신규 코드에서 사용 금지)
   pm10Warning,  // PM10 국가경보 (예외 레이어)
 }
 
