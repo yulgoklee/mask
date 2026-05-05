@@ -100,12 +100,13 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           const SizedBox(height: 8),
           TextField(
             controller: _nicknameCtrl,
+            readOnly: true,
             maxLength: 10,
             decoration: InputDecoration(
               hintText: '닉네임 입력 (최대 10자)',
               hintStyle: const TextStyle(color: AppColors.textHint),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: AppColors.surfaceVariant,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide(color: Colors.grey.shade300),
@@ -116,23 +117,32 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide:
-                    const BorderSide(color: AppColors.primary, width: 1.5),
+                borderSide: BorderSide(color: Colors.grey.shade300),
               ),
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               counterText: '',
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 4),
+          const Text(
+            '현재는 변경할 수 없어요',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textHint,
+            ),
+          ),
+          const SizedBox(height: 16),
 
           _FieldLabel('성별'),
           const SizedBox(height: 8),
           _ChipGroup<String>(
-            values: const ['male', 'female', 'other'],
-            selected: _draft.gender,
-            labelOf: (v) =>
-                v == 'male' ? '남성' : v == 'female' ? '여성' : '기타',
+            values: const ['male', 'female'],
+            // 기존에 'other' 등록한 경우 빈 문자열로 처리 (칩 미선택 상태)
+            selected: (_draft.gender == 'male' || _draft.gender == 'female')
+                ? _draft.gender
+                : '',
+            labelOf: (v) => v == 'male' ? '남성' : '여성',
             onSelect: (v) => setState(() => _draft = _draft.copyWith(gender: v)),
           ),
           const SizedBox(height: 20),

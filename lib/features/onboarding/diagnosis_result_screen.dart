@@ -5,6 +5,7 @@ import '../../core/constants/app_colors.dart';
 import '../../providers/profile_providers.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/sensitivity_widgets.dart';
+import 'widgets/persona_conclusion_card.dart';
 
 class DiagnosisResultScreen extends ConsumerStatefulWidget {
   final bool isRediag;
@@ -67,6 +68,10 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen>
 
                       // ── 메인 카드: 일반 vs 내 기준 ──────────────
                       ThresholdCompareCard(profile: profile),
+                      const SizedBox(height: 16),
+
+                      // ── 결론 카드: 마스크 필요성 (결과지 전용) ───
+                      PersonaConclusionCard(profile: profile),
                       const SizedBox(height: 16),
 
                       // ── 상태 분석: 5개 막대 ──────────────────────
