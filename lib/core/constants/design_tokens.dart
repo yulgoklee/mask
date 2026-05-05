@@ -5,33 +5,33 @@ import 'package:flutter/material.dart';
 class DT {
   // ── Primary ────────────────────────────────────────────────
   static const Color primary    = Color(0xFF2563EB);
-  static const Color primaryLt  = Color(0xFFDBEAFE);
+  static const Color primaryLt  = Color(0xFFCDE2FE);  // Tailwind 100→150 (Claude Design 검토, 2026-05-05)
 
   // ── Safe ──────────────────────────────────────────────────
   static const Color safe       = Color(0xFF16A34A);
-  static const Color safeLt     = Color(0xFFDCFCE7);
+  static const Color safeLt     = Color(0xFFCBF9DB);  // Tailwind 100→150
   static const Color safeBg     = Color(0xFFF0FDF4);
 
   // ── Caution ───────────────────────────────────────────────
   static const Color caution    = Color(0xFFD97706);
-  static const Color cautionLt  = Color(0xFFFEF3C7);
+  static const Color cautionLt  = Color(0xFFFDECA8);  // Tailwind 100→150
   static const Color cautionBg  = Color(0xFFFFFBEB);
 
   // ── Danger ────────────────────────────────────────────────
   static const Color danger     = Color(0xFFDC2626);
-  static const Color dangerLt   = Color(0xFFFEE2E2);
+  static const Color dangerLt   = Color(0xFFFED6D6);  // Tailwind 100→150
   static const Color dangerBg   = Color(0xFFFFF1F2);
 
   // ── Teal ──────────────────────────────────────────────────
   static const Color teal       = Color(0xFF0D9488);
-  static const Color tealLt     = Color(0xFFCCFBF1);
+  static const Color tealLt     = Color(0xFFB2F8EA);  // Tailwind 100→150
 
   // ── Purple ────────────────────────────────────────────────
   static const Color purple     = Color(0xFF7C3AED);
-  static const Color purpleLt   = Color(0xFFEDE9FE);
+  static const Color purpleLt   = Color(0xFFE5E0FE);  // Tailwind 100→150
 
   // ── Pink ──────────────────────────────────────────────────
-  static const Color pinkLt     = Color(0xFFFCE7F3); // 페르소나 - 예민한 감지형
+  static const Color pinkLt     = Color(0xFFFBDBED); // 페르소나 - 예민한 감지형 (Tailwind 100→150)
 
   // ── Neutral ───────────────────────────────────────────────
   static const Color text       = Color(0xFF111827);
