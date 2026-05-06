@@ -11,14 +11,13 @@ import 'diagnosis_cards.dart';
 
 final _analytics = FirebaseAnalytics.instance;
 
-/// 온보딩 — Q1~Q8 카드 PageView
+/// 온보딩 — Q1~Q6 카드 PageView
 ///
 /// Q1 닉네임       Q4 호흡기 (비염/천식/COPD/알레르기)
 /// Q2 출생연도      Q5 심혈관 (고혈압/심장/뇌졸중)
 /// Q3 성별          Q6 흡연 (필수)  Q6-1 흡연 종류 (현재 흡연만)
-///                  Q7 임신 (female/미선택만)  Q8 마스크 불편도
 ///
-/// 총: 9단계(female+현재흡연) / 8단계(female비흡연 or male+현재흡연) / 7단계(male비흡연)
+/// 총: 7단계(현재흡연) / 6단계(비흡연·금연)
 /// 완료 → analysis_loading_screen → dashboard
 class OnboardingScreen extends ConsumerStatefulWidget {
   final bool isRediag;
@@ -63,9 +62,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   bool _smokesHeated    = false;
   bool _smokesVaping    = false;
 
-  // ── Q8: 마스크 불편도 ───────────────────────────────────────
-  int _discomfortLevel = 1;
-
   // ── 저장 중 상태 (중복 탭 방지) ─────────────────────────────
   bool _saving = false;
 
@@ -77,7 +73,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   /// 전체 페이지 수 (조건부 페이지 반영)
   int get _totalPages {
-    int n = 7; // Q1~Q6 + Q8(불편도) 고정
+    int n = 6; // Q1~Q6 고정
     if (_includeSmokingType) n++;
     return n;
   }
@@ -164,13 +160,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               _smokesVaping    = v;
             }),
           ),
-
-        // ── Q8: 마스크 불편도 ───────────────────────────────
-        DiagQ10Discomfort(
-          questionNumber: _totalPages,
-          value: _discomfortLevel,
-          onChanged: (v) => setState(() => _discomfortLevel = v),
-        ),
       ];
 
   // ── 라이프사이클 ─────────────────────────────────────────────
@@ -204,7 +193,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           _smokesCigarette     = profile.smokesCigarette;
           _smokesHeated        = profile.smokesHeated;
           _smokesVaping        = profile.smokesVaping;
-          _discomfortLevel     = profile.discomfortLevel;
           // Q3(성별)부터 시작
           _currentPage = 2;
         });
@@ -407,7 +395,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         smokesHeated:    _smokesHeated,
         smokesVaping:    _smokesVaping,
         activityTags:    const [],
-        discomfortLevel: _discomfortLevel,
+        discomfortLevel: 1, // 기본값 (1.0.1에서 필드 자체 제거 예정)
         homeStationName:  '',
         officeStationName: '',
       );
