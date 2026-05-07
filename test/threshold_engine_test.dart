@@ -31,8 +31,6 @@ UserProfile _profile({
       heartDisease:  heartDisease,
       stroke:        stroke,
       smokingStatus: smokingStatus,
-      activityTags:  [],
-      discomfortLevel: 1,
     );
 
 void main() {

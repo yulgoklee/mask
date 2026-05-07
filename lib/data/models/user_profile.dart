@@ -13,18 +13,9 @@ enum UserGroup {
   general, // 일반 사용자
 }
 
-/// 활동 태그 상수
-class ActivityTag {
-  static const String commute   = 'commute';   // 출퇴근
-  static const String walk      = 'walk';       // 산책
-  static const String exercise  = 'exercise';  // 운동
-  static const String delivery  = 'delivery';  // 배달/외근
-  static const String childcare = 'childcare'; // 아이 등하원
-}
-
-/// 개인 건강 프로필 모델 v3
+/// 개인 건강 프로필 모델 v4 (2026-05-07: 활동·민감도 영구 제거)
 ///
-/// 11개 건강 항목 기반 (호흡기 4 + 심혈관 3 + 임신 + 흡연 + 기본 2)
+/// 호흡기 4 + 심혈관 3 + 흡연 + 기본 정보 (닉네임·생년·성별)
 class UserProfile {
   final String nickname;
   final int birthYear;
@@ -49,10 +40,6 @@ class UserProfile {
   final bool smokesHeated;    // 가열식 (IQOS, glo 등)
   final bool smokesVaping;    // 전자담배 (액상형)
 
-  // ── 생활 설정 ───────────────────────────────────────────────
-  final List<String> activityTags;
-  final int discomfortLevel;      // 0=안느낌 1=보통 2=많이불편
-
   // ── 관심 지역 (Stage 3 iOS Fallback용) ──────────────────────
   final String homeStationName;
   final String officeStationName;
@@ -72,8 +59,6 @@ class UserProfile {
     this.smokesCigarette = false,
     this.smokesHeated    = false,
     this.smokesVaping    = false,
-    required this.activityTags,
-    required this.discomfortLevel,
     this.homeStationName  = '',
     this.officeStationName = '',
   });
@@ -126,8 +111,6 @@ class UserProfile {
         heartDisease:   false,
         stroke:         false,
         smokingStatus:  SmokingStatus.never,
-        activityTags:   [],
-        discomfortLevel: 1,
       );
 
   // ── copyWith ──────────────────────────────────────────────
@@ -147,8 +130,6 @@ class UserProfile {
     bool? smokesCigarette,
     bool? smokesHeated,
     bool? smokesVaping,
-    List<String>? activityTags,
-    int? discomfortLevel,
     String? homeStationName,
     String? officeStationName,
   }) {
@@ -167,8 +148,6 @@ class UserProfile {
       smokesCigarette:   smokesCigarette   ?? this.smokesCigarette,
       smokesHeated:      smokesHeated      ?? this.smokesHeated,
       smokesVaping:      smokesVaping      ?? this.smokesVaping,
-      activityTags:      activityTags      ?? this.activityTags,
-      discomfortLevel:   discomfortLevel   ?? this.discomfortLevel,
       homeStationName:   homeStationName   ?? this.homeStationName,
       officeStationName: officeStationName ?? this.officeStationName,
     );
@@ -191,8 +170,6 @@ class UserProfile {
         'smokesCigarette':   smokesCigarette,
         'smokesHeated':      smokesHeated,
         'smokesVaping':      smokesVaping,
-        'activityTags':      activityTags,
-        'discomfortLevel':   discomfortLevel,
         'homeStationName':   homeStationName,
         'officeStationName': officeStationName,
       };
@@ -218,9 +195,8 @@ class UserProfile {
       smokesCigarette: json['smokesCigarette'] as bool? ?? false,
       smokesHeated:    json['smokesHeated']    as bool? ?? false,
       smokesVaping:    json['smokesVaping']    as bool? ?? false,
-      activityTags: (json['activityTags'] as List<dynamic>?)
-                        ?.cast<String>() ?? [],
-      discomfortLevel:   json['discomfortLevel']   as int?    ?? 1,
+      // activityTags·discomfortLevel은 v4(2026-05-07)에서 제거됨.
+      // 옛 JSON에 키 있어도 자동 무시됨 (사용자 0명, 마이그레이션 불필요).
       homeStationName:   json['homeStationName']   as String? ?? '',
       officeStationName: json['officeStationName'] as String? ?? '',
     );

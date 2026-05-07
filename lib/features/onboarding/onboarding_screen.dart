@@ -394,8 +394,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         smokesCigarette: _smokesCigarette,
         smokesHeated:    _smokesHeated,
         smokesVaping:    _smokesVaping,
-        activityTags:    const [],
-        discomfortLevel: 1, // 기본값 (1.0.1에서 필드 자체 제거 예정)
         homeStationName:  '',
         officeStationName: '',
       );
