@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_tokens.dart';
+import '../../core/constants/feature_flags.dart';
 import '../../data/models/user_profile.dart';
 import '../../providers/providers.dart';
 import '../../widgets/app_button.dart';
@@ -54,6 +55,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   bool _hasStroke           = false;
   bool _hasNoneCardiovascular = true; // 초기값: "없어요" 선택
 
+  // ── Q5.5: 잠재 신호 자가 점검 (Flag ON 시만, 선택) ──────────
+  // SignalId.* → bool. 빈 맵 = 모두 답 안 함 / 건너뛰기.
+  Map<String, bool> _signalAnswers = const {};
+
   // ── Q6: 흡연 ────────────────────────────────────────────────
   SmokingStatus? _smokingStatusChoice; // null = 아직 미선택
 
@@ -67,6 +72,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // ── 동적 페이지 조건 ─────────────────────────────────────────
 
+  /// Q5.5(신호 자가 점검) 포함 여부 — Feature Flag ON 시
+  bool get _includeSignalSelfCheck =>
+      FeatureFlags.kEnableSignalSelfCheck;
+
   /// Q6-1(흡연 종류) 포함 여부 — 현재 흡연 중인 경우만
   bool get _includeSmokingType =>
       _smokingStatusChoice == SmokingStatus.current;
@@ -74,9 +83,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   /// 전체 페이지 수 (조건부 페이지 반영)
   int get _totalPages {
     int n = 6; // Q1~Q6 고정
+    if (_includeSignalSelfCheck) n++;
     if (_includeSmokingType) n++;
     return n;
   }
+
+  /// Q6(흡연) 페이지 인덱스 — 자가 점검 페이지가 들어가면 +1.
+  int get _smokingPageIndex => _includeSignalSelfCheck ? 6 : 5;
 
   /// 실제 렌더할 페이지 위젯 목록
   List<Widget> get _pages => [
@@ -132,9 +145,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           }),
         ),
 
+        // ── Q5.5: 잠재 신호 자가 점검 (Flag ON 시만, 선택) ─
+        if (_includeSignalSelfCheck)
+          DiagSignalSelfCheck(
+            questionNumber: 6,
+            answers: _signalAnswers,
+            onChanged: (m) => setState(() => _signalAnswers = m),
+          ),
+
         // ── Q6: 흡연 이력 (라디오) ─────────────────────────
         DiagQ6Smoking(
-          questionNumber: 6,
+          questionNumber: _includeSignalSelfCheck ? 7 : 6,
           value: _smokingStatusChoice,
           onChanged: (v) => setState(() {
             _smokingStatusChoice = v;
@@ -150,7 +171,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         // ── Q6-1: 흡연 종류 (현재 흡연 중인 경우만) ────────
         if (_includeSmokingType)
           DiagQ6_1SmokingType(
-            questionNumber: 7,
+            questionNumber: _includeSignalSelfCheck ? 8 : 7,
             cigarette: _smokesCigarette,
             heated:    _smokesHeated,
             vaping:    _smokesVaping,
@@ -193,6 +214,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           _smokesCigarette     = profile.smokesCigarette;
           _smokesHeated        = profile.smokesHeated;
           _smokesVaping        = profile.smokesVaping;
+          // Flag ON 시에만 기존 신호 답변 복원 — OFF 시 빈 맵 유지
+          _signalAnswers = FeatureFlags.kEnableSignalSelfCheck
+              ? Map<String, bool>.from(profile.signalAnswers)
+              : const {};
           // Q3(성별)부터 시작
           _currentPage = 2;
         });
@@ -396,6 +421,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         smokesVaping:    _smokesVaping,
         homeStationName:  '',
         officeStationName: '',
+        // Flag OFF 시 항상 빈 맵. ON 시에는 사용자가 체크한 키만.
+        signalAnswers: FeatureFlags.kEnableSignalSelfCheck
+            ? Map<String, bool>.unmodifiable(_signalAnswers)
+            : const {},
       );
 
   // ── 빌드 ─────────────────────────────────────────────────────
@@ -451,10 +480,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         (_currentPage == 3 && !_hasRhinitis && !_hasAsthma && !_hasCopd && !_hasAllergy && !_hasNoneRespiratory) ||
                         // Q5(심혈관): 최소 1개 선택 또는 "없어요"
                         (_currentPage == 4 && !_hasHypertension && !_hasHeartDisease && !_hasStroke && !_hasNoneCardiovascular) ||
-                        // Q6(흡연): 반드시 선택
-                        (_currentPage == 5 && _smokingStatusChoice == null) ||
+                        // Q5.5(자가 점검): 항상 통과 — 답하지 않아도 다음 가능 (건너뛰기 의도).
+                        // Q6(흡연): 반드시 선택. 자가 점검 페이지가 들어가면 인덱스 +1.
+                        (_currentPage == _smokingPageIndex && _smokingStatusChoice == null) ||
                         // Q6-1(흡연 종류): 현재 흡연 중인 경우 최소 1개 선택
-                        (_currentPage == 6 && _includeSmokingType &&
+                        (_currentPage == _smokingPageIndex + 1 && _includeSmokingType &&
                             !_smokesCigarette && !_smokesHeated && !_smokesVaping))
                     ? null
                     : _nextPage,

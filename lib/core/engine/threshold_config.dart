@@ -55,6 +55,13 @@ class ThresholdConfig {
   /// key: 'KF94' | 'KF80'
   final Map<String, double> maskEfficiency;
 
+  /// 잠재 신호 가중치 (1.1.0+, Feature Flag로 제어)
+  ///
+  /// key: SignalId.* (signal_a1, signal_b1, signal_c1, signal_d3)
+  /// 적용: 호흡기 cap 안에서 합산. 이중 카운팅 룰 R1 (진단명 우선) 적용.
+  /// Phase 2 매핑 v0 기반. Phase 3 검증 후 Remote Config로 조정 가능.
+  final Map<String, double> signalWeights;
+
   const ThresholdConfig({
     required this.tBase,
     required this.tFloor,
@@ -63,6 +70,7 @@ class ThresholdConfig {
     required this.respiratoryCap,
     required this.cardiovascularCap,
     required this.maskEfficiency,
+    this.signalWeights = const {},
   });
 
   // ── 기본 설정 ────────────────────────────────────────────────
@@ -119,6 +127,15 @@ class ThresholdConfig {
       'KF94': 0.94,
       'KF80': 0.80,
     },
+    // ── 잠재 신호 가중치 (Phase 2 v0) ─────────────────────────
+    // ARIA·ATS·GOLD·CB Scale 기반. yulgok 자료원 검증 통과.
+    // 호흡기 cap 0.30 안에서 합산 (이중 카운팅 룰 R1 적용).
+    signalWeights: {
+      'signal_a1': 0.05, // 콧물·코막힘 4일+/주 (ARIA persistent AR)
+      'signal_b1': 0.07, // 야간 천식 증상 (ACT)
+      'signal_c1': 0.05, // 운동 5~10분 후 호흡 증상 (ATS EIB)
+      'signal_d3': 0.05, // 만성 가래 동반 기침 3개월+ (CB Scale)
+    },
   );
 
   // ── JSON 직렬화 ────────────────────────────────────────────
@@ -131,6 +148,7 @@ class ThresholdConfig {
         'respiratoryCap':    respiratoryCap,
         'cardiovascularCap': cardiovascularCap,
         'maskEfficiency':    maskEfficiency,
+        'signalWeights':     signalWeights,
       };
 
   factory ThresholdConfig.fromJson(Map<String, dynamic> json) =>
@@ -153,5 +171,8 @@ class ThresholdConfig {
         maskEfficiency: (json['maskEfficiency'] as Map<String, dynamic>?)
                 ?.map((k, v) => MapEntry(k, (v as num).toDouble())) ??
             defaults.maskEfficiency,
+        signalWeights: (json['signalWeights'] as Map<String, dynamic>?)
+                ?.map((k, v) => MapEntry(k, (v as num).toDouble())) ??
+            defaults.signalWeights,
       );
 }

@@ -13,9 +13,23 @@ enum UserGroup {
   general, // 일반 사용자
 }
 
-/// 개인 건강 프로필 모델 v4 (2026-05-07: 활동·민감도 영구 제거)
+/// 잠재 민감군 자가 점검 신호 ID (1.1.0+)
 ///
-/// 호흡기 4 + 심혈관 3 + 흡연 + 기본 정보 (닉네임·생년·성별)
+/// 의학 자료 검증 통과 (ARIA·ATS·GOLD·KAAACI). Phase 1·2 R&D 산출물 기반.
+/// 자세한 매핑: `docs/research/signal_weight_mapping_v0.md`
+class SignalId {
+  static const String a1 = 'signal_a1'; // 콧물·코막힘 4일+/주 (ARIA)
+  static const String b1 = 'signal_b1'; // 야간 천식 증상 (ACT)
+  static const String c1 = 'signal_c1'; // 운동 5~10분 후 호흡 증상 (ATS EIB)
+  static const String d3 = 'signal_d3'; // 만성 가래 동반 기침 3개월+ (CB Scale)
+
+  /// 모든 신호 ID (UI·검증 순회용)
+  static const List<String> all = [a1, b1, c1, d3];
+}
+
+/// 개인 건강 프로필 모델 v5 (2026-05-07: 잠재 신호 자가 점검 추가)
+///
+/// 호흡기 4 + 심혈관 3 + 흡연 + 기본 정보 + 잠재 신호 답변 (선택)
 class UserProfile {
   final String nickname;
   final int birthYear;
@@ -44,6 +58,11 @@ class UserProfile {
   final String homeStationName;
   final String officeStationName;
 
+  // ── 잠재 신호 자가 점검 (1.1.0+, 선택) ──────────────────────
+  /// SignalId.* → bool. 미응답·건너뛰기는 키 없음 또는 false.
+  /// Feature Flag OFF 시 항상 빈 맵.
+  final Map<String, bool> signalAnswers;
+
   const UserProfile({
     required this.nickname,
     required this.birthYear,
@@ -61,6 +80,7 @@ class UserProfile {
     this.smokesVaping    = false,
     this.homeStationName  = '',
     this.officeStationName = '',
+    this.signalAnswers = const {},
   });
 
   // ── 계산 속성 ──────────────────────────────────────────────
@@ -132,6 +152,7 @@ class UserProfile {
     bool? smokesVaping,
     String? homeStationName,
     String? officeStationName,
+    Map<String, bool>? signalAnswers,
   }) {
     return UserProfile(
       nickname:          nickname          ?? this.nickname,
@@ -150,6 +171,7 @@ class UserProfile {
       smokesVaping:      smokesVaping      ?? this.smokesVaping,
       homeStationName:   homeStationName   ?? this.homeStationName,
       officeStationName: officeStationName ?? this.officeStationName,
+      signalAnswers:     signalAnswers     ?? this.signalAnswers,
     );
   }
 
@@ -172,6 +194,7 @@ class UserProfile {
         'smokesVaping':      smokesVaping,
         'homeStationName':   homeStationName,
         'officeStationName': officeStationName,
+        'signalAnswers':     signalAnswers,
       };
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
@@ -199,6 +222,9 @@ class UserProfile {
       // 옛 JSON에 키 있어도 자동 무시됨 (사용자 0명, 마이그레이션 불필요).
       homeStationName:   json['homeStationName']   as String? ?? '',
       officeStationName: json['officeStationName'] as String? ?? '',
+      signalAnswers: (json['signalAnswers'] as Map<String, dynamic>?)
+              ?.map((k, v) => MapEntry(k, v as bool? ?? false)) ??
+          const {},
     );
   }
 }
