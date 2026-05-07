@@ -87,7 +87,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
 
                     // ── 서브 카피 ────────────────────────────────
                     Text(
-                      '같은 공기도 사람마다 다르게 영향을 줘요.\n당신의 몸 상태를 알려주시면 그에 맞춘\n알림을 보내드릴게요.',
+                      '오늘 마스크 챙겨야 할지, 당신 대신 판단해드릴게요.\n같은 공기도 사람마다 다르게 영향을 주니까요.',
                       style: TextStyle(
                         fontSize: 15,
                         color: AppColors.textPrimary.withValues(alpha: 0.65),
@@ -116,7 +116,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                     const _StepRow(
                       number: '①',
                       label: '몇 가지 질문',
-                      description: '호흡기 · 활동량 · 민감도',
+                      description: '호흡기 · 심혈관 · 흡연 이력',
                     ),
                     const SizedBox(height: 20),
                     const _StepRow(
