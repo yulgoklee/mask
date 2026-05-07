@@ -373,10 +373,10 @@ class DiagQ4Respiratory extends StatelessWidget {
   });
 
   static const _conditions = [
-    ('rhinitis', '👃', '비염',            '코막힘·재채기가 자주 발생해요'),
-    ('asthma',   '🫁', '천식',            '기관지가 좁아져 숨이 가빠요'),
-    ('copd',     '🌬️', 'COPD',           '만성 폐쇄성 폐질환을 진단받았어요'),
-    ('allergy',  '🌸', '알레르기',        '꽃가루·먼지에 심하게 반응해요'),
+    ('rhinitis', '👃', '비염 (알레르기성·비알레르기성)',  '콧물·코막힘·재채기·코 가려움'),
+    ('asthma',   '🫁', '천식 (운동 유발 포함)',         '쌕쌕거림·가슴 답답함·만성 기침'),
+    ('copd',     '🌬️', 'COPD / 만성 기관지염',         '만성 기침·가래·계단 시 숨 참'),
+    ('allergy',  '🌸', '흡입성 알레르기',                '꽃가루·먼지·동물 털 등에 반응'),
   ];
 
   bool _valueOf(String key) {

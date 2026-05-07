@@ -260,7 +260,7 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: _Q4Wrapper()));
       await tester.pump();
 
-      await tester.tap(find.text('비염'));
+      await tester.tap(find.text('비염 (알레르기성·비알레르기성)'));
       await tester.pump();
 
       final btn = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
@@ -272,9 +272,9 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: _Q4Wrapper()));
       await tester.pump();
 
-      await tester.tap(find.text('비염'));
+      await tester.tap(find.text('비염 (알레르기성·비알레르기성)'));
       await tester.pump();
-      await tester.tap(find.text('비염'));
+      await tester.tap(find.text('비염 (알레르기성·비알레르기성)'));
       await tester.pump();
 
       final btn = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
@@ -288,9 +288,9 @@ void main() {
       await tester.pump();
 
       // 비염 ON → OFF → 빈 상태
-      await tester.tap(find.text('비염'));
+      await tester.tap(find.text('비염 (알레르기성·비알레르기성)'));
       await tester.pump();
-      await tester.tap(find.text('비염'));
+      await tester.tap(find.text('비염 (알레르기성·비알레르기성)'));
       await tester.pump();
 
       // 없어요 선택
