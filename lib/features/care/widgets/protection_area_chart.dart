@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/constants/app_tokens.dart';
 import '../../../core/constants/design_tokens.dart';
 import '../models/care_models.dart';
 import '../providers/care_providers.dart';
@@ -27,7 +25,7 @@ class ProtectionAreaChart extends ConsumerWidget {
   }
 }
 
-// ── 차트 카드 ─────────────────────────────────────────────
+// ── 12시간 흐름 (카드 X — 배경 통합, Design 권장) ──────────
 
 class _ChartCard extends StatelessWidget {
   final ProtectionChartData data;
@@ -35,54 +33,48 @@ class _ChartCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color:        DT.white,
-        borderRadius: const BorderRadius.all(Radius.circular(16)),
-        boxShadow: AppTokens.shadowCard,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(),
-          _buildEmojiFlow(),
-          _buildCta(context),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildHeader(),
+        _buildEmojiFlow(),
+      ],
     );
   }
 
-  // ── 헤더: 카드 제목 + 흐름 요약 메시지 ─────────────────────
+  // ── 헤더: 흐름 라벨 + 요약 ────────────────────────────────
 
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '앞으로 12시간',
-            style: TextStyle(
-              fontSize:   16,
-              fontWeight: FontWeight.bold,
-              color:      DT.text,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '앞으로 12시간',
+          style: TextStyle(
+            fontSize:      13,
+            fontWeight:    FontWeight.w600,
+            color:         DT.gray,
+            letterSpacing: 0.5,
           ),
-          const SizedBox(height: 8),
-          Text(
-            buildFlowText(data.chartPoints, DateTime.now()),
-            style: const TextStyle(
-              fontSize: 14,
-              color:    DT.gray,
-              height:   1.4,
-            ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          buildFlowText(data.chartPoints, DateTime.now()),
+          style: const TextStyle(
+            fontSize:      18,
+            fontWeight:    FontWeight.w600,
+            color:         DT.text,
+            height:        1.4,
+            letterSpacing: -0.3,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  // ── 표정 흐름: h=0,2,4,6,8,10 이모지 6개 ─────────────────
+  // ── 시점별 흐름: h=0,2,4,6,8,10 이모지 6개 ───────────────
+  //
+  // 1.2.0 후보: 라인 차트로 변경 (시안 v3 방향)
 
   Widget _buildEmojiFlow() {
     final now   = DateTime.now();
@@ -90,7 +82,7 @@ class _ChartCard extends StatelessWidget {
     final pts   = data.chartPoints;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+      padding: const EdgeInsets.only(top: 24),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: hours.map((h) {
@@ -109,28 +101,6 @@ class _ChartCard extends StatelessWidget {
     final isAm = hr < 12;
     final h12  = hr % 12 == 0 ? 12 : hr % 12;
     return '${isAm ? "오전" : "오후"}\n$h12시';
-  }
-
-  // ── 하단 링크 ─────────────────────────────────────────────
-
-  Widget _buildCta(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 4, 16, 12),
-      child: Align(
-        alignment: Alignment.centerRight,
-        child: TextButton(
-          onPressed: () => context.go('/report'),
-          style: TextButton.styleFrom(
-            foregroundColor: DT.primary,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          ),
-          child: const Text(
-            '지난 7일 평균과 비교하기 ›',
-            style: TextStyle(fontSize: 12),
-          ),
-        ),
-      ),
-    );
   }
 }
 

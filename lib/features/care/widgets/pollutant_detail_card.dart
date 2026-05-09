@@ -37,65 +37,22 @@ class _PollutantDetailCardState extends ConsumerState<PollutantDetailCard> {
 
     final card = GestureDetector(
       onTap: () => setState(() => _expanded = !_expanded),
-      child: Container(
-        decoration: BoxDecoration(
-          color:        DT.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: const [
-            BoxShadow(offset: Offset(0, 2), blurRadius: 12, color: Color(0x0A000000)),
-          ],
-        ),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── 카드 제목 ─────────────────────────────────
-            const Text(
-              '세부 수치',
-              style: TextStyle(
-                fontSize:   16,
-                fontWeight: FontWeight.w600,
-                color:      DT.text,
-              ),
-            ),
-            const SizedBox(height: 12),
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Drill-down 토글 헤더 ──────────────────────
+          _buildToggleHint(),
 
-            // ── PM2.5 / PM10 ──────────────────────────────
-            Row(
-              children: [
-                Expanded(
-                  child: _PollutantBox(
-                    name:      '초미세먼지',
-                    value:     data.pm25,
-                    unit:      'µg/m³',
-                    grade:     data.pm25Grade,
-                    precision: 0,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _PollutantBox(
-                    name:      '미세먼지',
-                    value:     data.pm10,
-                    unit:      'µg/m³',
-                    grade:     data.pm10Grade,
-                    precision: 0,
-                  ),
-                ),
-              ],
-            ),
-
-            // ── 확장: O3 / NO2 / CO / SO2 ─────────────────
-            AnimatedSize(
-              duration: const Duration(milliseconds: 350),
-              curve:    Curves.easeOutCubic,
-              child:    _expanded ? _buildExtended(data) : const SizedBox.shrink(),
-            ),
-
-            // ── 토글 힌트 ─────────────────────────────────
-            _buildToggleHint(),
-          ],
-        ),
+          // ── 펼침 (열린 경우만 노출) ───────────────────
+          AnimatedSize(
+            duration: const Duration(milliseconds: 350),
+            curve:    Curves.easeOutCubic,
+            child:    _expanded
+                ? _buildExpanded(data)
+                : const SizedBox.shrink(),
+          ),
+        ],
       ),
     )
         .animate(delay: 200.ms)
@@ -106,84 +63,113 @@ class _PollutantDetailCardState extends ConsumerState<PollutantDetailCard> {
     return card.animate().shimmer(duration: 1200.ms, color: const Color(0xFFF9FAFB));
   }
 
-  Widget _buildExtended(PollutantCardData data) {
-    return Column(
-      children: [
-        const SizedBox(height: 16),
-        const Divider(height: 1, color: DT.border),
-        const SizedBox(height: 16),
-
-        // O3 / NO2
-        Row(
-          children: [
-            Expanded(
-              child: _PollutantBox(
-                name:      'O3 (오존)',
-                value:     data.o3,
-                unit:      'ppm',
-                grade:     data.o3Grade,
-                precision: 3,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _PollutantBox(
-                name:      'NO2 (이산화질소)',
-                value:     data.no2,
-                unit:      'ppm',
-                grade:     data.no2Grade,
-                precision: 3,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        // CO / SO2
-        Row(
-          children: [
-            Expanded(
-              child: _PollutantBox(
-                name:      'CO (일산화탄소)',
-                value:     data.co,
-                unit:      'ppm',
-                grade:     data.coGrade,
-                precision: 1,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _PollutantBox(
-                name:      'SO2 (아황산가스)',
-                value:     data.so2,
-                unit:      'ppm',
-                grade:     data.so2Grade,
-                precision: 3,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildToggleHint() {
+  /// 펼친 상태 — 모든 오염물질 6개 + 등급별 색
+  Widget _buildExpanded(PollutantCardData data) {
     return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      padding: const EdgeInsets.only(top: 16),
+      child: Column(
         children: [
-          Text(
-            _expanded ? '접기' : '세부 항목 보기',
-            style: const TextStyle(fontSize: 13, color: DT.gray),
+          // PM2.5 / PM10 (등급 색)
+          Row(
+            children: [
+              Expanded(
+                child: _PollutantBox(
+                  name:      '초미세먼지',
+                  value:     data.pm25,
+                  unit:      'µg/m³',
+                  grade:     data.pm25Grade,
+                  precision: 0,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _PollutantBox(
+                  name:      '미세먼지',
+                  value:     data.pm10,
+                  unit:      'µg/m³',
+                  grade:     data.pm10Grade,
+                  precision: 0,
+                ),
+              ),
+            ],
           ),
-          AnimatedRotation(
-            turns:    _expanded ? 0.5 : 0,
-            duration: const Duration(milliseconds: 200),
-            child: const Icon(Icons.expand_more, size: 16, color: DT.gray),
+          const SizedBox(height: 12),
+
+          // O3 / NO2
+          Row(
+            children: [
+              Expanded(
+                child: _PollutantBox(
+                  name:      'O3 (오존)',
+                  value:     data.o3,
+                  unit:      'ppm',
+                  grade:     data.o3Grade,
+                  precision: 3,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _PollutantBox(
+                  name:      'NO2 (이산화질소)',
+                  value:     data.no2,
+                  unit:      'ppm',
+                  grade:     data.no2Grade,
+                  precision: 3,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // CO / SO2
+          Row(
+            children: [
+              Expanded(
+                child: _PollutantBox(
+                  name:      'CO (일산화탄소)',
+                  value:     data.co,
+                  unit:      'ppm',
+                  grade:     data.coGrade,
+                  precision: 1,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _PollutantBox(
+                  name:      'SO2 (아황산가스)',
+                  value:     data.so2,
+                  unit:      'ppm',
+                  grade:     data.so2Grade,
+                  precision: 3,
+                ),
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  /// Drill-down 진입점 — "더 자세히 보기" / "접기" 토글
+  Widget _buildToggleHint() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          _expanded ? '접기' : '더 자세히 보기',
+          style: const TextStyle(
+            fontSize:      13,
+            fontWeight:    FontWeight.w500,
+            color:         DT.gray,
+            letterSpacing: -0.1,
+          ),
+        ),
+        AnimatedRotation(
+          turns:    _expanded ? 0.5 : 0,
+          duration: const Duration(milliseconds: 200),
+          child: const Icon(Icons.expand_more, size: 16, color: DT.gray),
+        ),
+      ],
     );
   }
 }
