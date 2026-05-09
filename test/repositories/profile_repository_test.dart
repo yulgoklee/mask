@@ -26,6 +26,8 @@ const _sampleProfile = UserProfile(
   heartDisease: false,
   stroke: false,
   smokingStatus: SmokingStatus.never,
+  activityTags: [ActivityTag.commute],
+  discomfortLevel: 0,
 );
 
 void main() {
@@ -48,6 +50,7 @@ void main() {
       expect(loaded.birthYear,     _sampleProfile.birthYear);
       expect(loaded.gender,        _sampleProfile.gender);
       expect(loaded.asthma,        _sampleProfile.asthma);
+      expect(loaded.activityTags,  _sampleProfile.activityTags);
     });
 
     test('여러 번 저장하면 최신 값으로 덮어씀', () async {
@@ -135,6 +138,7 @@ void main() {
         hypertension: false, heartDisease: false, stroke: false,
         smokingStatus: SmokingStatus.current,
         smokesCigarette: true, smokesHeated: false, smokesVaping: true,
+        activityTags: [], discomfortLevel: 1,
       );
       await repo.saveProfile(profile);
       final loaded = await repo.loadProfile();
@@ -143,8 +147,7 @@ void main() {
       expect(loaded.smokesVaping, isTrue);
     });
 
-    test('구버전 JSON (smokingType 필드 없음 + activityTags·discomfortLevel 잔재) → 기본값 false, 잔재 무시', () async {
-      // v3 → v4 마이그레이션: activityTags·discomfortLevel 옛 키 자동 무시
+    test('구버전 JSON (smokingType 필드 없음) → 기본값 false', () async {
       const legacyJson =
           '{"nickname":"","birthYear":1990,"gender":"",'
           '"asthma":false,"rhinitis":false,"copd":false,"allergy":false,'

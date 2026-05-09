@@ -28,6 +28,8 @@ class _FakeProfileRepo extends Fake implements ProfileRepository {
         heartDisease: false,
         stroke: false,
         smokingStatus: SmokingStatus.never,
+        activityTags: [],
+        discomfortLevel: 0,
       );
 
   @override

@@ -13,23 +13,18 @@ enum UserGroup {
   general, // 일반 사용자
 }
 
-/// 잠재 민감군 자가 점검 신호 ID (1.1.0+)
-///
-/// 의학 자료 검증 통과 (ARIA·ATS·GOLD·KAAACI). Phase 1·2 R&D 산출물 기반.
-/// 자세한 매핑: `docs/research/signal_weight_mapping_v0.md`
-class SignalId {
-  static const String a1 = 'signal_a1'; // 콧물·코막힘 4일+/주 (ARIA)
-  static const String b1 = 'signal_b1'; // 야간 천식 증상 (ACT)
-  static const String c1 = 'signal_c1'; // 운동 5~10분 후 호흡 증상 (ATS EIB)
-  static const String d3 = 'signal_d3'; // 만성 가래 동반 기침 3개월+ (CB Scale)
-
-  /// 모든 신호 ID (UI·검증 순회용)
-  static const List<String> all = [a1, b1, c1, d3];
+/// 활동 태그 상수
+class ActivityTag {
+  static const String commute   = 'commute';   // 출퇴근
+  static const String walk      = 'walk';       // 산책
+  static const String exercise  = 'exercise';  // 운동
+  static const String delivery  = 'delivery';  // 배달/외근
+  static const String childcare = 'childcare'; // 아이 등하원
 }
 
-/// 개인 건강 프로필 모델 v5 (2026-05-07: 잠재 신호 자가 점검 추가)
+/// 개인 건강 프로필 모델 v3
 ///
-/// 호흡기 4 + 심혈관 3 + 흡연 + 기본 정보 + 잠재 신호 답변 (선택)
+/// 11개 건강 항목 기반 (호흡기 4 + 심혈관 3 + 임신 + 흡연 + 기본 2)
 class UserProfile {
   final String nickname;
   final int birthYear;
@@ -54,14 +49,13 @@ class UserProfile {
   final bool smokesHeated;    // 가열식 (IQOS, glo 등)
   final bool smokesVaping;    // 전자담배 (액상형)
 
+  // ── 생활 설정 ───────────────────────────────────────────────
+  final List<String> activityTags;
+  final int discomfortLevel;      // 0=안느낌 1=보통 2=많이불편
+
   // ── 관심 지역 (Stage 3 iOS Fallback용) ──────────────────────
   final String homeStationName;
   final String officeStationName;
-
-  // ── 잠재 신호 자가 점검 (1.1.0+, 선택) ──────────────────────
-  /// SignalId.* → bool. 미응답·건너뛰기는 키 없음 또는 false.
-  /// Feature Flag OFF 시 항상 빈 맵.
-  final Map<String, bool> signalAnswers;
 
   const UserProfile({
     required this.nickname,
@@ -78,9 +72,10 @@ class UserProfile {
     this.smokesCigarette = false,
     this.smokesHeated    = false,
     this.smokesVaping    = false,
+    required this.activityTags,
+    required this.discomfortLevel,
     this.homeStationName  = '',
     this.officeStationName = '',
-    this.signalAnswers = const {},
   });
 
   // ── 계산 속성 ──────────────────────────────────────────────
@@ -131,6 +126,8 @@ class UserProfile {
         heartDisease:   false,
         stroke:         false,
         smokingStatus:  SmokingStatus.never,
+        activityTags:   [],
+        discomfortLevel: 1,
       );
 
   // ── copyWith ──────────────────────────────────────────────
@@ -150,9 +147,10 @@ class UserProfile {
     bool? smokesCigarette,
     bool? smokesHeated,
     bool? smokesVaping,
+    List<String>? activityTags,
+    int? discomfortLevel,
     String? homeStationName,
     String? officeStationName,
-    Map<String, bool>? signalAnswers,
   }) {
     return UserProfile(
       nickname:          nickname          ?? this.nickname,
@@ -169,9 +167,10 @@ class UserProfile {
       smokesCigarette:   smokesCigarette   ?? this.smokesCigarette,
       smokesHeated:      smokesHeated      ?? this.smokesHeated,
       smokesVaping:      smokesVaping      ?? this.smokesVaping,
+      activityTags:      activityTags      ?? this.activityTags,
+      discomfortLevel:   discomfortLevel   ?? this.discomfortLevel,
       homeStationName:   homeStationName   ?? this.homeStationName,
       officeStationName: officeStationName ?? this.officeStationName,
-      signalAnswers:     signalAnswers     ?? this.signalAnswers,
     );
   }
 
@@ -192,9 +191,10 @@ class UserProfile {
         'smokesCigarette':   smokesCigarette,
         'smokesHeated':      smokesHeated,
         'smokesVaping':      smokesVaping,
+        'activityTags':      activityTags,
+        'discomfortLevel':   discomfortLevel,
         'homeStationName':   homeStationName,
         'officeStationName': officeStationName,
-        'signalAnswers':     signalAnswers,
       };
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
@@ -218,13 +218,11 @@ class UserProfile {
       smokesCigarette: json['smokesCigarette'] as bool? ?? false,
       smokesHeated:    json['smokesHeated']    as bool? ?? false,
       smokesVaping:    json['smokesVaping']    as bool? ?? false,
-      // activityTags·discomfortLevel은 v4(2026-05-07)에서 제거됨.
-      // 옛 JSON에 키 있어도 자동 무시됨 (사용자 0명, 마이그레이션 불필요).
+      activityTags: (json['activityTags'] as List<dynamic>?)
+                        ?.cast<String>() ?? [],
+      discomfortLevel:   json['discomfortLevel']   as int?    ?? 1,
       homeStationName:   json['homeStationName']   as String? ?? '',
       officeStationName: json['officeStationName'] as String? ?? '',
-      signalAnswers: (json['signalAnswers'] as Map<String, dynamic>?)
-              ?.map((k, v) => MapEntry(k, v as bool? ?? false)) ??
-          const {},
     );
   }
 }

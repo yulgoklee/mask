@@ -1,178 +1,94 @@
-// ── 리포트 탭 v2 모델 ─────────────────────────────────────────
+// ── 단계 1 신규 모델 ───────────────────────────────────────
 
-/// 이번 주 리포트 상태
-enum WeekReportState {
-  /// 정상 — 임계치 초과 시간 있음
-  normal,
-
-  /// 안전 — 임계치 초과 없음
-  safe,
-
-  /// 빈 데이터 — 첫 가입 직후 등 데이터 부족 (3일 미만)
-  empty,
+/// 인사이트 카드 카테고리 (우선순위 순)
+enum InsightCategory {
+  actionMatch,       // 1: 마스크 챙긴 알림 존재
+  envPeak,           // 2: final_ratio 1.0 초과 날 존재
+  weekdayWeekend,    // 3: 주중-주말 평균 차 ≥ 0.15
+  avgSummary,        // 4: 데이터 있음, 위 조건 미충족
+  allSafe,           // 5: 전 기간 ratio < 1.0
 }
 
-/// 캘린더 7일 중 하루 데이터
-class DayCalendarData {
+/// InsightEngine이 생성한 인사이트 카드 데이터
+class InsightData {
+  final InsightCategory category;
+
+  /// 렌더링할 최종 카피 본문
+  final String bodyText;
+
+  /// 미주 텍스트 — "PM2.5 XXµg/m³ · 5월 3일 (토)" 형태 (없을 수 있음)
+  final String? footnoteText;
+
+  const InsightData({
+    required this.category,
+    required this.bodyText,
+    this.footnoteText,
+  });
+}
+
+/// WeeklyOverviewCard 1일 원(Circle) 데이터
+class DayCircleData {
   final DateTime date;
 
-  /// '월'~'일'
-  final String weekdayLabel;
+  /// null = 데이터 없음 (누락 표시)
+  final double? finalRatio;
 
-  /// 그날 최고 final_ratio. null = 데이터 없음
-  final double? peakRatio;
+  /// 해당 날 마스크 착용 기록 존재 여부
+  final bool maskWorn;
 
-  final bool hasData;
+  /// 오늘 날짜 여부 (원 강조 표시용)
+  final bool isToday;
 
-  const DayCalendarData({
+  const DayCircleData({
     required this.date,
-    required this.weekdayLabel,
-    required this.peakRatio,
-    required this.hasData,
+    required this.finalRatio,
+    required this.maskWorn,
+    required this.isToday,
   });
 }
 
-/// 패턴 발견 한 줄
-class PatternData {
-  /// 발견 문장: "월·화 오후가 더 위험했어요"
-  final String discoveryText;
-
-  /// 데이터 근거 캡션: "5/4 14시 PM2.5 52㎍"
-  final String noteText;
-
-  const PatternData({
-    required this.discoveryText,
-    required this.noteText,
-  });
+/// 추세 분류 (이번 주 vs 지난주 final_ratio 평균 차이)
+enum TrendCategory {
+  muchBetter,      // Δ ≤ -0.3
+  slightlyBetter,  // -0.3 < Δ ≤ -0.1
+  similar,         // |Δ| < 0.1
+  slightlyWorse,   // 0.1 ≤ Δ < 0.3
+  muchWorse,       // Δ ≥ 0.3
 }
 
-/// 주간 리포트 전체 데이터 (weekReportProvider 반환값)
-class WeekReportData {
-  /// "5월 1주차 · 5/4 ~ 5/10"
-  final String weekCaption;
+/// TrendLine 위젯용 추세 데이터
+class TrendData {
+  final TrendCategory category;
 
-  final WeekReportState state;
+  /// 이번 주 평균 - 지난주 평균 (양수 = 악화)
+  final double delta;
 
-  /// 위험 고유 시간대 수 (Set<String> 키: 'yyyy-MM-dd HH')
-  final int dangerHours;
+  const TrendData({required this.category, required this.delta});
+}
 
-  /// 7개 고정 (월~일 순서)
-  final List<DayCalendarData> days;
+/// 리포트 요약 카드 데이터
+class ReportSummaryData {
+  final int totalDays;
+  final int dangerDays;
+  final int maskWornDays;
 
-  /// null이면 PatternLine 숨김
-  final PatternData? pattern;
+  /// @deprecated UI에서 미사용 (§4.5 방어율 제거). 모델 필드는 유지.
+  final double defenseRate;
 
-  /// "14:02 갱신"
-  final String updatedTimeLabel;
+  final String dominantGrade;
 
-  /// CareBackground 색상 결정용 — dustDataProvider에서 직접 계산
-  final double currentFinalRatio;
-
-  const WeekReportData({
-    required this.weekCaption,
-    required this.state,
-    required this.dangerHours,
-    required this.days,
-    this.pattern,
-    required this.updatedTimeLabel,
-    required this.currentFinalRatio,
+  const ReportSummaryData({
+    required this.totalDays,
+    required this.dangerDays,
+    required this.maskWornDays,
+    required this.defenseRate,
+    required this.dominantGrade,
   });
 
-  /// 빈 상태 팩토리
-  factory WeekReportData.empty() {
-    final now = DateTime.now();
-    final weekdayLabels = ['월', '화', '수', '목', '금', '토', '일'];
-    // 월~일 순서로 이번 주 7일
-    final today = DateTime(now.year, now.month, now.day);
-    // 이번 주 월요일 계산 (weekday 1=월~7=일)
-    final mondayOffset = today.weekday - 1;
-    final monday = today.subtract(Duration(days: mondayOffset));
-    final days = List.generate(7, (i) {
-      final date = monday.add(Duration(days: i));
-      return DayCalendarData(
-        date: date,
-        weekdayLabel: weekdayLabels[i],
-        peakRatio: null,
-        hasData: false,
-      );
-    });
-    final caption = _buildWeekCaption(monday, monday.add(const Duration(days: 6)));
-    return WeekReportData(
-      weekCaption: caption,
-      state: WeekReportState.empty,
-      dangerHours: 0,
-      days: days,
-      pattern: null,
-      updatedTimeLabel: _buildTimeLabel(now),
-      currentFinalRatio: 0.0,
-    );
+  String get summaryText {
+    if (dangerDays == 0) {
+      return '이번 주는 위험한 날 없이 지냈어요.';
+    }
+    return '이번 주 중 ${dangerDays}일이 당신 기준을 넘었어요.';
   }
-
-  static String _buildWeekCaption(DateTime monday, DateTime sunday) {
-    final weekNum = ((monday.day - 1) ~/ 7) + 1;
-    final mm = monday.month;
-    final sd = sunday.month;
-    return '${mm}월 ${weekNum}주차 · $mm/${monday.day} ~ $sd/${sunday.day}';
-  }
-
-  static String _buildTimeLabel(DateTime dt) {
-    final h = dt.hour.toString().padLeft(2, '0');
-    final m = dt.minute.toString().padLeft(2, '0');
-    return '$h:$m 갱신';
-  }
-}
-
-// ── Drill-down 모델 ────────────────────────────────────────────
-
-/// 일별 상세 행 (Drill-down)
-class DrillDayRow {
-  /// "월 · 5/4"
-  final String dateLabel;
-
-  /// "14~17시" 또는 "—"
-  final String hoursRange;
-
-  /// PM2.5 최고값 (null이면 "—")
-  final int? peakPm25;
-
-  /// 그날 최고 final_ratio
-  final double peakRatio;
-
-  /// 위험(≥1.0) 레코드 수
-  final int dangerRecordCount;
-
-  const DrillDayRow({
-    required this.dateLabel,
-    required this.hoursRange,
-    required this.peakPm25,
-    required this.peakRatio,
-    required this.dangerRecordCount,
-  });
-}
-
-/// 히트맵 데이터 (7×24)
-class DrillHeatmapData {
-  /// [weekdayIdx(0=월~6=일)][hour(0~23)] = ratio? (null=데이터없음)
-  final List<List<double?>> grid;
-
-  /// ['월','화','수','목','금','토','일']
-  final List<String> weekdayLabels;
-
-  const DrillHeatmapData({
-    required this.grid,
-    required this.weekdayLabels,
-  });
-}
-
-/// Drill-down 화면 전체 데이터 (drillReportProvider 반환값)
-class DrillReportData {
-  final DrillHeatmapData heatmap;
-  final List<DrillDayRow> dayRows;
-  final String weekCaption;
-
-  const DrillReportData({
-    required this.heatmap,
-    required this.dayRows,
-    required this.weekCaption,
-  });
 }

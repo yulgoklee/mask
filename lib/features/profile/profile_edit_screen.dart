@@ -108,6 +108,18 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           ),
           const SizedBox(height: 20),
 
+          _FieldLabel('마스크 불편 정도'),
+          const SizedBox(height: 8),
+          _ChipGroup<int>(
+            values: const [0, 1, 2],
+            selected: _draft.discomfortLevel,
+            labelOf: (v) =>
+                v == 0 ? '안 느껴요' : v == 1 ? '보통이에요' : '많이 불편해요',
+            onSelect: (v) =>
+                setState(() => _draft = _draft.copyWith(discomfortLevel: v)),
+          ),
+          const SizedBox(height: 32),
+
           // ── 호흡기 질환 ───────────────────────────────────
           _SectionLabel('호흡기 질환'),
           const SizedBox(height: 10),

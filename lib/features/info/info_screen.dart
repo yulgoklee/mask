@@ -29,8 +29,6 @@ class InfoScreen extends StatelessWidget {
                 _MaskGuide(),
                 const SizedBox(height: 24),
                 _HealthTips(),
-                const SizedBox(height: 24),
-                _SourceReferences(),
                 const SizedBox(height: 16),
                 const Text(
                   '* 본 앱은 참고용 정보를 제공합니다. 의료적 진단이나 처방을 대체하지 않습니다.',
@@ -300,119 +298,6 @@ class _HealthTips extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _SourceReferences extends StatelessWidget {
-  static const _sources = [
-    (
-      'ARIA — 알레르기성 비염 가이드라인',
-      'Allergic Rhinitis and its Impact on Asthma (JACI 2019)',
-      'https://www.jacionline.org/article/S0091-6749(19)31187-X/fulltext',
-    ),
-    (
-      'ATS — 운동 유발 기관지수축 가이드라인',
-      'American Thoracic Society Clinical Practice Guideline (2013)',
-      'https://www.atsjournals.org/doi/full/10.1164/rccm.201303-0437ST',
-    ),
-    (
-      'WHO — 대기오염 가이드라인 2021',
-      'WHO Global Air Quality Guidelines (PM2.5 / PM10)',
-      'https://www.who.int/publications/i/item/9789240034228',
-    ),
-    (
-      '대한천식알레르기학회 (KAAACI)',
-      '한국 알레르기 비염 진단 기준',
-      'https://www.allergy.or.kr',
-    ),
-    (
-      'GOLD — COPD 가이드라인',
-      'Global Initiative for Chronic Obstructive Lung Disease',
-      'https://goldcopd.org',
-    ),
-    (
-      'Asthma Control Test (ACT)',
-      'ATS / 천식 자가 평가 도구',
-      'https://www.thoracic.org/members/assemblies/assemblies/srn/questionaires/act.php',
-    ),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Text('📚', style: TextStyle(fontSize: 18)),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  '근거 자료',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            '본 앱의 임계치·페르소나 분류는 다음 의학·환경 가이드라인을 참고합니다.',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ..._sources.map((s) {
-            final (title, subtitle, _) = s;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ],
-      ),
     );
   }
 }

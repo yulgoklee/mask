@@ -9,6 +9,7 @@ const _defaultProfile = UserProfile(
   asthma: false, rhinitis: false, copd: false, allergy: false,
   hypertension: false, heartDisease: false, stroke: false,
   smokingStatus: SmokingStatus.never,
+  activityTags: [], discomfortLevel: 1,
 );
 
 // 민감한 프로필: 비염 → W_health=0.15 → T_final=29.75
@@ -17,6 +18,7 @@ const _sensitiveProfile = UserProfile(
   asthma: false, rhinitis: true, copd: false, allergy: false,
   hypertension: false, heartDisease: false, stroke: false,
   smokingStatus: SmokingStatus.never,
+  activityTags: [], discomfortLevel: 1,
 );
 
 DustData _dust(int pm25, {int? pm10 = 30}) => DustData(

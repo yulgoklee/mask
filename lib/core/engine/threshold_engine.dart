@@ -41,7 +41,6 @@ class ThresholdEngine {
   }
 
   /// 호흡기 카테고리 (상한: respiratoryCap)
-  /// 진단명 가중치 + 잠재 신호 가중치 합산 → cap 적용
   double _computeWRespiratory(UserProfile profile) {
     double raw = 0.0;
     final hw = config.healthWeights;
@@ -49,40 +48,8 @@ class ThresholdEngine {
     if (profile.copd)     raw += _weight(hw, 'copd');
     if (profile.rhinitis) raw += _weight(hw, 'rhinitis');
     if (profile.allergy)  raw += _weight(hw, 'allergy');
-
-    // 잠재 신호 (1.1.0+, 이중 카운팅 룰 R1 — 진단명 우선)
-    raw += _computeRespiratorySignals(profile);
-
     final cap = config.respiratoryCap;
     return raw > cap ? cap : raw;
-  }
-
-  /// 잠재 신호 호흡기 가중치 (R1 이중 카운팅 방지)
-  ///
-  /// 매핑 (Phase 2 v0):
-  ///  - signal_a1 (콧물·코막힘 4일+) ↔ rhinitis·allergy 진단명
-  ///  - signal_b1 (야간 천식)         ↔ asthma 진단명
-  ///  - signal_c1 (운동 후 호흡)      ↔ asthma 진단명
-  ///  - signal_d3 (만성 가래 기침)    ↔ copd 진단명
-  /// 진단명이 켜진 신호는 0 (R1).
-  double _computeRespiratorySignals(UserProfile profile) {
-    if (profile.signalAnswers.isEmpty) return 0.0;
-    double raw = 0.0;
-    final sw = config.signalWeights;
-    if (profile.signalAnswers[SignalId.a1] == true
-        && !profile.rhinitis && !profile.allergy) {
-      raw += sw[SignalId.a1] ?? 0.0;
-    }
-    if (profile.signalAnswers[SignalId.b1] == true && !profile.asthma) {
-      raw += sw[SignalId.b1] ?? 0.0;
-    }
-    if (profile.signalAnswers[SignalId.c1] == true && !profile.asthma) {
-      raw += sw[SignalId.c1] ?? 0.0;
-    }
-    if (profile.signalAnswers[SignalId.d3] == true && !profile.copd) {
-      raw += sw[SignalId.d3] ?? 0.0;
-    }
-    return raw;
   }
 
   /// 심혈관 카테고리 (상한: cardiovascularCap)

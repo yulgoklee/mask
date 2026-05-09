@@ -31,6 +31,8 @@ UserProfile _profile({
       heartDisease:  heartDisease,
       stroke:        stroke,
       smokingStatus: smokingStatus,
+      activityTags:  [],
+      discomfortLevel: 1,
     );
 
 void main() {
@@ -282,87 +284,6 @@ void main() {
       final bd = _engine.breakdown(p);
       expect(bd.wHealth,
           closeTo(bd.wRespiratory + bd.wCardiovascular + bd.wSmoking, 0.0001));
-    });
-  });
-
-  // ── 잠재 신호 가중치 (1.1.0+) ──────────────────────────────────
-
-  group('signal weights — 잠재 신호 가중치 적용 + 이중 카운팅 룰', () {
-    UserProfile profileWithSignals(Map<String, bool> answers, {
-      bool asthma = false,
-      bool rhinitis = false,
-      bool copd = false,
-      bool allergy = false,
-    }) =>
-        UserProfile(
-          nickname: '', birthYear: 1990, gender: 'female',
-          asthma: asthma, rhinitis: rhinitis, copd: copd, allergy: allergy,
-          hypertension: false, heartDisease: false, stroke: false,
-          smokingStatus: SmokingStatus.never,
-          signalAnswers: answers,
-        );
-
-    test('signalAnswers 빈 맵 → 신호 가중치 0', () {
-      final p = profileWithSignals({});
-      expect(_engine.computeWHealth(p), closeTo(0.0, 0.0001));
-    });
-
-    test('signal_a1 ON + 진단 X → +0.05', () {
-      final p = profileWithSignals({SignalId.a1: true});
-      // W_resp = 0.05 (signal_a1만)
-      expect(_engine.computeWHealth(p), closeTo(0.05, 0.0001));
-    });
-
-    test('R1 룰 — signal_a1 ON + rhinitis 진단 → 신호 가중치 0', () {
-      final p = profileWithSignals({SignalId.a1: true}, rhinitis: true);
-      // 진단명 우선: rhinitis 0.15만, signal_a1 무시
-      expect(_engine.computeWHealth(p), closeTo(0.15, 0.0001));
-    });
-
-    test('R1 룰 — signal_a1 ON + allergy 진단 → 신호 가중치 0', () {
-      final p = profileWithSignals({SignalId.a1: true}, allergy: true);
-      expect(_engine.computeWHealth(p), closeTo(0.15, 0.0001));
-    });
-
-    test('R1 룰 — signal_b1·c1 ON + asthma 진단 → 둘 다 0', () {
-      final p = profileWithSignals(
-          {SignalId.b1: true, SignalId.c1: true},
-          asthma: true);
-      expect(_engine.computeWHealth(p), closeTo(0.20, 0.0001));
-    });
-
-    test('R1 룰 — signal_d3 ON + copd 진단 → 0', () {
-      final p = profileWithSignals({SignalId.d3: true}, copd: true);
-      expect(_engine.computeWHealth(p), closeTo(0.25, 0.0001));
-    });
-
-    test('4개 신호 모두 ON + 진단 X → 0.22 (cap 0.30 안)', () {
-      final p = profileWithSignals({
-        SignalId.a1: true, SignalId.b1: true,
-        SignalId.c1: true, SignalId.d3: true,
-      });
-      // 0.05 + 0.07 + 0.05 + 0.05 = 0.22
-      expect(_engine.computeWHealth(p), closeTo(0.22, 0.0001));
-    });
-
-    test('4개 신호 + 천식 진단 → cap 0.30 적용', () {
-      // asthma 0.20 + signal_a1 0.05 + signal_d3 0.05 = 0.30 (cap 정확히)
-      // signal_b1·c1는 R1 룰로 0
-      final p = profileWithSignals({
-        SignalId.a1: true, SignalId.b1: true,
-        SignalId.c1: true, SignalId.d3: true,
-      }, asthma: true);
-      expect(_engine.computeWHealth(p), closeTo(0.30, 0.0001));
-    });
-
-    test('signal_a1=false (명시적 false) → 가중치 0', () {
-      final p = profileWithSignals({SignalId.a1: false});
-      expect(_engine.computeWHealth(p), closeTo(0.0, 0.0001));
-    });
-
-    test('T_final — signal_b1 ON 단독 → T_final = 35×(1-0.07) = 32.55', () {
-      final p = profileWithSignals({SignalId.b1: true});
-      expect(_engine.computeTFinal(p), closeTo(32.55, 0.01));
     });
   });
 }

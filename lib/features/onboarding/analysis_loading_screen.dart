@@ -27,7 +27,7 @@ class _AnalysisLoadingScreenState
 
   static const _messages = [
     '프로필을 분석하고 있어요...',
-    '내 몸에 맞는 임계치를 계산 중이에요...',
+    '민감도 계수를 계산 중이에요...',
     '맞춤형 알림 기준을 설정하고 있어요...',
     '거의 다 됐어요! ✨',
   ];
