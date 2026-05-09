@@ -62,24 +62,6 @@ CustomTransitionPage<void> _slidePage(GoRouterState state, Widget child) =>
       },
     );
 
-CustomTransitionPage<void> _slideUpPage(GoRouterState state, Widget child) =>
-    CustomTransitionPage(
-      key: state.pageKey,
-      child: child,
-      transitionDuration: const Duration(milliseconds: 320),
-      reverseTransitionDuration: const Duration(milliseconds: 280),
-      transitionsBuilder: (_, animation, __, child) {
-        final tween = Tween<Offset>(
-          begin: const Offset(0, 1.0),
-          end: Offset.zero,
-        ).chain(CurveTween(curve: Curves.easeOutCubic));
-        return SlideTransition(
-          position: animation.drive(tween),
-          child: child,
-        );
-      },
-    );
-
 final appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/splash',
@@ -151,7 +133,7 @@ final appRouter = GoRouter(
     // ── 설정 / 서브 페이지 (전체 화면, ShellRoute 밖) ─────────
     GoRoute(
       path: '/settings',
-      pageBuilder: (_, state) => _slideUpPage(state, const SettingsScreen()),
+      pageBuilder: (_, state) => _slidePage(state, const SettingsScreen()),
     ),
     GoRoute(
       path: '/my-body-info',
@@ -159,31 +141,31 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/notifications',
-      pageBuilder: (_, state) => _slideUpPage(state, const NotificationScreen()),
+      pageBuilder: (_, state) => _slidePage(state, const NotificationScreen()),
     ),
     GoRoute(
       path: '/info',
-      pageBuilder: (_, state) => _slideUpPage(state, const InfoScreen()),
+      pageBuilder: (_, state) => _slidePage(state, const InfoScreen()),
     ),
     GoRoute(
       path: '/profile/edit',
       pageBuilder: (_, state) =>
-          _slideUpPage(state, const ProfileEditScreen()),
+          _slidePage(state, const ProfileEditScreen()),
     ),
     GoRoute(
       path: '/care/details',
       pageBuilder: (_, state) =>
-          _slideUpPage(state, const CareDrillScreen()),
+          _slidePage(state, const CareDrillScreen()),
     ),
     GoRoute(
       path: '/report/details',
       pageBuilder: (_, state) =>
-          _slideUpPage(state, const ReportDrillScreen()),
+          _slidePage(state, const ReportDrillScreen()),
     ),
     GoRoute(
       path: '/profile/details',
       pageBuilder: (_, state) =>
-          _slideUpPage(state, const ProfileDrillScreen()),
+          _slidePage(state, const ProfileDrillScreen()),
     ),
 
     // ── 메인 3탭 StatefulShellRoute ──────────────────────────

@@ -10,7 +10,7 @@ import 'widgets/waterfall.dart';
 
 /// 프로필 Drill-down — /profile/details (시안 profile-main ProfileDrillScreen)
 ///
-/// slideUp 진입 (app_router.dart _slideUpPage)
+/// slideRight 진입 (app_router.dart _slidePage)
 /// 케어 드릴 구조 동일 — 배경만 ProfileBackground로 교체
 ///
 /// 4 섹션:
