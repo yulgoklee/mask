@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/constants/design_tokens.dart';
+import '../../../widgets/korean_hero_text.dart';
 import 'care_background.dart';
 
 /// 케어 탭 Hero — 인사 + 큰 타이포 답 (시안 v3 정확)
@@ -20,7 +21,7 @@ class CareHero extends StatelessWidget {
     this.showSub = true,
   });
 
-  /// 위험도별 답 텍스트 (시안 그대로)
+  /// 위험도별 답 텍스트 — 자연 줄바꿈 (강제 \n X)
   String get _title {
     switch (level) {
       case CareRiskLevel.safe:    return '오늘은 마스크 안 써도 돼요';
@@ -56,9 +57,9 @@ class CareHero extends StatelessWidget {
           ),
         const SizedBox(height: 8),
 
-        // ── Hero 답 (자연 줄바꿈, wordBreak: keep-all) ─
-        Text(
-          _title,
+        // ── Hero 답 (한국어 단어 단위 줄바꿈, 64pt 유지)
+        KoreanHeroText(
+          text: _title,
           style: TextStyle(
             fontSize:      heroSize,
             fontWeight:    FontWeight.w700,

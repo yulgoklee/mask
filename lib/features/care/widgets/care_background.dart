@@ -29,46 +29,34 @@ class CareBackground extends StatelessWidget {
     return CareRiskLevel.safe;
   }
 
-  /// 시안 v3 정확한 6-stop 그라디언트
+  /// 시안 그라디언트 — 3-stop, 위 30%까지 진한 톤 유지 + 70% 페이드 영역.
+  ///
+  /// 위 30%는 topColor 그대로, 0.30~1.0 구간에서 `#F9FAFB`로 점진 페이드.
+  /// 페이드 영역이 70%라 위→아래 변화가 명확히 보이고, 끝까지 색이 살아있음.
   List<Color> get _colors {
     switch (level) {
       case CareRiskLevel.safe:
         return const [
-          Color(0xFFE6F4EE),
-          Color(0xFFEEF7F2),
-          Color(0xFFF4FAF6),
-          Color(0xFFF8FBF9),
-          Color(0xFFFAFBFA),
+          Color(0xFFE0F0E8),
+          Color(0xFFE0F0E8),
           Color(0xFFF9FAFB),
         ];
       case CareRiskLevel.caution:
         return const [
-          Color(0xFFFEF3D6),
-          Color(0xFFFEF6E1),
-          Color(0xFFFDF8EA),
-          Color(0xFFFBFAF1),
-          Color(0xFFFAFAF6),
+          Color(0xFFFDEDC4),
+          Color(0xFFFDEDC4),
           Color(0xFFF9FAFB),
         ];
       case CareRiskLevel.danger:
         return const [
-          Color(0xFFFBE3DA),
-          Color(0xFFFBE7DF),
-          Color(0xFFFBEDE6),
-          Color(0xFFFAF1EC),
-          Color(0xFFFAF6F2),
+          Color(0xFFF9D8C8),
+          Color(0xFFF9D8C8),
           Color(0xFFF9FAFB),
         ];
     }
   }
 
-  List<double> get _stops {
-    switch (level) {
-      case CareRiskLevel.safe:    return const [0.0, 0.28, 0.52, 0.72, 0.88, 1.0];
-      case CareRiskLevel.caution: return const [0.0, 0.26, 0.48, 0.70, 0.86, 1.0];
-      case CareRiskLevel.danger:  return const [0.0, 0.22, 0.44, 0.64, 0.84, 1.0];
-    }
-  }
+  List<double> get _stops => const [0.0, 0.3, 1.0];
 
   /// 위험도 베이스 색 (다른 위젯에서 참조)
   static Color baseColor(CareRiskLevel level) {

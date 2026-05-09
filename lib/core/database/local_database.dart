@@ -476,6 +476,61 @@ class LocalDatabase {
     }).toList();
   }
 
+  // ── 리포트 탭 v2 집계 쿼리 ─────────────────────────────────
+
+  /// 시간별 AQI 레코드 조회 (리포트 탭 v2 히트맵·캘린더용)
+  ///
+  /// 반환: [{day: 'YYYY-MM-DD', hour: int, pm25_value: int, pm10_value: int, data_time: str}]
+  Future<List<Map<String, dynamic>>> getHourlyAqiRecords({
+    required String stationName,
+    required int days,
+  }) async {
+    final db = await database;
+    final since = DateTime.now()
+        .subtract(Duration(days: days))
+        .toIso8601String();
+    return db.rawQuery('''
+      SELECT
+        DATE(data_time)  AS day,
+        CAST(strftime('%H', data_time) AS INTEGER) AS hour,
+        pm25_value,
+        pm10_value,
+        data_time
+      FROM aqi_records
+      WHERE station_name = ?
+        AND data_time >= ?
+        AND pm25_value IS NOT NULL
+      ORDER BY data_time ASC
+    ''', [stationName, since]);
+  }
+
+  /// 요일 × 시간대 평균 집계 (리포트 탭 v2 히트맵용)
+  ///
+  /// 반환: [{weekday_num: int(0=일~6=토), hour_num: int, pm25_avg: double, pm10_avg: double, record_count: int}]
+  Future<List<Map<String, dynamic>>> getWeekdayHourAverages({
+    required String stationName,
+    required int days,
+  }) async {
+    final db = await database;
+    final since = DateTime.now()
+        .subtract(Duration(days: days))
+        .toIso8601String();
+    return db.rawQuery('''
+      SELECT
+        CAST(strftime('%w', data_time) AS INTEGER) AS weekday_num,
+        CAST(strftime('%H', data_time) AS INTEGER) AS hour_num,
+        AVG(CAST(pm25_value AS REAL)) AS pm25_avg,
+        AVG(CAST(pm10_value AS REAL)) AS pm10_avg,
+        COUNT(*) AS record_count
+      FROM aqi_records
+      WHERE station_name = ?
+        AND data_time >= ?
+        AND pm25_value IS NOT NULL
+      GROUP BY weekday_num, hour_num
+      ORDER BY weekday_num ASC, hour_num ASC
+    ''', [stationName, since]);
+  }
+
   // ── 유틸 ─────────────────────────────────────────────────────
 
   Future<void> close() async => _db?.close();
