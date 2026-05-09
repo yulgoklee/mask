@@ -79,11 +79,12 @@ void main() {
           .toList()
         ..sort();
 
+      // profile_tab.dart v2 재작성 후 /profile/edit 직접 참조 제거됨.
+      // app_router.dart (pageBuilder 정의)만 허용.
       expect(
         files,
         equals([
           'lib/core/router/app_router.dart',
-          'lib/features/profile_tab/profile_tab.dart',
         ]),
         reason:
             '허용된 파일 외에 /profile/edit 참조가 발견됨: $files',

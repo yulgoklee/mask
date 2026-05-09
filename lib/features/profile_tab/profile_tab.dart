@@ -1,113 +1,96 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/constants/app_colors.dart';
 import '../../core/constants/design_tokens.dart';
 import '../../providers/profile_providers.dart';
-import '../../widgets/sensitivity_widgets.dart';
-import 'widgets/notification_summary_card.dart';
-import 'widgets/persona_alert_card.dart';
+import '../profile/profile_persona.dart';
+import '../profile/widgets/axis_list.dart';
+import '../profile/widgets/profile_background.dart';
+import '../profile/widgets/profile_hero.dart';
+import '../profile/widgets/threshold_range.dart';
+import 'widgets/profile_footer.dart';
 
+/// 프로필 탭 — /profile (시안 profile-main ProfileScreen 재작성)
+///
+/// 구조 (리포트 탭 패턴 동일):
+///   LayoutBuilder + SingleChildScrollView + SizedBox(viewport.maxHeight) + Spacer
+/// Padding: EdgeInsets.fromLTRB(24, 24, 24, 16)
+/// 여백: Hero~ThresholdRange 44, ThresholdRange~Section 32, Section~Footer Spacer
 class ProfileTab extends ConsumerWidget {
   const ProfileTab({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(profileProvider);
+    final persona = PersonaData.fromProfile(profile);
+    final level   = ProfileBackground.levelFromSum(persona.sum);
+    final accent  = ProfileBackground.accentColor(level);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        title: const Text(
-          '프로필',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings, color: AppColors.textPrimary),
-            onPressed: () => context.push('/settings'),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-          const SizedBox(width: 16),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        children: [
-          const SizedBox(height: 8),
+      body: ProfileBackground(
+        level: level,
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, viewport) {
+              return SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: SizedBox(
+                  height: viewport.maxHeight,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // ── Hero ───────────────────────────────────────
+                        ProfileHero(
+                          tFinal: persona.tFinal,
+                          sub: persona.label,
+                          cap: '내 기준은',
+                        ),
 
-          // ── 카드 1: 페르소나 ───────────────────────────────
-          ProfileStateHeader(profile: profile),
-          const SizedBox(height: 16),
-          ThresholdCompareCard(
-            profile: profile,
-            showSubtitle: true,
-            expandable: true,
-          ),
-          const SizedBox(height: 16),
-          SensitivityBreakdown(profile: profile),
-          const SizedBox(height: 12),
-          PersonaAlertCard(profile: profile),
-          const SizedBox(height: 20),
+                        const SizedBox(height: 44),
 
-          // ── 카드 2: 내 알림 요약 ───────────────────────────
-          const NotificationSummaryCard(),
-          const SizedBox(height: 12),
+                        // ── ThresholdRange ─────────────────────────────
+                        ThresholdRange(
+                          myThreshold: persona.tFinal,
+                          general: persona.general,
+                          accentColor: accent,
+                        ),
 
-          // ── 한 줄 링크: 내 몸 정보 수정 ───────────────────
-          const _BodyInfoLink(),
-          const SizedBox(height: 40),
-        ],
-      ),
-    );
-  }
-}
+                        const SizedBox(height: 32),
 
-// ── §3.3 내 몸 정보 수정 한 줄 링크 ──────────────────────────
+                        // ── 섹션 라벨 ──────────────────────────────────
+                        const Text(
+                          '내 호흡기 정보',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: DT.gray,
+                            letterSpacing: 0.52,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
 
-class _BodyInfoLink extends StatelessWidget {
-  const _BodyInfoLink();
+                        // ── 5축 리스트 (variant D) ──────────────────────
+                        AxisList(
+                          axes: persona.axes,
+                          accentColor: accent,
+                        ),
 
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: DT.white,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => context.push('/profile/edit'),
-        child: Container(
-          height: 56,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: DT.border),
-          ),
-          child: const Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '내 몸 정보 수정',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+                        // ── Spacer → Footer 하단 고정 ──────────────────
+                        const Spacer(),
+
+                        // ── Footer ─────────────────────────────────────
+                        ProfileFooter(
+                          onMoreDetails: () => context.push('/profile/details'),
+                          onSettings: () => context.push('/settings'),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              Icon(
-                Icons.chevron_right,
-                size: 16,
-                color: AppColors.textSecondary,
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),

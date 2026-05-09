@@ -20,25 +20,119 @@ class AxisItem {
   });
 }
 
-/// 5축 가중치 리스트 — Variant D (시안 profile-components PAxisList variant D)
+/// AxisList 렌더 방식 변형 (D-4: axis_list.dart 내부 enum)
+enum AxisListVariant {
+  /// D: 활성 항목 강조 + 비활성 항목 한 줄 압축 (기본값, 기존 사용처 보호 W-3)
+  d,
+
+  /// F: 5축 모두 Key-Value 두 열로 렌더링 (Drill 화면용)
+  f,
+}
+
+/// 5축 가중치 리스트
 ///
-/// 활성 항목: vertical padding 14, hairline 구분선
-///   좌: label 15pt w700 + sub 12pt w500 (marginTop 3)
-///   우: delta 18pt w700 tabular-nums + "㎍/㎥" 11pt w500 (marginLeft 3)
-/// 비활성 항목들: 마지막 active 행 아래에 한 줄 압축
-///   "심혈관 · 흡연 · 임신·특별 — 해당 없음" (12pt w500 DT.gray2)
+/// [variant] 기본값 AxisListVariant.d — 기존 사용처(결과지·프로필 표면) 깨짐 방지 (W-3)
+///
+/// Variant D: 활성 항목 강조, 비활성 한 줄 압축
+///   활성: vertical padding 14, hairline 구분선
+///     좌: label 15pt w700 + sub 12pt w500 (marginTop 3)
+///     우: delta 18pt w700 tabular-nums + "㎍/㎥" 11pt w500 (marginLeft 3)
+///   비활성: "심혈관 · 흡연 · 임신·특별 — 해당 없음" (12pt w500 DT.gray2)
+///
+/// Variant F: 5축 전부 Key-Value 두 열 (Drill 화면용)
+///   각 행 padding 12, hairline
+///   좌: label 14pt — isActive w600/text, else w500/gray
+///   우: delta "X.X㎍/㎥" or "해당 없음" 14pt tabular-nums
 class AxisList extends StatelessWidget {
   final List<AxisItem> axes;
   final Color accentColor;
+  final AxisListVariant variant;
 
   const AxisList({
     super.key,
     required this.axes,
     required this.accentColor,
+    this.variant = AxisListVariant.d,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (variant == AxisListVariant.f) {
+      return _buildVariantF();
+    }
+    return _buildVariantD();
+  }
+
+  // ── Variant F: 5축 전부 Key-Value 두 열 ───────────────────────
+  Widget _buildVariantF() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: axes.asMap().entries.map((entry) {
+        final i = entry.key;
+        final a = entry.value;
+        final isLast = i == axes.length - 1;
+        final noData = !a.isActive;
+        // 연령 축은 sub가 "N세" 형태이므로 라벨에 포함 (시안 F: "연령 (35세)")
+        final label = a.key == 'age' && a.sub != null
+            ? '연령 (${a.sub})'
+            : a.label;
+        final valueText = noData
+            ? '해당 없음'
+            : '${a.delta.toStringAsFixed(1)}㎍/㎥';
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  // 좌: 라벨
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: noData
+                            ? FontWeight.w500
+                            : FontWeight.w600,
+                        color: noData ? DT.gray : DT.text,
+                        letterSpacing: -0.14,
+                      ),
+                    ),
+                  ),
+                  // 우: 값
+                  Text(
+                    valueText,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: noData
+                          ? FontWeight.w500
+                          : FontWeight.w700,
+                      color: noData ? DT.gray2 : DT.text,
+                      letterSpacing: -0.14,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (!isLast)
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: DT.text.withValues(alpha: 0.08),
+              ),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+  // ── Variant D: 활성 강조 + 비활성 압축 ───────────────────────
+  Widget _buildVariantD() {
     final active = axes.where((a) => a.isActive).toList();
     final neutral = axes.where((a) => !a.isActive).toList();
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/care/care_drill_screen.dart';
+import '../../features/profile_tab/profile_drill_screen.dart';
 import '../../features/report_tab/report_drill_screen.dart';
 import '../../features/care/care_tab.dart';
 import '../../features/info/info_screen.dart';
@@ -178,6 +179,11 @@ final appRouter = GoRouter(
       path: '/report/details',
       pageBuilder: (_, state) =>
           _slideUpPage(state, const ReportDrillScreen()),
+    ),
+    GoRoute(
+      path: '/profile/details',
+      pageBuilder: (_, state) =>
+          _slideUpPage(state, const ProfileDrillScreen()),
     ),
 
     // ── 메인 3탭 StatefulShellRoute ──────────────────────────

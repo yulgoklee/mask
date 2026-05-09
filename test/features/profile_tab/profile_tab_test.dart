@@ -6,35 +6,41 @@ import 'package:mask_alert/data/models/notification_setting.dart';
 import 'package:mask_alert/data/models/user_profile.dart';
 import 'package:mask_alert/data/repositories/profile_repository.dart';
 import 'package:mask_alert/features/profile_tab/profile_tab.dart';
+import 'package:mask_alert/features/profile_tab/widgets/profile_footer.dart';
+import 'package:mask_alert/features/profile/widgets/axis_list.dart';
+import 'package:mask_alert/features/profile/widgets/profile_background.dart';
+import 'package:mask_alert/features/profile/widgets/profile_hero.dart';
+import 'package:mask_alert/features/profile/widgets/threshold_range.dart';
 import 'package:mask_alert/providers/profile_providers.dart';
 
-// ── Fake repo ─────────────────────────────────────────────
+// ── Fake repo ─────────────────────────────────────────────────────
 
 class _FakeProfileRepo extends Fake implements ProfileRepository {
-  final NotificationSetting notifSetting;
+  final UserProfile profile;
 
-  _FakeProfileRepo({this.notifSetting = const NotificationSetting()});
-
-  UserProfile _profile = const UserProfile(
-    nickname: '테스트',
-    birthYear: 1990,
-    gender: 'male',
-    asthma: false,
-    rhinitis: false,
-    copd: false,
-    allergy: false,
-    hypertension: false,
-    heartDisease: false,
-    stroke: false,
-    smokingStatus: SmokingStatus.never,
-  );
+  _FakeProfileRepo({UserProfile? profile})
+      : profile = profile ??
+            const UserProfile(
+              nickname: '테스트',
+              birthYear: 1990,
+              gender: 'male',
+              asthma: false,
+              rhinitis: false,
+              copd: false,
+              allergy: false,
+              hypertension: false,
+              heartDisease: false,
+              stroke: false,
+              smokingStatus: SmokingStatus.never,
+            );
 
   @override
-  Future<UserProfile> loadProfile() async => _profile;
+  Future<UserProfile> loadProfile() async => profile;
   @override
-  Future<void> saveProfile(UserProfile p) async => _profile = p;
+  Future<void> saveProfile(UserProfile p) async {}
   @override
-  Future<NotificationSetting> loadNotificationSetting() async => notifSetting;
+  Future<NotificationSetting> loadNotificationSetting() async =>
+      const NotificationSetting();
   @override
   Future<void> saveNotificationSetting(NotificationSetting s) async {}
   @override
@@ -49,19 +55,10 @@ class _FakeProfileRepo extends Fake implements ProfileRepository {
   Future<void> completeTutorial() async {}
 }
 
-// ── 테스트 헬퍼 ───────────────────────────────────────────
+// ── 테스트 헬퍼 ────────────────────────────────────────────────────
 
-void _setTallView(WidgetTester tester) {
-  tester.view.physicalSize = const Size(400, 6000);
-  tester.view.devicePixelRatio = 1.0;
-  addTearDown(tester.view.resetPhysicalSize);
-  addTearDown(tester.view.resetDevicePixelRatio);
-}
-
-Widget _buildWithRouter({NotificationSetting? notifSetting}) {
-  final repo = _FakeProfileRepo(
-    notifSetting: notifSetting ?? const NotificationSetting(),
-  );
+Widget _buildWithRouter({UserProfile? profile}) {
+  final repo = _FakeProfileRepo(profile: profile);
 
   final router = GoRouter(
     initialLocation: '/profile',
@@ -71,16 +68,16 @@ Widget _buildWithRouter({NotificationSetting? notifSetting}) {
         builder: (_, __) => const ProfileTab(),
       ),
       GoRoute(
+        path: '/profile/details',
+        builder: (_, __) => const Scaffold(body: Text('상세 화면')),
+      ),
+      GoRoute(
         path: '/settings',
         builder: (_, __) => const Scaffold(body: Text('설정 화면')),
       ),
       GoRoute(
         path: '/profile/edit',
         builder: (_, __) => const Scaffold(body: Text('프로필 수정 화면')),
-      ),
-      GoRoute(
-        path: '/notifications',
-        builder: (_, __) => const Scaffold(body: Text('알림 설정 화면')),
       ),
     ],
   );
@@ -94,164 +91,173 @@ Widget _buildWithRouter({NotificationSetting? notifSetting}) {
 }
 
 void main() {
-  // ── a. 설정 아이콘 렌더링 ──────────────────────────────
+  // ── a. 핵심 컴포넌트 렌더링 ─────────────────────────────────────
 
-  group('a: 설정 아이콘 렌더링', () {
-    testWidgets('⚙️ 아이콘 표시', (tester) async {
+  group('a: 핵심 컴포넌트 렌더링', () {
+    testWidgets('Hero 캡션 "내 기준은" 표시', (tester) async {
       await tester.pumpWidget(_buildWithRouter());
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.settings), findsOneWidget);
+      expect(find.text('내 기준은'), findsOneWidget);
     });
 
-    testWidgets('프로필 타이틀과 같은 AppBar에 위치', (tester) async {
+    testWidgets('Hero 단위 "㎍/㎥" 표시', (tester) async {
       await tester.pumpWidget(_buildWithRouter());
       await tester.pumpAndSettle();
 
-      final iconFinder = find.byIcon(Icons.settings);
-      expect(iconFinder, findsOneWidget);
+      // ProfileHero의 단위 텍스트
+      expect(find.text('㎍/㎥'), findsWidgets);
+    });
 
-      final appBar = find.byType(AppBar);
-      expect(
-        find.descendant(of: appBar, matching: find.text('프로필')),
-        findsOneWidget,
+    testWidgets('ThresholdRange 캡션 표시 (일반 기준보다 N% 낮아요 / 비슷해요)', (tester) async {
+      await tester.pumpWidget(_buildWithRouter());
+      await tester.pumpAndSettle();
+
+      // 두 문구 중 하나 표시됨
+      final finder = find.byWidgetPredicate(
+        (w) =>
+            w is Text &&
+            (w.data?.contains('낮아요') == true ||
+                w.data?.contains('비슷해요') == true),
       );
+      expect(finder, findsOneWidget);
+    });
+
+    testWidgets('섹션 라벨 "내 호흡기 정보" 표시', (tester) async {
+      await tester.pumpWidget(_buildWithRouter());
+      await tester.pumpAndSettle();
+
+      expect(find.text('내 호흡기 정보'), findsOneWidget);
+    });
+
+    testWidgets('AxisList variant D 렌더링', (tester) async {
+      await tester.pumpWidget(_buildWithRouter());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AxisList), findsOneWidget);
+    });
+
+    testWidgets('핵심 위젯 타입 3종 렌더링 확인', (tester) async {
+      await tester.pumpWidget(_buildWithRouter());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ProfileBackground), findsOneWidget);
+      expect(find.byType(ProfileHero), findsOneWidget);
+      expect(find.byType(ThresholdRange), findsOneWidget);
     });
   });
 
-  // ── b. /settings 네비게이션 ────────────────────────────
+  // ── b. Footer 렌더링 ─────────────────────────────────────────────
 
-  group('b: /settings 네비게이션', () {
-    testWidgets('설정 아이콘 탭 → /settings 화면으로 이동', (tester) async {
+  group('b: Footer 렌더링', () {
+    testWidgets('ProfileFooter 위젯 존재', (tester) async {
       await tester.pumpWidget(_buildWithRouter());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.settings));
+      expect(find.byType(ProfileFooter), findsOneWidget);
+    });
+
+    testWidgets('"더 자세히 보기" 텍스트 표시', (tester) async {
+      await tester.pumpWidget(_buildWithRouter());
+      await tester.pumpAndSettle();
+
+      expect(find.text('더 자세히 보기'), findsOneWidget);
+    });
+
+    testWidgets('설정 아이콘 (settings_outlined) 표시', (tester) async {
+      await tester.pumpWidget(_buildWithRouter());
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+    });
+
+    testWidgets('Footer 안내 문구 표시', (tester) async {
+      await tester.pumpWidget(_buildWithRouter());
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('기준이 다시 계산'), findsOneWidget);
+    });
+  });
+
+  // ── c. 네비게이션 ────────────────────────────────────────────────
+
+  group('c: 네비게이션', () {
+    testWidgets('"더 자세히 보기" 탭 → /profile/details 이동', (tester) async {
+      await tester.pumpWidget(_buildWithRouter());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('더 자세히 보기'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('상세 화면'), findsOneWidget);
+    });
+
+    testWidgets('설정 아이콘 탭 → /settings 이동', (tester) async {
+      await tester.pumpWidget(_buildWithRouter());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.settings_outlined));
       await tester.pumpAndSettle();
 
       expect(find.text('설정 화면'), findsOneWidget);
-      expect(find.byType(ProfileTab), findsNothing);
     });
   });
 
-  // ── c. 카드 1: 페르소나 위젯 렌더링 ───────────────────────
+  // ── d. 제거된 구 UI 확인 ─────────────────────────────────────────
 
-  group('c: 페르소나 카드 렌더링', () {
-    testWidgets('ThresholdCompareCard 존재 — "일반인 기준" 텍스트', (tester) async {
+  group('d: 폐기된 구 UI 부재 확인', () {
+    testWidgets('알림 요약 카드(🔔 내 알림) 없음', (tester) async {
       await tester.pumpWidget(_buildWithRouter());
       await tester.pumpAndSettle();
 
-      expect(find.text('일반인 기준'), findsOneWidget);
+      expect(find.text('🔔 내 알림'), findsNothing);
     });
 
-    testWidgets('SensitivityBreakdown 존재 — "상태 분석" 텍스트', (tester) async {
+    testWidgets('AppBar 없음 (ProfileBackground 기반 레이아웃)', (tester) async {
       await tester.pumpWidget(_buildWithRouter());
       await tester.pumpAndSettle();
 
-      expect(find.text('상태 분석'), findsOneWidget);
+      expect(find.byType(AppBar), findsNothing);
     });
 
-    testWidgets('"이렇게 알려드릴게요." 헤더 텍스트 존재', (tester) async {
+    testWidgets('"이렇게 알려드릴게요" 구 헤더 없음', (tester) async {
       await tester.pumpWidget(_buildWithRouter());
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('이렇게 알려드릴게요'), findsOneWidget);
-    });
-  });
-
-  // ── d. 카드 2: 내 알림 요약 카드 렌더링 ──────────────────
-
-  group('d: 내 알림 요약 카드 렌더링', () {
-    testWidgets('"🔔 내 알림" 카드 제목 표시', (tester) async {
-      _setTallView(tester);
-      await tester.pumpWidget(_buildWithRouter());
-      await tester.pumpAndSettle();
-
-      expect(find.text('🔔 내 알림'), findsOneWidget);
+      expect(find.textContaining('이렇게 알려드릴게요'), findsNothing);
     });
 
-    testWidgets('"변경 →" 텍스트 표시', (tester) async {
-      _setTallView(tester);
+    testWidgets('"일반인 기준" 구 카드 텍스트 없음', (tester) async {
       await tester.pumpWidget(_buildWithRouter());
       await tester.pumpAndSettle();
 
-      expect(find.text('변경 →'), findsOneWidget);
-    });
-
-    testWidgets('알림 카드 탭 → /notifications 화면으로 이동', (tester) async {
-      _setTallView(tester);
-      await tester.pumpWidget(_buildWithRouter());
-      await tester.pumpAndSettle();
-
-      // "🔔 내 알림" 텍스트를 탭
-      await tester.tap(find.text('🔔 내 알림'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('알림 설정 화면'), findsOneWidget);
-    });
-
-    testWidgets('"변경 →" 탭 → /notifications 화면으로 이동', (tester) async {
-      _setTallView(tester);
-      await tester.pumpWidget(_buildWithRouter());
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('변경 →'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('알림 설정 화면'), findsOneWidget);
+      expect(find.text('일반인 기준'), findsNothing);
     });
   });
 
-  // ── e. 한 줄 링크: 내 몸 정보 수정 ─────────────────────
+  // ── e. 배경 레벨 (ProfileBackground) ─────────────────────────────
 
-  group('e: 내 몸 정보 수정 링크', () {
-    testWidgets('"내 몸 정보 수정" 텍스트 표시', (tester) async {
-      _setTallView(tester);
-      await tester.pumpWidget(_buildWithRouter());
+  group('e: 배경 그라디언트', () {
+    testWidgets('호흡기 민감 프로필 → caution 배경 렌더', (tester) async {
+      const sensitiveProfile = UserProfile(
+        nickname: '민감이',
+        birthYear: 1990,
+        gender: 'female',
+        asthma: true,
+        rhinitis: true,
+        copd: false,
+        allergy: false,
+        hypertension: false,
+        heartDisease: false,
+        stroke: false,
+        smokingStatus: SmokingStatus.never,
+      );
+
+      await tester.pumpWidget(_buildWithRouter(profile: sensitiveProfile));
       await tester.pumpAndSettle();
 
-      expect(find.text('내 몸 정보 수정'), findsOneWidget);
-    });
-
-    testWidgets('chevron_right 아이콘 표시', (tester) async {
-      _setTallView(tester);
-      await tester.pumpWidget(_buildWithRouter());
-      await tester.pumpAndSettle();
-
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
-    });
-
-    testWidgets('내 몸 정보 수정 탭 → /profile/edit 화면으로 이동', (tester) async {
-      _setTallView(tester);
-      await tester.pumpWidget(_buildWithRouter());
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('내 몸 정보 수정'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('프로필 수정 화면'), findsOneWidget);
-      expect(find.byType(ProfileTab), findsNothing);
-    });
-  });
-
-  // ── f. 제거된 항목 확인 ──────────────────────────────────
-
-  group('f: 제거된 항목', () {
-    testWidgets('"방해 금지" 섹션 없음 (이동됨)', (tester) async {
-      _setTallView(tester);
-      await tester.pumpWidget(_buildWithRouter());
-      await tester.pumpAndSettle();
-
-      // 방해금지는 알림 설정 화면으로 이동됨
-      expect(find.text('방해 금지'), findsNothing);
-    });
-
-    testWidgets('"프로필 수정하기" 구 버튼 없음 (→ "내 몸 정보 수정"으로 교체)', (tester) async {
-      _setTallView(tester);
-      await tester.pumpWidget(_buildWithRouter());
-      await tester.pumpAndSettle();
-
-      expect(find.text('프로필 수정하기'), findsNothing);
+      // 렌더링만 확인 (배경색 변경 여부는 CareBackground와 동일 패턴)
+      expect(find.byType(ProfileTab), findsOneWidget);
     });
   });
 }
