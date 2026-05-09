@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/design_tokens.dart';
 import '../../core/engine/threshold_engine.dart';
+import '../../data/models/user_profile.dart';
 import '../../providers/dust_providers.dart';
 import '../../providers/profile_providers.dart';
 import 'care_tab.dart' as care_tab;
@@ -23,7 +24,7 @@ class CareDrillScreen extends ConsumerWidget {
     final profile    = ref.watch(profileProvider);
     final level      = CareBackground.levelFromRatio(statusCard.finalRatio);
     final base       = CareBackground.baseColor(level);
-    final breakdown  = const ThresholdEngine().breakdown(profile);
+    final breakdown  = ThresholdEngine().breakdown(profile);
 
     // Hero compact 카피
     final compactHero = switch (level) {
@@ -462,7 +463,7 @@ class _SourceRow extends StatelessWidget {
 
 // ── note 헬퍼 ─────────────────────────────────────────────
 
-String _respiratoryNote(profile) {
+String _respiratoryNote(UserProfile profile) {
   final items = <String>[];
   if (profile.asthma)   items.add('천식');
   if (profile.copd)     items.add('COPD');
@@ -471,7 +472,7 @@ String _respiratoryNote(profile) {
   return items.isEmpty ? '진단 없음' : items.join('·');
 }
 
-String _cardioNote(profile) {
+String _cardioNote(UserProfile profile) {
   final items = <String>[];
   if (profile.hypertension) items.add('고혈압');
   if (profile.heartDisease) items.add('심장 질환');
@@ -479,9 +480,10 @@ String _cardioNote(profile) {
   return items.isEmpty ? '진단 없음' : items.join('·');
 }
 
-String _smokingNote(profile) {
-  final s = profile.smokingStatus.name;
-  if (s == 'current') return '현재 흡연 중';
-  if (s == 'former')  return '과거 흡연';
-  return '비흡연';
+String _smokingNote(UserProfile profile) {
+  switch (profile.smokingStatus) {
+    case SmokingStatus.current: return '현재 흡연 중';
+    case SmokingStatus.former:  return '과거 흡연';
+    case SmokingStatus.never:   return '비흡연';
+  }
 }
