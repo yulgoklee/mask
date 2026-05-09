@@ -36,6 +36,7 @@ class DT {
   // ── Neutral ───────────────────────────────────────────────
   static const Color text       = Color(0xFF111827);
   static const Color gray       = Color(0xFF6B7280);
+  static const Color gray2      = Color(0xFF9CA3AF);
   static const Color grayLt     = Color(0xFFF3F4F6);
   static const Color border     = Color(0xFFE5E7EB);
   static const Color white      = Color(0xFFFFFFFF);

@@ -8,7 +8,6 @@ library;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:mask_alert/data/models/notification_log.dart';
-import 'package:mask_alert/features/report_tab/models/report_models.dart';
 
 // ── 인메모리 DB 헬퍼 ──────────────────────────────────────────
 
