@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/constants/design_tokens.dart';
 import '../../providers/dust_providers.dart';
 import '../../widgets/async_state_widgets.dart';
@@ -9,7 +10,6 @@ import 'widgets/care_hero.dart';
 import 'widgets/threshold_meter.dart';
 import 'widgets/pollutant_row.dart';
 import 'widgets/trend_chart.dart';
-import 'widgets/pollutant_detail_card.dart';
 
 // ── 위치 표시 ────────────────────────────────────────────
 String locationLabel(String? sido, String stationName) {
@@ -72,30 +72,66 @@ class _CareFooter extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             // 위치 + 갱신 (좌측, 핀 아이콘)
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.location_on_outlined, size: 12, color: DT.gray),
-                const SizedBox(width: 4),
-                Text(
-                  '${locationLabel(sido, dust.stationName)}  ·  ${dataTimeLabel(dust.dataTime)}',
-                  style: const TextStyle(
-                    fontSize:   12,
-                    fontWeight: FontWeight.w500,
-                    color:      DT.gray,
+            Flexible(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.location_on_outlined, size: 12, color: DT.gray),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      '${locationLabel(sido, dust.stationName)}  ·  ${dataTimeLabel(dust.dataTime)}',
+                      style: const TextStyle(
+                        fontSize:   12,
+                        fontWeight: FontWeight.w500,
+                        color:      DT.gray,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-
             // 더 자세히 보기 (우측, 화살표)
-            // 현재는 인라인 펼침이라 PollutantDetailCard 토글로 진입
-            // 별도 화면 분리는 1.2.0 후보
+            const _MoreLink(),
           ],
         );
       },
       loading: () => const SizedBox.shrink(),
       error:   (_, __) => const SizedBox.shrink(),
+    );
+  }
+}
+
+// ── 더 자세히 보기 진입 (시안 v3) ─────────────────────────
+
+class _MoreLink extends StatelessWidget {
+  const _MoreLink();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push('/care/details'),
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Text(
+              '더 자세히 보기',
+              style: TextStyle(
+                fontSize:      14,
+                fontWeight:    FontWeight.w600,
+                color:         DT.text,
+                letterSpacing: -0.14,
+              ),
+            ),
+            SizedBox(width: 6),
+            Icon(Icons.arrow_forward_ios_rounded, size: 12, color: DT.text),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -180,12 +216,8 @@ class CareTab extends ConsumerWidget {
                   // 예보 에러 (있으면)
                   const _ForecastErrorBanner(),
 
-                  // ⑥ 위치 + 갱신 시각 (하단 — 시안)
+                  // ⑥ 위치 + 갱신 시각 + ⑦ 더 자세히 보기 (시안 footer)
                   const _CareFooter(),
-                  const SizedBox(height: 20),
-
-                  // ⑦ 더 자세히 보기 (Drill-down 펼침)
-                  const PollutantDetailCard(),
                   const SizedBox(height: 16),
                 ],
               ),
