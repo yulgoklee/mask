@@ -65,9 +65,6 @@ dependencies:
   # 글래스모피즘
   glassmorphism: ^3.0.0
 
-  # 숫자 롤링 애니메이션
-  animated_digit: ^3.1.2
-
   # 앱 버전 정보
   package_info_plus: ^8.0.0
 

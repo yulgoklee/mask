@@ -16,8 +16,6 @@ void main() {
       expect(p.heartDisease, false);
       expect(p.stroke, false);
       expect(p.smokingStatus, SmokingStatus.never);
-      expect(p.activityTags, isEmpty);
-      expect(p.discomfortLevel, 1);
     });
   });
 
@@ -35,8 +33,6 @@ void main() {
         heartDisease: false,
         stroke: false,
         smokingStatus: SmokingStatus.never,
-        activityTags: [ActivityTag.commute, ActivityTag.exercise],
-        discomfortLevel: 0,
       );
       final json = profile.toJson();
       final restored = UserProfile.fromJson(json);
@@ -46,8 +42,6 @@ void main() {
       expect(restored.asthma, profile.asthma);
       expect(restored.rhinitis, profile.rhinitis);
       expect(restored.smokingStatus, profile.smokingStatus);
-      expect(restored.activityTags, profile.activityTags);
-      expect(restored.discomfortLevel, profile.discomfortLevel);
     });
   });
 
@@ -68,7 +62,6 @@ void main() {
         asthma: false, rhinitis: false, copd: false, allergy: false,
         hypertension: false, heartDisease: false, stroke: false,
         smokingStatus: SmokingStatus.never,
-        activityTags: [], discomfortLevel: 1,
       );
       expect(p.displayName, '지수님');
     });
@@ -84,7 +77,6 @@ void main() {
         asthma: false, rhinitis: false, copd: false, allergy: false,
         hypertension: false, heartDisease: false, stroke: false,
         smokingStatus: SmokingStatus.never,
-        activityTags: [], discomfortLevel: 1,
       );
       expect(p.isVulnerableAge, true);
     });
@@ -94,7 +86,6 @@ void main() {
         asthma: false, rhinitis: false, copd: false, allergy: false,
         hypertension: false, heartDisease: false, stroke: false,
         smokingStatus: SmokingStatus.never,
-        activityTags: [], discomfortLevel: 1,
       );
       expect(p.isVulnerableAge, true);
     });
@@ -119,7 +110,6 @@ void main() {
         asthma: true, rhinitis: false, copd: false, allergy: false,
         hypertension: false, heartDisease: false, stroke: false,
         smokingStatus: SmokingStatus.current,
-        activityTags: [], discomfortLevel: 0,
       );
       // W_respiratory=0.20 (asthma), W_smoking=0.20 (current) → W_total=0.40
       // raw = 35 × 0.60 = 21.0
@@ -132,7 +122,6 @@ void main() {
         asthma: true, rhinitis: true, copd: true, allergy: true,
         hypertension: true, heartDisease: true, stroke: true,
         smokingStatus: SmokingStatus.current,
-        activityTags: [], discomfortLevel: 0,
       );
       expect(p.tFinal, closeTo(15.0, 0.01));
     });
@@ -147,16 +136,6 @@ void main() {
     });
   });
 
-  group('ActivityTag 상수', () {
-    test('값 확인', () {
-      expect(ActivityTag.commute,  'commute');
-      expect(ActivityTag.walk,     'walk');
-      expect(ActivityTag.exercise, 'exercise');
-      expect(ActivityTag.delivery, 'delivery');
-      expect(ActivityTag.childcare,'childcare');
-    });
-  });
-
   group('SmokingType 새 필드 — toJson / fromJson / copyWith', () {
     test('toJson — smokesCigarette/smokesHeated/smokesVaping 포함', () {
       const p = UserProfile(
@@ -165,7 +144,6 @@ void main() {
         hypertension: false, heartDisease: false, stroke: false,
         smokingStatus: SmokingStatus.current,
         smokesCigarette: true, smokesHeated: false, smokesVaping: true,
-        activityTags: [], discomfortLevel: 1,
       );
       final json = p.toJson();
       expect(json['smokesCigarette'], isTrue);
@@ -180,7 +158,6 @@ void main() {
         'hypertension': false, 'heartDisease': false, 'stroke': false,
         'smokingStatus': 'current',
         'smokesCigarette': true, 'smokesHeated': false, 'smokesVaping': true,
-        'activityTags': <String>[], 'discomfortLevel': 1,
       };
       final p = UserProfile.fromJson(json);
       expect(p.smokesCigarette, isTrue);
@@ -195,7 +172,6 @@ void main() {
         hypertension: false, heartDisease: false, stroke: false,
         smokingStatus: SmokingStatus.current,
         smokesCigarette: true, smokesHeated: true, smokesVaping: false,
-        activityTags: [], discomfortLevel: 1,
       );
       final restored = UserProfile.fromJson(p.toJson());
       expect(restored.smokesCigarette, p.smokesCigarette);
@@ -209,7 +185,6 @@ void main() {
         'asthma': false, 'rhinitis': false, 'copd': false, 'allergy': false,
         'hypertension': false, 'heartDisease': false, 'stroke': false,
         'smokingStatus': 'current',
-        'activityTags': <String>[], 'discomfortLevel': 1,
         // smokesCigarette/smokesHeated/smokesVaping 없음 — 구버전 호환
       };
       final p = UserProfile.fromJson(json);

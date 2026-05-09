@@ -88,6 +88,17 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen>
                             ? context.go('/profile')
                             : context.go('/location_setup', extra: true),
                       ),
+                      const SizedBox(height: 20),
+
+                      // ── 근거 자료 푸터 ───────────────────────────
+                      Text(
+                        '※ 본 진단은 ARIA · ATS · WHO Air Quality Guidelines 2021 ·\n   대한천식알레르기학회 자료를 참고했습니다.\n   의료 진단을 대체하지 않습니다.',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary.withValues(alpha: 0.85),
+                          height: 1.5,
+                        ),
+                      ),
                       const SizedBox(height: 24),
                     ],
                   ),

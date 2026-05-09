@@ -27,7 +27,6 @@ UserProfile _profile({
       heartDisease: false,
       stroke:       false,
       smokingStatus: SmokingStatus.never,
-      activityTags: [], discomfortLevel: 1,
     );
 
 // care_providers.dart의 순수 함수들을 직접 재현해 검증

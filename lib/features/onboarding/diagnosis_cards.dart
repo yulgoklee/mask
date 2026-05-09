@@ -373,10 +373,10 @@ class DiagQ4Respiratory extends StatelessWidget {
   });
 
   static const _conditions = [
-    ('rhinitis', '👃', '비염',            '코막힘·재채기가 자주 발생해요'),
-    ('asthma',   '🫁', '천식',            '기관지가 좁아져 숨이 가빠요'),
-    ('copd',     '🌬️', 'COPD',           '만성 폐쇄성 폐질환을 진단받았어요'),
-    ('allergy',  '🌸', '알레르기',        '꽃가루·먼지에 심하게 반응해요'),
+    ('rhinitis', '👃', '비염 (알레르기성·비알레르기성)',  '콧물·코막힘·재채기·코 가려움'),
+    ('asthma',   '🫁', '천식 (운동 유발 포함)',         '쌕쌕거림·가슴 답답함·만성 기침'),
+    ('copd',     '🌬️', 'COPD / 만성 기관지염',         '만성 기침·가래·계단 시 숨 참'),
+    ('allergy',  '🌸', '흡입성 알레르기',                '꽃가루·먼지·동물 털 등에 반응'),
   ];
 
   bool _valueOf(String key) {
@@ -937,138 +937,6 @@ class DiagQ8Outdoor extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  Q9 — 활동 태그 (복수 선택)
-// ══════════════════════════════════════════════════════════════
-
-class DiagQ9ActivityTags extends StatelessWidget {
-  final List<String> value;
-  final ValueChanged<List<String>> onChanged;
-  final int questionNumber;
-
-  const DiagQ9ActivityTags({
-    super.key,
-    required this.value,
-    required this.onChanged,
-    this.questionNumber = 9,
-  });
-
-  // (tag, emoji, label, hint)
-  static const _options = [
-    (ActivityTag.commute,   '🚇', '출퇴근',     '대중교통·도보 이동'),
-    (ActivityTag.walk,      '🚶', '산책',       '공원·동네 가벼운 산책'),
-    (ActivityTag.exercise,  '🏃', '운동',       '조깅·자전거·야외 운동'),
-    (ActivityTag.delivery,  '🛵', '배달/외근',  '야외 업무·배달'),
-    (ActivityTag.childcare, '👶', '아이 등하원', '아이와 함께 야외 활동'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 32),
-          _qBadge('Q$questionNumber · 활동 유형'),
-          const SizedBox(height: 14),
-          _qTitle(context, '주로 어떤 활동을 하시나요?'),
-          const SizedBox(height: 8),
-          _qSubtitle(context, '복수 선택 가능 · 없으면 건너뛰세요.'),
-          const SizedBox(height: 32),
-          ..._options.map((opt) {
-            final (tag, emoji, label, hint) = opt;
-            final sel = value.contains(tag);
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: GestureDetector(
-                onTap: () {
-                  final next = [...value];
-                  if (sel) {
-                    next.remove(tag);
-                  } else {
-                    next.add(tag);
-                  }
-                  onChanged(next);
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 160),
-                  curve: Curves.easeOut,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 18, vertical: 16),
-                  decoration: BoxDecoration(
-                    color: sel
-                        ? AppColors.primary.withValues(alpha: 0.08)
-                        : AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: sel ? AppColors.primary : AppColors.divider,
-                      width: sel ? 2 : 1,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Text(emoji, style: const TextStyle(fontSize: 26)),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              label,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
-                                color: sel
-                                    ? AppColors.primary
-                                    : AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              hint,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 160),
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: sel ? AppColors.primary : Colors.transparent,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: sel ? AppColors.primary : AppColors.divider,
-                            width: 2,
-                          ),
-                        ),
-                        child: sel
-                            ? const Icon(Icons.check,
-                                size: 16, color: Colors.white)
-                            : null,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }),
-          const SizedBox(height: 24),
-          _insightBox(
-            '당신의 활동 패턴에 맞춰 알림 기준을 더 정밀하게 조정해드릴게요.',
-          ),
-          const SizedBox(height: 32),
-        ],
-      ),
-    );
-  }
-}
-
-// ══════════════════════════════════════════════════════════════
 //  Q5 — 심혈관
 // ══════════════════════════════════════════════════════════════
 
@@ -1245,6 +1113,170 @@ class DiagQ5Cardiovascular extends StatelessWidget {
             '고혈압·심장 질환이 있으면 미세먼지가 혈관에 더 큰 영향을 줘요. '
             '뇌졸중 경험이 있으면 혈관이 더 예민한 상태예요. '
             '입력한 정보를 바탕으로 마스크 타이밍을 개인화해드려요.',
+          ),
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  Q5.5 — 잠재 민감군 자가 점검 (선택, 1.1.0+)
+//
+//  `FeatureFlags.kEnableSignalSelfCheck` 가 true 일 때만 노출.
+//  Q5(심혈관) 다음, Q6(흡연) 이전. 4개 신호 (A1·B1·C1·D3) 체크리스트.
+//  복수 선택, 답하지 않아도 됨 (모두 false 가능 → 건너뛰기 효과).
+//  자세한 매핑: `docs/research/signal_weight_mapping_v0.md`
+// ══════════════════════════════════════════════════════════════
+
+class DiagSignalSelfCheck extends StatelessWidget {
+  /// SignalId.* → bool. 누락된 키는 false로 간주.
+  final Map<String, bool> answers;
+
+  /// 토글 시 갱신된 전체 답변 맵을 부모에 전달.
+  final ValueChanged<Map<String, bool>> onChanged;
+
+  /// 진행 표시용 페이지 번호 (Q5와 Q6 사이라서 5나 6의 변형이 아닌 임의 표시).
+  final int questionNumber;
+
+  const DiagSignalSelfCheck({
+    super.key,
+    required this.answers,
+    required this.onChanged,
+    this.questionNumber = 6,
+  });
+
+  /// 신호 카드 정의 (id, emoji, label, hint)
+  ///
+  /// 라벨은 의학적 진단 표현이 아닌 일상 언어. 답하기 쉬운 형태.
+  static const _signals = [
+    (
+      'signal_a1', // SignalId.a1
+      '🤧',
+      '콧물·코막힘이 한 주에 4일 이상 있다',
+      '계절·환경과 관계없이 자주 반복되는 경우',
+    ),
+    (
+      'signal_b1', // SignalId.b1
+      '🌙',
+      '자다가 천식 증상으로 깬 적 있다',
+      '쌕쌕거림·가슴 답답함으로 새벽에 깬 경험',
+    ),
+    (
+      'signal_c1', // SignalId.c1
+      '🏃',
+      '운동 시작 5~10분 후 가슴 답답함·기침',
+      '평소 활동량 대비 호흡이 더 거칠어지는 경우',
+    ),
+    (
+      'signal_d3', // SignalId.d3
+      '🫁',
+      '만성 가래 동반 기침이 3개월 이상 지속',
+      '겨울·아침에 가래가 더 심한 편',
+    ),
+  ];
+
+  bool _isChecked(String id) => answers[id] ?? false;
+
+  void _toggle(String id) {
+    final updated = Map<String, bool>.from(answers);
+    final next = !_isChecked(id);
+    if (next) {
+      updated[id] = true;
+    } else {
+      // false는 키 자체를 제거 — 답변 안 한 것과 동일하게 취급.
+      updated.remove(id);
+    }
+    onChanged(updated);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 32),
+          _qBadge('Q$questionNumber · 자가 점검 (선택)'),
+          const SizedBox(height: 14),
+          _qTitle(context, '혹시 이런 적\n있으신가요?'),
+          const SizedBox(height: 8),
+          _qSubtitle(context, '복수 선택 가능 · 답하지 않아도 괜찮아요.'),
+          const SizedBox(height: 28),
+
+          // ── 4개 신호 체크리스트 ─────────────────────────────
+          ..._signals.map((sig) {
+            final (id, emoji, label, hint) = sig;
+            final sel = _isChecked(id);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: GestureDetector(
+                onTap: () => _toggle(id),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: sel
+                        ? AppColors.coral.withValues(alpha: 0.07)
+                        : AppColors.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: sel ? AppColors.coral : AppColors.divider,
+                      width: sel ? 2 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(emoji, style: const TextStyle(fontSize: 26)),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              label,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                                color: sel
+                                    ? AppColors.coral
+                                    : AppColors.textPrimary,
+                                height: 1.35,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              hint,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        sel ? Icons.check_box : Icons.check_box_outline_blank,
+                        color: sel ? AppColors.coral : AppColors.textHint,
+                        size: 22,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+
+          const SizedBox(height: 16),
+
+          // ── 의료 면책 + 자료 출처 ──────────────────────────
+          _insightBox(
+            '체크해도 진단이 아니에요. "민감군일 가능성"을 기준에 살짝 반영할 뿐이에요.\n\n'
+            '자료: ARIA·ATS·GOLD·CB Scale 가이드라인 참조',
           ),
           const SizedBox(height: 32),
         ],
@@ -1489,116 +1521,6 @@ class DiagQ6_1SmokingType extends StatelessWidget {
           _insightBox(
             '담배 종류에 따라 폐에 미치는 영향이 달라요. '
             '가열식·전자담배도 미세먼지와 결합하면 폐에 더 큰 자극을 줄 수 있어요.',
-          ),
-          const SizedBox(height: 32),
-        ],
-      ),
-    );
-  }
-}
-
-// ══════════════════════════════════════════════════════════════
-//  Q10 — 마스크 불편도
-// ══════════════════════════════════════════════════════════════
-
-class DiagQ10Discomfort extends StatelessWidget {
-  final int value; // 0=안느낌 1=보통 2=많이불편
-  final ValueChanged<int> onChanged;
-  final int questionNumber;
-
-  const DiagQ10Discomfort({
-    super.key,
-    required this.value,
-    required this.onChanged,
-    this.questionNumber = 10,
-  });
-
-  static const _options = [
-    (0, '😌', '편해요',        '마스크 착용이 익숙해요'),
-    (1, '😐', '보통이에요',    '가끔 답답하긴 해요'),
-    (2, '😮', '많이 불편해요', '답답함·김 서림이 심해요'),
-  ];
-
-  /// 옵션별 고정 색상 — 편함(초록) / 보통(파랑) / 불편(코랄)
-  static const _optionColors = [
-    AppColors.success,  // 편해요
-    AppColors.primary,  // 보통이에요
-    AppColors.coral,    // 많이 불편해요
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 32),
-          _qBadge('Q$questionNumber · 마스크'),
-          const SizedBox(height: 14),
-          _qTitle(context, '마스크 착용이\n불편하신가요?'),
-          const SizedBox(height: 8),
-          _qSubtitle(context, '많이 불편하면 알림 기준을 조금 완화해드려요.'),
-          const SizedBox(height: 32),
-          Row(
-            children: _options.map((opt) {
-              final (val, emoji, label, hint) = opt;
-              final sel = value == val;
-              final badgeColor = _optionColors[val]; // index 기반 고정 색상
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: GestureDetector(
-                    onTap: () => onChanged(val),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      padding: const EdgeInsets.fromLTRB(8, 16, 8, 14),
-                      decoration: BoxDecoration(
-                        color: sel ? badgeColor.withValues(alpha: 0.08) : AppColors.surfaceVariant,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: sel ? badgeColor : AppColors.divider,
-                          width: sel ? 2 : 1,
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Text(emoji, style: const TextStyle(fontSize: 26)),
-                          const SizedBox(height: 8),
-                          Text(
-                            label,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: sel ? badgeColor : AppColors.textPrimary,
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: Text(
-                              hint,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 10,
-                                color: AppColors.textSecondary,
-                                height: 1.4,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 32),
-          _insightBox(
-            '마스크가 많이 불편한 경우, 꼭 써야 할 타이밍에만 알려드려요. '
-            '무리한 착용보다 실질적인 보호에 집중합니다.',
           ),
           const SizedBox(height: 32),
         ],

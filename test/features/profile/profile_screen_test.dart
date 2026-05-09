@@ -53,8 +53,6 @@ const _base = UserProfile(
   heartDisease: false,
   stroke: false,
   smokingStatus: SmokingStatus.never,
-  activityTags: [],
-  discomfortLevel: 1,
 );
 
 // ── 테스트 헬퍼 ───────────────────────────────────────────
