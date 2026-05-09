@@ -99,6 +99,14 @@ Widget buildList(List<AxisItem> axes) {
   );
 }
 
+Widget buildListF(List<AxisItem> axes) {
+  return MaterialApp(
+    home: Scaffold(
+      body: AxisList(axes: axes, accentColor: DT.safe, variant: AxisListVariant.f),
+    ),
+  );
+}
+
 void main() {
   group('AxisList — active 항목', () {
     testWidgets('active 항목 라벨 표시', (tester) async {
@@ -154,6 +162,48 @@ void main() {
       await tester.pumpWidget(buildList(_axes5));
       // active 2개 → ㎍/㎥ 2개
       expect(find.text('㎍/㎥'), findsNWidgets(2));
+    });
+  });
+
+  // ── Variant F 테스트 ────────────────────────────────────────
+
+  group('AxisList variant F — 5축 전체 렌더링', () {
+    testWidgets('F: 5축 모두 표시 (isActive 무관)', (tester) async {
+      await tester.pumpWidget(buildListF(_axes5));
+      // active: 호흡기 민감, 연령 (sub 포함), inactive: 심혈관, 흡연, 임신·특별
+      expect(find.textContaining('호흡기 민감'), findsOneWidget);
+      expect(find.textContaining('심혈관'), findsOneWidget);
+      expect(find.textContaining('흡연'), findsOneWidget);
+      expect(find.textContaining('임신·특별'), findsOneWidget);
+      expect(find.textContaining('연령'), findsOneWidget);
+    });
+
+    testWidgets('F: 연령 라벨에 나이 포함 "연령 (36세)"', (tester) async {
+      await tester.pumpWidget(buildListF(_axes5));
+      expect(find.text('연령 (36세)'), findsOneWidget);
+    });
+
+    testWidgets('F: active 항목은 delta 값 표시 (예: "-7.0㎍/㎥")', (tester) async {
+      await tester.pumpWidget(buildListF(_axes5));
+      expect(find.text('-7.0㎍/㎥'), findsOneWidget);
+    });
+
+    testWidgets('F: inactive 항목은 "해당 없음" 표시', (tester) async {
+      await tester.pumpWidget(buildListF(_axes5));
+      // 심혈관, 흡연, 임신·특별, 연령 모두 inactive → 3개 해당 없음 (연령 active이므로 3개)
+      expect(find.text('해당 없음'), findsNWidgets(3));
+    });
+
+    testWidgets('F: 비활성 항목에 "해당 없음" 한 줄 압축 없음 (개별 행)', (tester) async {
+      await tester.pumpWidget(buildListF(_axes5));
+      // variant D의 압축 형태("심혈관 · 흡연 ... — 해당 없음")가 없음
+      expect(find.textContaining(' · '), findsNothing);
+    });
+
+    testWidgets('F: 모두 비활성이면 모든 행 "해당 없음" 표시', (tester) async {
+      await tester.pumpWidget(buildListF(_allNeutral));
+      // 5축 전부 inactive
+      expect(find.text('해당 없음'), findsNWidgets(5));
     });
   });
 }
