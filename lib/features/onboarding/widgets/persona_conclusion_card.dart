@@ -13,10 +13,10 @@ class PersonaConclusionCard extends StatelessWidget {
   const PersonaConclusionCard({super.key, required this.profile});
 
   /// 페르소나 분류 → (제목, 본문)
-  /// 5종: compound / respiratory / cardiovascular / sensitive / general
   static (String, String) _resolve(UserProfile p) {
     final hasResp  = p.hasRespiratoryCondition;
     final hasCardio = p.hasCardiovascularCondition;
+    final hasActivity = p.activityTags.isNotEmpty;
     final isSmoking = p.smokingStatus == SmokingStatus.current;
 
     // compound: 호흡기 + 심혈관 동시 보유, 또는 호흡기/심혈관 + 흡연
@@ -40,6 +40,22 @@ class PersonaConclusionCard extends StatelessWidget {
       return (
         '당신에게 마스크는',
         '호흡기 상태와 활동량 모두 신경 쓰시는 분이에요. 마스크가 노출 시간을 줄이는 보호선이에요.',
+      );
+    }
+
+    // activeSensitive: 활동 태그 있음 + 민감도 있음 (연령·흡연 포함)
+    if (hasActivity && (p.isVulnerableAge || isSmoking)) {
+      return (
+        '당신에게 마스크는',
+        '야외 활동이 많고 공기 변화도 빨리 느끼는 편이세요. 일찍 챙기시면 효과가 커요.',
+      );
+    }
+
+    // outdoor: 활동 태그만 있음
+    if (hasActivity) {
+      return (
+        '당신에게 마스크는',
+        '야외 시간이 길어서 누적 노출이 커요. 마스크가 흡입량을 줄여줍니다.',
       );
     }
 

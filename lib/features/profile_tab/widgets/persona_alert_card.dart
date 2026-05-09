@@ -13,10 +13,10 @@ class PersonaAlertCard extends StatelessWidget {
   const PersonaAlertCard({super.key, required this.profile});
 
   /// null 반환 시 위젯 미표시 (균형 유지형)
-  /// 5종: compound / respiratory / cardiovascular / sensitive / general(미표시)
   static _AlertSpec? _resolve(UserProfile p) {
     final hasResp   = p.hasRespiratoryCondition;
     final hasCardio = p.hasCardiovascularCondition;
+    final hasActivity = p.activityTags.isNotEmpty;
     final isSmoking = p.smokingStatus == SmokingStatus.current;
 
     // compound: 호흡기 + 심혈관 동시 보유, 또는 호흡기/심혈관 + 흡연 → 가장 강조
@@ -43,6 +43,24 @@ class PersonaAlertCard extends StatelessWidget {
         bg: DT.dangerLt,
         iconColor: DT.danger,
         body: '호흡기와 활동량 모두 위험 요소가 있어요. 외출 시 마스크는 단순 도움이 아닌 보호 도구입니다.',
+      );
+    }
+
+    // activeSensitive: 활동 태그 + 취약 연령/흡연
+    if (hasActivity && (p.isVulnerableAge || isSmoking)) {
+      return _AlertSpec(
+        bg: DT.cautionLt,
+        iconColor: DT.caution,
+        body: '야외 활동량이 많고 공기에도 예민하세요. 일찍 챙기는 게 효과 커요.',
+      );
+    }
+
+    // outdoor: 활동 태그만
+    if (hasActivity) {
+      return _AlertSpec(
+        bg: DT.cautionLt,
+        iconColor: DT.caution,
+        body: '야외 시간이 길어서 누적 노출이 큽니다. 마스크가 흡입량을 줄여줘요.',
       );
     }
 

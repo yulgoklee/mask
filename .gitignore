@@ -9,7 +9,6 @@ android/key.properties
 CLAUDE.md
 project_charter.md
 docs/design_briefs/
-docs/strategy/
 
 # Miscellaneous
 *.class

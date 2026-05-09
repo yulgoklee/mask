@@ -18,6 +18,8 @@ UserProfile _profile({
       heartDisease: false,
       stroke: false,
       smokingStatus: SmokingStatus.never,
+      activityTags: const [],
+      discomfortLevel: 1,
     );
 
 void main() {
