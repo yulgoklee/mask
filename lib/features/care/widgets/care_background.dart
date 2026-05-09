@@ -34,7 +34,17 @@ class CareBackground extends StatelessWidget {
     return CareRiskLevel.safe;
   }
 
+  /// 위험도별 그라디언트 색 (위 → 아래)
+  /// 시안 v3 의도 — 위험도가 한눈에 보이도록 진하게
   Color get _topColor {
+    switch (level) {
+      case CareRiskLevel.safe:    return const Color(0xFFB7F0CB); // 명확한 민트
+      case CareRiskLevel.caution: return const Color(0xFFFCD980); // 명확한 노랑
+      case CareRiskLevel.danger:  return const Color(0xFFFFA8A8); // 명확한 살구
+    }
+  }
+
+  Color get _midColor {
     switch (level) {
       case CareRiskLevel.safe:    return DT.safeBg;       // #F0FDF4
       case CareRiskLevel.caution: return DT.cautionBg;    // #FFFBEB
@@ -53,9 +63,10 @@ class CareBackground extends StatelessWidget {
           end: Alignment.bottomCenter,
           colors: [
             _topColor,
+            _midColor,
             DT.background,
           ],
-          stops: const [0.0, 0.65],
+          stops: const [0.0, 0.35, 0.85],
         ),
       ),
       child: child,

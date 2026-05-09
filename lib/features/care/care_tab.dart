@@ -110,10 +110,10 @@ class _ValueColumn extends StatelessWidget {
   }
 }
 
-// ── 푸터 (위치 · 갱신 시각) ───────────────────────────────
+// ── 상단 위치·시간 캡션 (시안 v3: Hero 위에 작게) ─────────
 
-class _CareFooter extends ConsumerWidget {
-  const _CareFooter();
+class _LocationCaption extends ConsumerWidget {
+  const _LocationCaption();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -123,12 +123,12 @@ class _CareFooter extends ConsumerWidget {
         if (dust == null) return const SizedBox.shrink();
         final sido = ref.watch(stationSidoProvider).valueOrNull;
         return Text(
-          '${locationLabel(sido, dust.stationName)} · ${dataTimeLabel(dust.dataTime)}',
+          '${locationLabel(sido, dust.stationName)}  ·  ${dataTimeLabel(dust.dataTime)}',
           style: const TextStyle(
-            fontSize:   12,
+            fontSize:   11,
             fontWeight: FontWeight.w500,
             color:      DT.gray,
-            letterSpacing: -0.1,
+            letterSpacing: 0.1,
           ),
         );
       },
@@ -178,39 +178,39 @@ class CareTab extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // ── 상단 캡션: 위치·시간 (시안 v3) ─────────
+                  const _LocationCaption(),
+                  const SizedBox(height: 24),
+
                   // ── 인사 + Hero 답 ──────────────────────────
                   CareHero(
                     level:    level,
                     nickname: statusCard.nickname,
                   ),
-                  const SizedBox(height: 52),
+                  const SizedBox(height: 56),
 
                   // ── 미세먼지 수치 (공공 측정 노출 OK) ────────
                   _PollutantValues(
                     pm25: statusCard.pm25Value,
                     pm10: statusCard.pm10Value,
                   ),
-                  const SizedBox(height: 36),
+                  const SizedBox(height: 40),
 
                   // ── 내 기준 위치 미터 ───────────────────────
                   ThresholdMeter(
                     ratio: statusCard.finalRatio,
                     level: level,
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 36),
 
-                  // ── 12시간 흐름 차트 (다음 단계에서 카드 X 처리) ─
+                  // ── 12시간 흐름 ─────────────────────────────
                   const ProtectionAreaChart(),
-                  const SizedBox(height: 28),
-
-                  // ── 푸터: 위치 · 갱신 시각 ──────────────────
-                  const _CareFooter(),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
 
                   // ── 예보 에러 (있으면) ──────────────────────
                   const _ForecastErrorBanner(),
 
-                  // ── 자세히 보기 (Drill-down) — 다음 단계에서 펼침 처리 ─
+                  // ── 더 자세히 보기 (Drill-down 펼침) ────────
                   const PollutantDetailCard(),
                   const SizedBox(height: 24),
                 ],

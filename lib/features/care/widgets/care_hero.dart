@@ -25,11 +25,11 @@ class CareHero extends StatelessWidget {
   String get _title {
     switch (level) {
       case CareRiskLevel.safe:
-        return '오늘은 마스크\n안 써도 돼요';
+        return '오늘은,\n안 써도 돼요';
       case CareRiskLevel.caution:
-        return '마스크\n챙기시면 좋아요';
+        return '오늘은,\n챙기시면 좋아요';
       case CareRiskLevel.danger:
-        return '지금 마스크\n필요해요';
+        return '오늘은,\n꼭 챙겨주세요';
     }
   }
 
@@ -37,8 +37,8 @@ class CareHero extends StatelessWidget {
   String get _sub {
     switch (level) {
       case CareRiskLevel.safe:    return '공기가 깨끗해요';
-      case CareRiskLevel.caution: return '외출 시 챙기시는 게 좋아요';
-      case CareRiskLevel.danger:  return '외출 전 꼭 챙겨주세요';
+      case CareRiskLevel.caution: return '외출하실 때 마스크 한 장이면 충분해요';
+      case CareRiskLevel.danger:  return 'KF94 정도가 안전해요';
     }
   }
 
