@@ -7,7 +7,8 @@ import 'providers/care_providers.dart';
 import 'widgets/care_background.dart';
 import 'widgets/care_hero.dart';
 import 'widgets/threshold_meter.dart';
-import 'widgets/protection_area_chart.dart';
+import 'widgets/pollutant_row.dart';
+import 'widgets/trend_chart.dart';
 import 'widgets/pollutant_detail_card.dart';
 
 // ── 위치 표시 ────────────────────────────────────────────
@@ -19,12 +20,12 @@ String locationLabel(String? sido, String stationName) {
 
 // ── 갱신 시각 표시 ───────────────────────────────────────
 String dataTimeLabel(DateTime dt) {
-  final isAm  = dt.hour < 12;
-  final h12   = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
-  return '${isAm ? "오전" : "오후"} $h12시 기준';
+  final h = dt.hour.toString().padLeft(2, '0');
+  final m = dt.minute.toString().padLeft(2, '0');
+  return '$h:$m 갱신';
 }
 
-// ── 예보 오류 배너 (그라디언트 위에 가벼운 인라인) ────────────
+// ── 예보 오류 배너 ───────────────────────────────────────
 
 class _ForecastErrorBanner extends ConsumerWidget {
   const _ForecastErrorBanner();
@@ -55,65 +56,10 @@ class _ForecastErrorBanner extends ConsumerWidget {
   }
 }
 
-// ── 미세먼지 수치 표시 (공공 측정 — 노출 OK) ─────────────────
+// ── 하단 푸터 (위치·시간 + 더 자세히 보기) ─────────────────
 
-class _PollutantValues extends StatelessWidget {
-  final double pm25;
-  final double? pm10;
-
-  const _PollutantValues({required this.pm25, required this.pm10});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(child: _ValueColumn(label: '초미세먼지', value: pm25.round())),
-        const SizedBox(width: 32),
-        Expanded(child: _ValueColumn(label: '미세먼지', value: pm10?.round())),
-      ],
-    );
-  }
-}
-
-class _ValueColumn extends StatelessWidget {
-  final String label;
-  final int? value;
-
-  const _ValueColumn({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize:   13,
-            fontWeight: FontWeight.w500,
-            color:      DT.gray,
-            letterSpacing: -0.1,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value?.toString() ?? '—',
-          style: const TextStyle(
-            fontSize:   26,
-            fontWeight: FontWeight.w700,
-            color:      DT.text,
-            letterSpacing: -0.5,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ── 상단 위치·시간 캡션 (시안 v3: Hero 위에 작게) ─────────
-
-class _LocationCaption extends ConsumerWidget {
-  const _LocationCaption();
+class _CareFooter extends ConsumerWidget {
+  const _CareFooter();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -122,14 +68,30 @@ class _LocationCaption extends ConsumerWidget {
       data: (dust) {
         if (dust == null) return const SizedBox.shrink();
         final sido = ref.watch(stationSidoProvider).valueOrNull;
-        return Text(
-          '${locationLabel(sido, dust.stationName)}  ·  ${dataTimeLabel(dust.dataTime)}',
-          style: const TextStyle(
-            fontSize:   11,
-            fontWeight: FontWeight.w500,
-            color:      DT.gray,
-            letterSpacing: 0.1,
-          ),
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // 위치 + 갱신 (좌측, 핀 아이콘)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.location_on_outlined, size: 12, color: DT.gray),
+                const SizedBox(width: 4),
+                Text(
+                  '${locationLabel(sido, dust.stationName)}  ·  ${dataTimeLabel(dust.dataTime)}',
+                  style: const TextStyle(
+                    fontSize:   12,
+                    fontWeight: FontWeight.w500,
+                    color:      DT.gray,
+                  ),
+                ),
+              ],
+            ),
+
+            // 더 자세히 보기 (우측, 화살표)
+            // 현재는 인라인 펼침이라 PollutantDetailCard 토글로 진입
+            // 별도 화면 분리는 1.2.0 후보
+          ],
         );
       },
       loading: () => const SizedBox.shrink(),
@@ -138,7 +100,7 @@ class _LocationCaption extends ConsumerWidget {
   }
 }
 
-// ── 케어 탭 (시각 재설계 v3 — 카드 X, Hero + 배경 그라디언트) ───
+// ── 케어 탭 (시안 v3 정확) ───────────────────────────────
 
 class CareTab extends ConsumerWidget {
   const CareTab({super.key});
@@ -178,41 +140,53 @@ class CareTab extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── 상단 캡션: 위치·시간 (시안 v3) ─────────
-                  const _LocationCaption(),
-                  const SizedBox(height: 24),
+                  // ① 인사
+                  if (statusCard.nickname.isNotEmpty)
+                    CareHero(
+                      level:    level,
+                      nickname: statusCard.nickname,
+                      heroSize: 64,
+                      showSub:  true,
+                    )
+                  else
+                    CareHero(
+                      level:    level,
+                      heroSize: 64,
+                      showSub:  true,
+                    ),
+                  const SizedBox(height: 52),
 
-                  // ── 인사 + Hero 답 ──────────────────────────
-                  CareHero(
-                    level:    level,
-                    nickname: statusCard.nickname,
-                  ),
-                  const SizedBox(height: 56),
-
-                  // ── 미세먼지 수치 (공공 측정 노출 OK) ────────
-                  _PollutantValues(
-                    pm25: statusCard.pm25Value,
-                    pm10: statusCard.pm10Value,
-                  ),
-                  const SizedBox(height: 40),
-
-                  // ── 내 기준 위치 미터 ───────────────────────
-                  ThresholdMeter(
-                    ratio: statusCard.finalRatio,
-                    level: level,
+                  // ③ 미세먼지 수치 (PM2.5·PM10) + hint
+                  PollutantRow(
+                    pm25:      statusCard.pm25Value,
+                    pm10:      statusCard.pm10Value,
+                    threshold: statusCard.tFinal,
+                    level:     level,
                   ),
                   const SizedBox(height: 36),
 
-                  // ── 12시간 흐름 ─────────────────────────────
-                  const ProtectionAreaChart(),
-                  const SizedBox(height: 32),
+                  // ④ 내 기준 위치 미터
+                  ThresholdMeter(
+                    pm25:      statusCard.pm25Value,
+                    threshold: statusCard.tFinal,
+                    level:     level,
+                  ),
+                  const SizedBox(height: 28),
 
-                  // ── 예보 에러 (있으면) ──────────────────────
+                  // ⑤ 12시간 흐름 (라인 차트)
+                  const TrendChart(),
+                  const SizedBox(height: 24),
+
+                  // 예보 에러 (있으면)
                   const _ForecastErrorBanner(),
 
-                  // ── 더 자세히 보기 (Drill-down 펼침) ────────
+                  // ⑥ 위치 + 갱신 시각 (하단 — 시안)
+                  const _CareFooter(),
+                  const SizedBox(height: 20),
+
+                  // ⑦ 더 자세히 보기 (Drill-down 펼침)
                   const PollutantDetailCard(),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
