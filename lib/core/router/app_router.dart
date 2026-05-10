@@ -75,11 +75,11 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/disclaimer',
-      pageBuilder: (_, state) => _fadePage(state, const DisclaimerScreen()),
+      pageBuilder: (_, state) => _slidePage(state, const DisclaimerScreen()),
     ),
     GoRoute(
       path: '/welcome',
-      pageBuilder: (_, state) => _fadePage(state, const WelcomeScreen()),
+      pageBuilder: (_, state) => _slidePage(state, const WelcomeScreen()),
     ),
     GoRoute(
       path: '/onboarding',

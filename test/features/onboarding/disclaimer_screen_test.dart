@@ -46,11 +46,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     // 헤드라인 (OnboardingHero, \n 포함 → textContaining)
-    expect(find.textContaining('알려드릴게요'), findsWidgets);
+    expect(find.textContaining('읽어주세요'), findsWidgets);
     // 각 항목 라벨
     expect(find.text('참고 정보'), findsOneWidget);
     expect(find.text('의료진 우선'), findsOneWidget);
-    expect(find.text('측정 한계'), findsOneWidget);
+    // 사이클 #15: "측정 한계" → "수치가 달라요"
+    expect(find.text('수치가 달라요'), findsOneWidget);
     // 각 항목 본문 (일부)
     expect(
       find.textContaining('참고용이에요'),
@@ -79,6 +80,7 @@ void main() {
       isNull,
     );
 
+    await tester.ensureVisible(find.text('확인했습니다'));
     await tester.tap(find.text('확인했습니다'));
     await tester.pumpAndSettle();
 
