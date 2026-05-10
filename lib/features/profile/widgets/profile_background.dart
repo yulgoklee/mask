@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/design_tokens.dart';
+import '../../../widgets/gradient_background.dart';
 
 /// 프로필·결과지 배경 그라디언트 (시안 profile-main 정확)
 ///
@@ -54,24 +55,11 @@ class ProfileBackground extends StatelessWidget {
     }
   }
 
-  List<double> get _stops => const [0.0, 0.3, 1.0];
-
   @override
   Widget build(BuildContext context) {
-    return SizedBox.expand(
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: _colors,
-            stops: _stops,
-          ),
-        ),
-        child: child,
-      ),
+    return GradientBackground(
+      colors: _colors,
+      child: child,
     );
   }
 }
