@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/design_tokens.dart';
 import '../../core/constants/location_stations.dart';
 import '../../data/models/user_profile.dart';
+import 'diagnosis_cards_helpers.dart';
 
 // ══════════════════════════════════════════════════════════════
 //  Q1 — 닉네임
@@ -47,23 +48,23 @@ class _DiagQ1NicknameState extends State<DiagQ1Nickname> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 32),
-          _qBadge('Q${widget.questionNumber} · 이름'),
+          qBadge('Q${widget.questionNumber} · 이름'),
           const SizedBox(height: 14),
-          _qTitle(context, '어떻게 불러드릴까요?'),
+          qTitle(context, '어떻게 불러드릴까요?'),
           const SizedBox(height: 8),
-          _qSubtitle(context, '알림 메시지에 이름이 표시돼요. "지수님, 지금 마스크를 쓰세요!"처럼요.'),
+          qSubtitle(context, '알림 메시지에 이름이 표시돼요. "지수님, 지금 마스크를 쓰세요!"처럼요.'),
           const SizedBox(height: 36),
-          _fieldLabel('이름'),
+          fieldLabel('이름'),
           const SizedBox(height: 10),
           TextField(
             controller: _ctrl,
             maxLength: 10,
             textInputAction: TextInputAction.done,
-            decoration: _inputDecoration('예: 지수'),
+            decoration: inputDecoration('예: 지수'),
             onChanged: (v) => widget.onChanged(v.trim().isEmpty ? null : v.trim()),
           ),
           const SizedBox(height: 32),
-          _insightBox('이름을 입력하면 "지수님, 오늘 미세먼지가 높아요" 처럼 알림이 개인화돼요.'),
+          insightBox('이름을 입력하면 "지수님, 오늘 미세먼지가 높아요" 처럼 알림이 개인화돼요.'),
           const SizedBox(height: 32),
         ],
       ),
@@ -132,11 +133,11 @@ class _DiagQ2BirthYearState extends State<DiagQ2BirthYear> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _qBadge('Q${widget.questionNumber} · 연령'),
+              qBadge('Q${widget.questionNumber} · 연령'),
               const SizedBox(height: 14),
-              _qTitle(context, '출생연도를 알려주세요'),
+              qTitle(context, '출생연도를 알려주세요'),
               const SizedBox(height: 8),
-              _qSubtitle(context, '연령별 기초 민감도를 자동으로 반영해요.'),
+              qSubtitle(context, '연령별 기초 민감도를 자동으로 반영해요.'),
               const SizedBox(height: 20),
 
               // ── 선택된 연도 + 나이 표시 ──────────────────────
@@ -257,7 +258,7 @@ class _DiagQ2BirthYearState extends State<DiagQ2BirthYear> {
         // ── 인사이트 박스 ────────────────────────────────────
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-          child: _insightBox(
+          child: insightBox(
             '취약 연령(18세 미만 · 60세 이상)은 미세먼지 영향이 더 커요. '
             '기준치를 자동으로 조정해드릴게요.',
           ),
@@ -291,9 +292,9 @@ class DiagQ3Gender extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 32),
-          _qBadge('Q$questionNumber · 성별'),
+          qBadge('Q$questionNumber · 성별'),
           const SizedBox(height: 14),
-          _qTitle(context, '성별을 알려주세요'),
+          qTitle(context, '성별을 알려주세요'),
           const SizedBox(height: 40),
           Row(
             children: List.generate(_options.length, (i) {
@@ -409,13 +410,13 @@ class DiagQ4Respiratory extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 32),
-          _qBadge('Q$questionNumber · 호흡기'),
+          qBadge('Q$questionNumber · 호흡기'),
           const SizedBox(height: 14),
-          _qTitle(context, '호흡기 상태를 알려주세요'),
+          qTitle(context, '호흡기 상태를 알려주세요'),
           const SizedBox(height: 6),
-          _qSubtitle(context, '호흡기 상태는 마스크 판단에 가장 중요해요'),
+          qSubtitle(context, '호흡기 상태는 마스크 판단에 가장 중요해요'),
           const SizedBox(height: 4),
-          _qSubtitle(context, '진단 받은 게 있다면 모두 선택해주세요'),
+          qSubtitle(context, '진단 받은 게 있다면 모두 선택해주세요'),
           const SizedBox(height: 28),
 
           // ── 체크박스 항목 (4개) ──────────────────────────────
@@ -530,7 +531,7 @@ class DiagQ4Respiratory extends StatelessWidget {
           ),
 
           const SizedBox(height: 20),
-          _insightBox(
+          insightBox(
             '호흡기 질환이 있으면 같은 농도에서 더 일찍 반응해요.\n'
             '기준치를 최대 30%까지 낮춰 더 일찍 알려드려요.',
           ),
@@ -593,13 +594,13 @@ class DiagQ5Cardiovascular extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 32),
-          _qBadge('Q$questionNumber · 심혈관'),
+          qBadge('Q$questionNumber · 심혈관'),
           const SizedBox(height: 14),
-          _qTitle(context, '혈관 건강을 알려주세요'),
+          qTitle(context, '혈관 건강을 알려주세요'),
           const SizedBox(height: 6),
-          _qSubtitle(context, '혈관 건강도 미세먼지 영향을 받아요'),
+          qSubtitle(context, '혈관 건강도 미세먼지 영향을 받아요'),
           const SizedBox(height: 4),
-          _qSubtitle(context, '진단 받은 게 있다면 모두 선택해주세요'),
+          qSubtitle(context, '진단 받은 게 있다면 모두 선택해주세요'),
           const SizedBox(height: 28),
 
           // ── 체크박스 항목 (3개) ──────────────────────────────
@@ -714,7 +715,7 @@ class DiagQ5Cardiovascular extends StatelessWidget {
           ),
 
           const SizedBox(height: 20),
-          _insightBox(
+          insightBox(
             '혈관 질환이 있으면 미세먼지가 혈관 벽에 더 큰 자극을 줘요.\n'
             '기준치를 최대 25%까지 낮춰 더 일찍 알려드려요.',
           ),
@@ -803,11 +804,11 @@ class DiagSignalSelfCheck extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 32),
-          _qBadge('Q$questionNumber · 자가 점검 (선택)'),
+          qBadge('Q$questionNumber · 자가 점검 (선택)'),
           const SizedBox(height: 14),
-          _qTitle(context, '혹시 이런 적\n있으신가요?'),
+          qTitle(context, '혹시 이런 적\n있으신가요?'),
           const SizedBox(height: 8),
-          _qSubtitle(context, '복수 선택 가능 · 답하지 않아도 괜찮아요.'),
+          qSubtitle(context, '복수 선택 가능 · 답하지 않아도 괜찮아요.'),
           const SizedBox(height: 28),
 
           // ── 4개 신호 체크리스트 ─────────────────────────────
@@ -878,7 +879,7 @@ class DiagSignalSelfCheck extends StatelessWidget {
           const SizedBox(height: 16),
 
           // ── 의료 면책 + 자료 출처 ──────────────────────────
-          _insightBox(
+          insightBox(
             '체크해도 진단이 아니에요. "민감군일 가능성"을 기준에 살짝 반영할 뿐이에요.\n\n'
             '자료: ARIA·ATS·GOLD·CB Scale 가이드라인 참조',
           ),
@@ -928,11 +929,11 @@ class DiagQ6Smoking extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 32),
-          _qBadge('Q$questionNumber · 흡연'),
+          qBadge('Q$questionNumber · 흡연'),
           const SizedBox(height: 14),
-          _qTitle(context, '흡연 이력을 알려주세요'),
+          qTitle(context, '흡연 이력을 알려주세요'),
           const SizedBox(height: 8),
-          _qSubtitle(context, '흡연은 폐 민감도에 직접적인 영향을 줘요'),
+          qSubtitle(context, '흡연은 폐 민감도에 직접적인 영향을 줘요'),
           const SizedBox(height: 28),
 
           ..._options.map((opt) {
@@ -998,7 +999,7 @@ class DiagQ6Smoking extends StatelessWidget {
           }),
 
           const SizedBox(height: 20),
-          _insightBox(
+          insightBox(
             '현재 흡연 중이면 기준치를 20% 더 낮춰요.\n'
             '금연 후에도 폐 민감도가 수년간 높게 유지돼요.',
           ),
@@ -1013,14 +1014,14 @@ class DiagQ6Smoking extends StatelessWidget {
 //  Q6-1 — 흡연 종류 (현재 흡연 중인 경우만)
 // ══════════════════════════════════════════════════════════════
 
-class DiagQ6_1SmokingType extends StatelessWidget {
+class DiagQ6p1SmokingType extends StatelessWidget {
   final bool cigarette;
   final bool heated;
   final bool vaping;
   final void Function(bool cigarette, bool heated, bool vaping) onChanged;
   final int questionNumber;
 
-  const DiagQ6_1SmokingType({
+  const DiagQ6p1SmokingType({
     super.key,
     required this.cigarette,
     required this.heated,
@@ -1060,11 +1061,11 @@ class DiagQ6_1SmokingType extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 32),
-          _qBadge('Q$questionNumber · 흡연 종류'),
+          qBadge('Q$questionNumber · 흡연 종류'),
           const SizedBox(height: 14),
-          _qTitle(context, '피우시는 종류는?'),
+          qTitle(context, '피우시는 종류는?'),
           const SizedBox(height: 8),
-          _qSubtitle(context, '모두 선택해주세요'),
+          qSubtitle(context, '모두 선택해주세요'),
           const SizedBox(height: 28),
 
           ..._options.map((opt) {
@@ -1127,7 +1128,7 @@ class DiagQ6_1SmokingType extends StatelessWidget {
           }),
 
           const SizedBox(height: 20),
-          _insightBox(
+          insightBox(
             '담배 종류에 따라 폐에 미치는 영향이 달라요. '
             '가열식·전자담배도 미세먼지와 결합하면 폐에 더 큰 자극을 줄 수 있어요.',
           ),
@@ -1137,103 +1138,6 @@ class DiagQ6_1SmokingType extends StatelessWidget {
     );
   }
 }
-
-// ══════════════════════════════════════════════════════════════
-//  공용 내부 위젯 & 헬퍼
-// ══════════════════════════════════════════════════════════════
-
-/// Q배지 (예: "Q4 · 호흡기")
-Widget _qBadge(String text) => Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-      decoration: BoxDecoration(
-        color: DT.primaryLt.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: DT.primary,
-          fontWeight: FontWeight.w700,
-          fontSize: 13,
-        ),
-      ),
-    );
-
-/// 질문 타이틀
-Widget _qTitle(BuildContext context, String title) =>
-    Text(
-      title,
-      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: DT.text,
-            height: 1.3,
-          ),
-    );
-
-/// 서브타이틀
-Widget _qSubtitle(BuildContext context, String subtitle) =>
-    Text(
-      subtitle,
-      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: DT.gray,
-          ),
-    );
-
-/// 인사이트 박스
-Widget _insightBox(String text) => Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: DT.primaryLt.withValues(alpha: 0.25),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: DT.primaryLt),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.info_outline, size: 18, color: DT.primary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(
-                color: DT.gray,
-                fontSize: 13,
-                height: 1.5,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-
-/// 텍스트 필드용 레이블
-Widget _fieldLabel(String text) => Text(
-      text,
-      style: const TextStyle(
-        color: DT.text,
-        fontWeight: FontWeight.w600,
-        fontSize: 15,
-      ),
-    );
-
-/// 텍스트 필드 데코레이션
-InputDecoration _inputDecoration(String hint) => InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(color: DT.gray2),
-      filled: true,
-      fillColor: DT.grayLt,
-      counterText: '',
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: DT.primary, width: 1.5),
-      ),
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-    );
 
 // ══════════════════════════════════════════════════════════════
 //  QLocation — 관심 지역 (집 / 회사·학교)
@@ -1288,11 +1192,11 @@ class _DiagQLocationState extends State<DiagQLocation> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 32),
-          _qBadge('Q${widget.questionNumber} · 위치 설정'),
+          qBadge('Q${widget.questionNumber} · 위치 설정'),
           const SizedBox(height: 14),
-          _qTitle(context, '자주 계시는 곳을\n알려주세요'),
+          qTitle(context, '자주 계시는 곳을\n알려주세요'),
           const SizedBox(height: 8),
-          _qSubtitle(
+          qSubtitle(
             context,
             '앱이 백그라운드 상태일 때 이 지역의 측정소 데이터로 알림을 보내요.',
           ),
@@ -1329,7 +1233,7 @@ class _DiagQLocationState extends State<DiagQLocation> {
             },
           ),
           const SizedBox(height: 28),
-          _insightBox(
+          insightBox(
             '선택하지 않아도 앱은 정상 동작해요. '
             '나중에 프로필 탭에서 언제든지 수정할 수 있어요.',
           ),

@@ -171,7 +171,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
         // ── Q6-1: 흡연 종류 (현재 흡연 중인 경우만) ────────
         if (_includeSmokingType)
-          DiagQ6_1SmokingType(
+          DiagQ6p1SmokingType(
             questionNumber: _includeSignalSelfCheck ? 8 : 7,
             cigarette: _smokesCigarette,
             heated:    _smokesHeated,
