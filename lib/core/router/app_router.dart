@@ -19,6 +19,10 @@ import '../../features/onboarding/welcome_screen.dart';
 import '../../features/profile/profile_edit_screen.dart';
 import '../../features/profile_tab/profile_tab.dart';
 import '../../features/settings/settings_screen.dart';
+import '../../features/settings/transparency/sources_screen.dart';
+import '../../features/settings/transparency/calculation_screen.dart';
+import '../../features/settings/transparency/limits_screen.dart';
+import '../../features/settings/transparency/disclaimer_screen.dart';
 import '../../features/report_tab/report_tab.dart';
 import '../../features/splash/splash_screen.dart';
 import '../../features/tutorial/tutorial_screen.dart';
@@ -134,6 +138,22 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/settings',
       pageBuilder: (_, state) => _slidePage(state, const SettingsScreen()),
+    ),
+    GoRoute(
+      path: '/settings/transparency/sources',
+      pageBuilder: (_, s) => _slidePage(s, const SourcesScreen()),
+    ),
+    GoRoute(
+      path: '/settings/transparency/calculation',
+      pageBuilder: (_, s) => _slidePage(s, const CalculationScreen()),
+    ),
+    GoRoute(
+      path: '/settings/transparency/limits',
+      pageBuilder: (_, s) => _slidePage(s, const LimitsScreen()),
+    ),
+    GoRoute(
+      path: '/settings/transparency/disclaimer',
+      pageBuilder: (_, s) => _slidePage(s, const TransparencyDisclaimerScreen()),
     ),
     GoRoute(
       path: '/my-body-info',
