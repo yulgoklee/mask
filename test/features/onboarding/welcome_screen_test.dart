@@ -118,7 +118,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('이런 걸 여쭤볼게요'), findsOneWidget);
-    expect(find.text('호흡기 · 심혈관 질환 여부'), findsOneWidget);
+    expect(find.text('호흡기 · 심혈관 질환'), findsOneWidget);
   });
 
   testWidgets('d: 페이지 2에서 "다음 →" 탭 → 페이지 3 표시 (흐름 설명)', (tester) async {

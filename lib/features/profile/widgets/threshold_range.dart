@@ -76,25 +76,26 @@ class ThresholdRange extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // "일반 35" — 일반 마커 중심 위
-                  Positioned(
-                    top: 0,
-                    left: genX - 24,
-                    child: SizedBox(
-                      width: 48,
-                      child: Text(
-                        '일반 ${general.toStringAsFixed(0)}',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: DT.gray2,
-                          letterSpacing: -0.055,
-                          fontFeatures: [FontFeature.tabularFigures()],
+                  // "일반 35" — 일반 마커 중심 위 (나=일반일 때 숨김)
+                  if (myThreshold != general)
+                    Positioned(
+                      top: 0,
+                      left: genX - 24,
+                      child: SizedBox(
+                        width: 48,
+                        child: Text(
+                          '일반 ${general.toStringAsFixed(0)}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: DT.gray2,
+                            letterSpacing: -0.055,
+                            fontFeatures: [FontFeature.tabularFigures()],
+                          ),
                         ),
                       ),
                     ),
-                  ),
 
                   // ── 트랙 베이스 ──────────────────────────────
                   Positioned(

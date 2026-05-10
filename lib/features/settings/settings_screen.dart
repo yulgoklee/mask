@@ -280,7 +280,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     // ── 위치 ─────────────────────────────────
                     const SLabel('위치'),
                     SItem(
-                      label: '관심 지역',
+                      label: '위치 설정',
                       onClick: () =>
                           context.push('/location_setup', extra: false),
                     ),

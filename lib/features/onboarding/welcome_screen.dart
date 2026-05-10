@@ -168,8 +168,8 @@ class _WelcomePage1 extends StatelessWidget {
           Text(
             '같은 공기도 사람마다 다르게 영향을 줘요.\n건강 정보를 바탕으로 당신만의 기준을 만들어드려요.',
             style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w400,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
               color: DT.gray,
               height: 1.6,
             ),
@@ -199,15 +199,15 @@ class _WelcomePage2 extends StatelessWidget {
           // Hero 40pt
           const OnboardingHero(
             main: '이런 걸 여쭤볼게요',
-            sub: '호흡기 상태에 맞춘 기준을 만들기 위해 몇 가지만 확인할게요.',
+            sub: '건강 정보 5개로 당신만의 기준을 만들어요.',
             heroSize: 40,
           ),
           const SizedBox(height: 36),
 
-          // 질문 예시 3개
+          // 질문 카테고리 4개
           const _QuestionPreviewRow(
             icon: Icons.air_outlined,
-            label: '호흡기 · 심혈관 질환 여부',
+            label: '호흡기 · 심혈관 질환',
           ),
           Divider(height: 1, color: DT.text.withValues(alpha: 0.06)),
           const _QuestionPreviewRow(
@@ -217,18 +217,13 @@ class _WelcomePage2 extends StatelessWidget {
           Divider(height: 1, color: DT.text.withValues(alpha: 0.06)),
           const _QuestionPreviewRow(
             icon: Icons.person_outline_rounded,
-            label: '성별 · 연령',
-            isLast: true,
+            label: '성별 · 생년월일',
           ),
-
-          const SizedBox(height: 24),
-          const Text(
-            '질문은 총 5개예요. 2분이면 충분해요.',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: DT.gray2,
-            ),
+          Divider(height: 1, color: DT.text.withValues(alpha: 0.06)),
+          const _QuestionPreviewRow(
+            icon: Icons.location_on_outlined,
+            label: '위치 설정',
+            isLast: true,
           ),
 
           const Spacer(),
@@ -255,27 +250,27 @@ class _WelcomePage3 extends StatelessWidget {
           // Hero 40pt
           const OnboardingHero(
             main: '이렇게 진행돼요',
-            sub: '단계별로 알려드릴게요.',
+            sub: '약 2분이면 충분해요.',
             heroSize: 40,
           ),
           const SizedBox(height: 36),
 
-          // 3단계
+          // 3단계 (시간·플로우 강조)
           const _StepRow(
             number: '01',
-            label: '몇 가지 질문',
-            description: '호흡기·심혈관·흡연 이력',
+            label: '질문 5개',
+            description: '약 2분',
           ),
           Divider(height: 1, color: DT.text.withValues(alpha: 0.06)),
           const _StepRow(
             number: '02',
-            label: '결과 확인',
+            label: '즉시 결과지',
             description: '내 기준치와 건강 페르소나',
           ),
           Divider(height: 1, color: DT.text.withValues(alpha: 0.06)),
           const _StepRow(
             number: '03',
-            label: '알림 설정',
+            label: '매일 맞춤 알림',
             description: '원하는 시간에 받기',
             isLast: true,
           ),

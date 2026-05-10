@@ -7,6 +7,7 @@ import '../../core/constants/app_tokens.dart';
 import '../../core/constants/design_tokens.dart';
 import '../../providers/providers.dart';
 import '../../widgets/app_button.dart';
+import 'widgets/onboarding_background.dart';
 
 /// 알림 권한 요청 — 맥락 있는 설명 화면
 class PermissionScreen extends ConsumerStatefulWidget {
@@ -34,14 +35,16 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen> {
     return PopScope(
       canPop: false, // 권한 화면에서 뒤로가기로 notification_time 스택 없어 앱 종료 방지
       child: Scaffold(
-        backgroundColor: DT.background,
-        body: SafeArea(
-          child: FutureBuilder<bool>(
-            future: _notifGrantedFuture,
-            builder: (context, snapshot) {
-              final notifGranted = snapshot.data ?? false;
-              return _buildBody(context, name, notifGranted);
-            },
+        backgroundColor: Colors.transparent,
+        body: OnboardingBackground(
+          child: SafeArea(
+            child: FutureBuilder<bool>(
+              future: _notifGrantedFuture,
+              builder: (context, snapshot) {
+                final notifGranted = snapshot.data ?? false;
+                return _buildBody(context, name, notifGranted);
+              },
+            ),
           ),
         ),
       ),

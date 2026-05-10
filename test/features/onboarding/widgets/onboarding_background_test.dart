@@ -49,9 +49,9 @@ void main() {
 
       expect(gradient.colors.length, 3);
       expect(gradient.stops, const [0.0, 0.3, 1.0]);
-      // safe 톱 색상
-      expect(gradient.colors[0], const Color(0xFFE0F0E8));
-      // safe 바텀 색상
+      // brand 파랑 톱 색상 (T11: #E0F0E8 → #E8F0FE)
+      expect(gradient.colors[0], const Color(0xFFE8F0FE));
+      // 바텀 색상
       expect(gradient.colors[2], const Color(0xFFF9FAFB));
     });
   });

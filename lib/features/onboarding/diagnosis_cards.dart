@@ -911,6 +911,15 @@ class DiagQ6Smoking extends StatelessWidget {
     (SmokingStatus.never,   Icons.check_circle_outline, '안 피워요',    '흡연 이력이 없어요'),
   ];
 
+  /// SmokingStatus별 강조 색 분기
+  Color _q6Accent(SmokingStatus s) {
+    switch (s) {
+      case SmokingStatus.never:   return DT.safe;
+      case SmokingStatus.former:  return DT.primary;
+      case SmokingStatus.current: return DT.caution;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -929,6 +938,7 @@ class DiagQ6Smoking extends StatelessWidget {
           ..._options.map((opt) {
             final (status, iconData, label, hint) = opt;
             final sel = value == status;
+            final accent = _q6Accent(status);
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: GestureDetector(
@@ -939,17 +949,17 @@ class DiagQ6Smoking extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: sel
-                        ? DT.primary.withValues(alpha: 0.07)
+                        ? accent.withValues(alpha: 0.07)
                         : DT.white,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: sel ? DT.primary : DT.border,
+                      color: sel ? accent : DT.border,
                       width: sel ? 2 : 1,
                     ),
                   ),
                   child: Row(
                     children: [
-                      Icon(iconData, size: 26, color: sel ? DT.primary : DT.gray2),
+                      Icon(iconData, size: 26, color: sel ? accent : DT.gray2),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
@@ -960,9 +970,7 @@ class DiagQ6Smoking extends StatelessWidget {
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 15,
-                                color: sel
-                                    ? DT.primary
-                                    : DT.text,
+                                color: sel ? accent : DT.text,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -979,7 +987,7 @@ class DiagQ6Smoking extends StatelessWidget {
                         sel
                             ? Icons.radio_button_checked
                             : Icons.radio_button_off,
-                        color: sel ? DT.primary : DT.gray2,
+                        color: sel ? accent : DT.gray2,
                         size: 22,
                       ),
                     ],
@@ -1072,17 +1080,17 @@ class DiagQ6_1SmokingType extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: sel
-                        ? DT.primary.withValues(alpha: 0.07)
+                        ? DT.caution.withValues(alpha: 0.07)
                         : DT.white,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: sel ? DT.primary : DT.border,
+                      color: sel ? DT.caution : DT.border,
                       width: sel ? 2 : 1,
                     ),
                   ),
                   child: Row(
                     children: [
-                      Icon(iconData, size: 26, color: sel ? DT.primary : DT.gray2),
+                      Icon(iconData, size: 26, color: sel ? DT.caution : DT.gray2),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
@@ -1093,9 +1101,7 @@ class DiagQ6_1SmokingType extends StatelessWidget {
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 15,
-                                color: sel
-                                    ? DT.primary
-                                    : DT.text,
+                                color: sel ? DT.caution : DT.text,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -1110,7 +1116,7 @@ class DiagQ6_1SmokingType extends StatelessWidget {
                       ),
                       Icon(
                         sel ? Icons.check_box : Icons.check_box_outline_blank,
-                        color: sel ? DT.primary : DT.gray2,
+                        color: sel ? DT.caution : DT.gray2,
                         size: 22,
                       ),
                     ],
@@ -1282,7 +1288,7 @@ class _DiagQLocationState extends State<DiagQLocation> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 32),
-          _qBadge('Q${widget.questionNumber} · 관심 지역'),
+          _qBadge('Q${widget.questionNumber} · 위치 설정'),
           const SizedBox(height: 14),
           _qTitle(context, '자주 계시는 곳을\n알려주세요'),
           const SizedBox(height: 8),

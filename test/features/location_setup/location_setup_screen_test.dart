@@ -41,12 +41,12 @@ void main() {
   // ── a: SettingsDrillHeader ────────────────────────────────
 
   group('a: SettingsDrillHeader 헤더', () {
-    testWidgets('"관심 지역" 타이틀 표시', (tester) async {
+    testWidgets('"위치 설정" 타이틀 표시', (tester) async {
       await tester.pumpWidget(_buildApp());
       await tester.pump();
 
       expect(find.byType(SettingsDrillHeader), findsOneWidget);
-      expect(find.text('관심 지역'), findsOneWidget);
+      expect(find.text('위치 설정'), findsOneWidget);
     });
 
     testWidgets('기존 온보딩 스타일 대제목 아이콘 없음', (tester) async {
@@ -114,7 +114,7 @@ void main() {
       await tester.pumpWidget(_buildApp(isOnboarding: true));
       await tester.pump();
 
-      expect(find.text('관심 지역'), findsOneWidget);
+      expect(find.text('위치 설정'), findsOneWidget);
       expect(find.byType(SettingsDrillHeader), findsOneWidget);
     });
   });
