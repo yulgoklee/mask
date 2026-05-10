@@ -2,209 +2,232 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_tokens.dart';
 import '../../core/constants/design_tokens.dart';
 import '../../core/services/app_logger.dart';
-import '../../data/models/notification_setting.dart';
+import '../../features/settings/widgets/s_dnd_child.dart';
+import '../../features/settings/widgets/s_item.dart';
+import '../../features/settings/widgets/s_label.dart';
+import '../../features/settings/widgets/s_switch.dart';
+import '../../features/settings/widgets/settings_drill_header.dart';
 import '../../providers/providers.dart';
 import '../../widgets/app_button.dart';
-import '../../widgets/notif_card.dart';
+import '../../widgets/time_picker_sheet.dart';
 
-/// 위치 설정 이후 — 알림 시간 + 톤 설정 화면 (리디자인 v2)
+/// 알림 시간 설정 화면
+///
+/// [isOnboarding] = true: 온보딩 플로우에서 진입. 하단 "설정 완료→" 버튼 표시.
+/// [isOnboarding] = false(기본): 설정에서 push. 하단 버튼 없음.
 class NotificationTimeScreen extends ConsumerWidget {
-  const NotificationTimeScreen({super.key});
+  final bool isOnboarding;
+
+  const NotificationTimeScreen({super.key, this.isOnboarding = false});
+
+  String _fmtTime(int h, int m) {
+    final period = h < 12 ? '오전' : '오후';
+    final dh = h == 0 ? 12 : (h > 12 ? h - 12 : h);
+    final dm = m == 0 ? '00분' : '$m분';
+    return '$period $dh시 $dm';
+  }
+
+  String _fmtHour(int h) {
+    final period = h < 12 ? '오전' : '오후';
+    final display = h == 0 ? 12 : (h > 12 ? h - 12 : h);
+    return '$period $display시';
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final setting = ref.watch(notificationSettingProvider);
+    final notifier = ref.read(notificationSettingProvider.notifier);
     // 홈 화면 로딩 단축: 알림 설정 중 백그라운드에서 미세먼지 데이터 선제 패치
     ref.watch(dustDataProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: DT.background,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── 헤더 ──────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(AppTokens.screenH, 36, AppTokens.screenH, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Center(
-                      child: Text('🔔', style: TextStyle(fontSize: 26)),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    '알림을 설정해드릴게요',
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                      height: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    '원하는 알림만 켜두세요. 언제든 변경할 수 있어요.',
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: AppColors.textSecondary,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
+            // ── 헤더 ──────────────────────────────────────────────
+            SettingsDrillHeader(
+              title: '알림 시간',
+              onBack: () => context.pop(),
             ),
 
-            const SizedBox(height: 28),
-
-            // ── 알림 카드 목록 ─────────────────────────────────
+            // ── 본문 (스크롤) ──────────────────────────────────────
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    NotifCard(
-                      emoji: '🌅',
-                      title: '외출 전 알림',
-                      subtitle: '아침에 마스크 필요 여부를 알려드려요',
-                      accentColor: AppColors.notifMorning,
-                      enabled: setting.morningAlertEnabled,
-                      hour: setting.morningAlertHour,
-                      minute: setting.morningAlertMinute,
-                      onToggle: (v) => ref
-                          .read(notificationSettingProvider.notifier)
-                          .update(setting.copyWith(morningAlertEnabled: v)),
-                      onTimeTap: () async {
+                    // ── 스케줄 알림 ────────────────────────────────
+                    const SLabel('스케줄 알림'),
+                    SItem(
+                      label: '외출 전',
+                      value: setting.morningAlertEnabled
+                          ? _fmtTime(setting.morningAlertHour,
+                              setting.morningAlertMinute)
+                          : '꺼짐',
+                      onClick: () async {
                         final picked = await showCupertinoTimePicker(
                           context,
                           hour: setting.morningAlertHour,
                           minute: setting.morningAlertMinute,
-                          accentColor: AppColors.notifMorning,
+                          accentColor: DT.primary,
                         );
                         if (picked != null) {
-                          ref
-                              .read(notificationSettingProvider.notifier)
-                              .update(setting.copyWith(
-                                morningAlertHour: picked.hour,
-                                morningAlertMinute: picked.minute,
-                              ));
+                          notifier.update(setting.copyWith(
+                            morningAlertEnabled: true,
+                            morningAlertHour: picked.hour,
+                            morningAlertMinute: picked.minute,
+                          ));
                         }
                       },
                     ),
-                    const SizedBox(height: 12),
-                    NotifCard(
-                      emoji: '🌙',
-                      title: '전날 예보 알림',
-                      subtitle: '내일 미세먼지를 미리 알려드려요',
-                      accentColor: AppColors.notifEvening,
-                      enabled: setting.eveningForecastEnabled,
-                      hour: setting.eveningForecastHour,
-                      minute: setting.eveningForecastMinute,
-                      onToggle: (v) => ref
-                          .read(notificationSettingProvider.notifier)
-                          .update(setting.copyWith(eveningForecastEnabled: v)),
-                      onTimeTap: () async {
+                    SItem(
+                      label: '전날 예보',
+                      value: setting.eveningForecastEnabled
+                          ? _fmtTime(setting.eveningForecastHour,
+                              setting.eveningForecastMinute)
+                          : '꺼짐',
+                      onClick: () async {
                         final picked = await showCupertinoTimePicker(
                           context,
                           hour: setting.eveningForecastHour,
                           minute: setting.eveningForecastMinute,
-                          accentColor: AppColors.notifEvening,
+                          accentColor: DT.primary,
                         );
                         if (picked != null) {
-                          ref
-                              .read(notificationSettingProvider.notifier)
-                              .update(setting.copyWith(
-                                eveningForecastHour: picked.hour,
-                                eveningForecastMinute: picked.minute,
-                              ));
+                          notifier.update(setting.copyWith(
+                            eveningForecastEnabled: true,
+                            eveningForecastHour: picked.hour,
+                            eveningForecastMinute: picked.minute,
+                          ));
                         }
                       },
                     ),
-                    const SizedBox(height: 12),
-                    NotifCard(
-                      emoji: '🏠',
-                      title: '귀가 후 알림',
-                      subtitle: '퇴근 시간대 미세먼지를 확인해드려요',
-                      accentColor: AppColors.notifReturn,
-                      enabled: setting.eveningReturnEnabled,
-                      hour: setting.eveningReturnHour,
-                      minute: setting.eveningReturnMinute,
-                      onToggle: (v) => ref
-                          .read(notificationSettingProvider.notifier)
-                          .update(setting.copyWith(eveningReturnEnabled: v)),
-                      onTimeTap: () async {
+                    SItem(
+                      label: '귀가 후',
+                      value: setting.eveningReturnEnabled
+                          ? _fmtTime(setting.eveningReturnHour,
+                              setting.eveningReturnMinute)
+                          : '꺼짐',
+                      onClick: () async {
                         final picked = await showCupertinoTimePicker(
                           context,
                           hour: setting.eveningReturnHour,
                           minute: setting.eveningReturnMinute,
-                          accentColor: AppColors.notifReturn,
+                          accentColor: DT.primary,
                         );
                         if (picked != null) {
-                          ref
-                              .read(notificationSettingProvider.notifier)
-                              .update(setting.copyWith(
-                                eveningReturnHour: picked.hour,
-                                eveningReturnMinute: picked.minute,
-                              ));
+                          notifier.update(setting.copyWith(
+                            eveningReturnEnabled: true,
+                            eveningReturnHour: picked.hour,
+                            eveningReturnMinute: picked.minute,
+                          ));
                         }
                       },
+                      last: true,
                     ),
-                    const SizedBox(height: 20),
-                    // ── 방해 금지 시간 ───────────────────────────
-                    _OnboardingQuietHoursCard(
-                      setting: setting,
-                      notifier: ref.read(notificationSettingProvider.notifier),
+                    const Divider(height: 1, color: DT.border),
+
+                    // ── 실시간 ─────────────────────────────────────
+                    const SLabel('실시간'),
+                    SItem(
+                      label: '실시간 경보',
+                      trailing: SSwitch(
+                        value: setting.realtimeAlertEnabled,
+                        onChange: (v) => notifier.update(
+                          setting.copyWith(realtimeAlertEnabled: v),
+                        ),
+                      ),
+                      last: true,
                     ),
-                    const SizedBox(height: 20),
+                    const Divider(height: 1, color: DT.border),
+
+                    // ── 방해 금지 ──────────────────────────────────
+                    const SLabel('방해 금지'),
+                    SItem(
+                      label: '방해 금지 시간',
+                      trailing: SSwitch(
+                        value: setting.quietHoursEnabled,
+                        onChange: (v) => notifier.update(
+                          setting.copyWith(quietHoursEnabled: v),
+                        ),
+                      ),
+                    ),
+                    if (setting.quietHoursEnabled) ...[
+                      SDndChild(
+                        child: SItem(
+                          label: '시작 시간',
+                          value: _fmtHour(setting.quietHoursStartHour),
+                          onClick: () async {
+                            final picked = await showCupertinoTimePicker(
+                              context,
+                              hour: setting.quietHoursStartHour,
+                              minute: 0,
+                              accentColor: DT.gray,
+                            );
+                            if (picked != null) {
+                              notifier.update(setting.copyWith(
+                                quietHoursStartHour: picked.hour,
+                              ));
+                            }
+                          },
+                        ),
+                      ),
+                      SDndChild(
+                        child: SItem(
+                          label: '종료 시간',
+                          value: _fmtHour(setting.quietHoursEndHour),
+                          onClick: () async {
+                            final picked = await showCupertinoTimePicker(
+                              context,
+                              hour: setting.quietHoursEndHour,
+                              minute: 0,
+                              accentColor: DT.gray,
+                            );
+                            if (picked != null) {
+                              notifier.update(setting.copyWith(
+                                quietHoursEndHour: picked.hour,
+                              ));
+                            }
+                          },
+                          last: true,
+                        ),
+                      ),
+                    ],
+                    const Divider(height: 1, color: DT.border),
+
+                    // ── 알림 미리보기 ──────────────────────────────
+                    const SLabel('알림 미리보기'),
+                    const _SimulationButton(),
                   ],
                 ),
               ),
             ),
 
-            // ── 하단 버튼 영역 ─────────────────────────────────
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                border: Border(
-                  top: BorderSide(
-                    color: AppColors.divider.withValues(alpha: 0.6),
-                  ),
+            // ── 온보딩 전용 하단 버튼 ──────────────────────────────
+            if (isOnboarding)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+                child: AppButton.primary(
+                  label: '설정 완료  →',
+                  onTap: () async {
+                    try {
+                      await ref
+                          .read(profileRepositoryProvider)
+                          .completeOnboarding();
+                    } catch (e, st) {
+                      AppLogger.error(e, st,
+                          reason: 'onboarding_complete_save');
+                    }
+                    if (!context.mounted) return;
+                    context.go('/permission');
+                  },
                 ),
               ),
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-              child: Column(
-                children: [
-                  const _SimulationButton(),
-                  const SizedBox(height: 10),
-                  AppButton.primary(
-                    label: '설정 완료  →',
-                    onTap: () async {
-                      try {
-                        await ref
-                            .read(profileRepositoryProvider)
-                            .completeOnboarding();
-                      } catch (e, st) {
-                        AppLogger.error(e, st, reason: 'onboarding_complete_save');
-                      }
-                      if (!context.mounted) return;
-                      context.go('/permission');
-                    },
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
       ),
@@ -235,11 +258,11 @@ class _SimulationButtonState extends ConsumerState<_SimulationButton> {
       child: OutlinedButton(
         onPressed: (_loading || _sent) ? null : _simulate,
         style: OutlinedButton.styleFrom(
-          foregroundColor: _sent ? AppColors.success : AppColors.primary,
+          foregroundColor: _sent ? DT.safe : DT.primary,
           side: BorderSide(
             color: _sent
-                ? AppColors.success
-                : AppColors.primary.withValues(alpha: 0.5),
+                ? DT.safe
+                : DT.primary.withValues(alpha: 0.5),
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -253,7 +276,7 @@ class _SimulationButtonState extends ConsumerState<_SimulationButton> {
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: AppColors.primary),
+                    strokeWidth: 2, color: DT.primary),
               )
             else
               Icon(
@@ -325,265 +348,5 @@ class _SimulationButtonState extends ConsumerState<_SimulationButton> {
         _sent = true;
       });
     }
-  }
-}
-
-// ══════════════════════════════════════════════════════════════
-//  온보딩용 방해 금지 시간 카드
-// ══════════════════════════════════════════════════════════════
-
-class _OnboardingQuietHoursCard extends ConsumerWidget {
-  final NotificationSetting setting;
-  final NotificationSettingNotifier notifier;
-
-  const _OnboardingQuietHoursCard({
-    required this.setting,
-    required this.notifier,
-  });
-
-  String _hourLabel(int hour) {
-    final period = hour < 12 ? '오전' : '오후';
-    final display = hour % 12 == 0 ? 12 : hour % 12;
-    return '$period $display시';
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // 방해 금지는 "차단" 의미 → 중립 회색 톤 사용
-    const accentColor = DT.gray;
-    const accentBg    = DT.grayLt;
-    final enabled = setting.quietHoursEnabled;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOut,
-      decoration: BoxDecoration(
-        color: enabled ? accentBg : AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: enabled
-              ? accentColor.withValues(alpha: 0.4)
-              : AppColors.divider,
-          width: enabled ? 1.5 : 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── 헤더: 아이콘 + 텍스트 + 토글 ────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 12, 16),
-            child: Row(
-              children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: enabled
-                        ? accentColor.withValues(alpha: 0.15)
-                        : AppColors.surfaceVariant,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Center(
-                    child: Text('🌙', style: TextStyle(fontSize: 22)),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '방해 금지',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: enabled
-                              ? AppColors.textPrimary
-                              : AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      const Text(
-                        '이 시간엔 알림을 보내지 않아요',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Transform.scale(
-                  scale: 0.85,
-                  child: Switch(
-                    value: enabled,
-                    onChanged: (v) =>
-                        notifier.update(setting.copyWith(quietHoursEnabled: v)),
-                    activeThumbColor: accentColor,
-                    activeTrackColor: accentColor.withValues(alpha: 0.35),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ── 시간 선택 (활성 시만) ────────────────────────────
-          if (enabled) ...[
-            Divider(
-              height: 1,
-              color: accentColor.withValues(alpha: 0.2),
-              indent: 16,
-              endIndent: 16,
-            ),
-            // 시작 시간
-            GestureDetector(
-              onTap: () async {
-                final picked = await showCupertinoTimePicker(
-                  context,
-                  hour: setting.quietHoursStartHour,
-                  minute: 0,
-                  accentColor: accentColor,
-                );
-                if (picked != null) {
-                  notifier.update(setting.copyWith(
-                    quietHoursStartHour: picked.hour,
-                  ));
-                }
-              },
-              behavior: HitTestBehavior.opaque,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.bedtime_outlined,
-                      size: 16,
-                      color: accentColor.withValues(alpha: 0.8),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '시작',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: accentColor,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 7),
-                      decoration: BoxDecoration(
-                        color: accentColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        _hourLabel(setting.quietHoursStartHour),
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: accentColor,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      size: 18,
-                      color: accentColor.withValues(alpha: 0.6),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Divider(
-              height: 1,
-              color: accentColor.withValues(alpha: 0.15),
-              indent: 16,
-              endIndent: 16,
-            ),
-            // 종료 시간
-            GestureDetector(
-              onTap: () async {
-                final picked = await showCupertinoTimePicker(
-                  context,
-                  hour: setting.quietHoursEndHour,
-                  minute: 0,
-                  accentColor: accentColor,
-                );
-                if (picked != null) {
-                  notifier.update(setting.copyWith(
-                    quietHoursEndHour: picked.hour,
-                  ));
-                }
-              },
-              behavior: HitTestBehavior.opaque,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.wb_sunny_outlined,
-                      size: 16,
-                      color: accentColor.withValues(alpha: 0.8),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '종료',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: accentColor,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 7),
-                      decoration: BoxDecoration(
-                        color: accentColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        _hourLabel(setting.quietHoursEndHour),
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: accentColor,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      size: 18,
-                      color: accentColor.withValues(alpha: 0.6),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Divider(
-              height: 1,
-              color: accentColor.withValues(alpha: 0.2),
-              indent: 16,
-              endIndent: 16,
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-              child: Text(
-                '이 시간엔 알림을 보내지 않아요. 단, 매우 위험한 공기에선 예외예요.',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: accentColor.withValues(alpha: 0.8),
-                  height: 1.4,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
   }
 }

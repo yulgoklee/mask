@@ -123,7 +123,10 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/notification_time',
-      pageBuilder: (_, state) => _slidePage(state, const NotificationTimeScreen()),
+      pageBuilder: (_, state) => _slidePage(
+        state,
+        NotificationTimeScreen(isOnboarding: state.extra as bool? ?? false),
+      ),
     ),
     GoRoute(
       path: '/permission',

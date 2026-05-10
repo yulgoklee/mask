@@ -7,6 +7,7 @@ import 'package:mask_alert/data/models/notification_setting.dart';
 import 'package:mask_alert/data/models/user_profile.dart';
 import 'package:mask_alert/data/repositories/profile_repository.dart';
 import 'package:mask_alert/features/profile/profile_edit_screen.dart';
+import 'package:mask_alert/features/settings/widgets/s_item.dart';
 import 'package:mask_alert/providers/core_providers.dart';
 import 'package:mask_alert/providers/profile_providers.dart';
 
@@ -95,12 +96,14 @@ void _setTallView(WidgetTester tester) {
   addTearDown(tester.view.resetDevicePixelRatio);
 }
 
-Future<void> _tapSwitchAndSave(WidgetTester tester, String title) async {
-  final tile = find.ancestor(
-    of: find.text(title),
-    matching: find.byType(ListTile),
+/// SItem label을 기준으로 인접 Switch를 찾아 탭 후 저장
+Future<void> _tapSwitchAndSave(WidgetTester tester, String label) async {
+  // SItem 위젯 내 label 텍스트의 형제 Switch를 찾음
+  final sItem = find.ancestor(
+    of: find.text(label),
+    matching: find.byType(SItem),
   );
-  final sw = find.descendant(of: tile, matching: find.byType(Switch));
+  final sw = find.descendant(of: sItem, matching: find.byType(Switch));
   await tester.tap(sw);
   await tester.pumpAndSettle();
   await tester.tap(find.text('저장'));
@@ -151,13 +154,11 @@ void main() {
       expect(find.text('뇌졸중 (중풍 경험)'), findsOneWidget);
     });
 
-    testWidgets('흡연 ChipGroup 3개 옵션 표시', (tester) async {
+    testWidgets('흡연 여부 SItem 표시', (tester) async {
       _setTallView(tester);
       await tester.pumpWidget(_buildApp());
       await tester.pump();
-      expect(find.text('현재 흡연 중'), findsOneWidget);
-      expect(find.text('끊었어요'), findsOneWidget);
-      expect(find.text('안 피워요'), findsOneWidget);
+      expect(find.text('흡연 여부'), findsOneWidget);
     });
 
     testWidgets('never 초기 상태: 흡연 종류 Switch 숨김', (tester) async {
@@ -169,7 +170,7 @@ void main() {
       expect(find.text('전자담배'), findsNothing);
     });
 
-    testWidgets('AppBar에 저장 버튼 표시', (tester) async {
+    testWidgets('저장 버튼 표시', (tester) async {
       _setTallView(tester);
       await tester.pumpWidget(_buildApp());
       await tester.pump();
@@ -186,12 +187,12 @@ void main() {
           _buildApp(initial: _base.copyWith(rhinitis: true)));
       await tester.pump();
 
-      final tile = find.ancestor(
+      final sItem = find.ancestor(
         of: find.text('비염'),
-        matching: find.byType(ListTile),
+        matching: find.byType(SItem),
       );
       final sw = tester.widget<Switch>(
-        find.descendant(of: tile, matching: find.byType(Switch)),
+        find.descendant(of: sItem, matching: find.byType(Switch)),
       );
       expect(sw.value, isTrue);
     });
@@ -202,12 +203,12 @@ void main() {
           _buildApp(initial: _base.copyWith(hypertension: true)));
       await tester.pump();
 
-      final tile = find.ancestor(
+      final sItem = find.ancestor(
         of: find.text('고혈압'),
-        matching: find.byType(ListTile),
+        matching: find.byType(SItem),
       );
       final sw = tester.widget<Switch>(
-        find.descendant(of: tile, matching: find.byType(Switch)),
+        find.descendant(of: sItem, matching: find.byType(Switch)),
       );
       expect(sw.value, isTrue);
     });
@@ -294,47 +295,31 @@ void main() {
   // ── c: 흡연 섹션 조건부 노출 + 초기화 ──────────────────
 
   group('c: 흡연 섹션 조건부 노출 + 초기화', () {
-    testWidgets('현재 흡연 중 선택 → 종류 Switch 3개 노출 (저장 전, UI 즉시 반영)',
-        (tester) async {
+    testWidgets('smokingStatus=current → 종류 Switch 3개 노출', (tester) async {
       _setTallView(tester);
-      await tester.pumpWidget(_buildApp());
+      await tester.pumpWidget(_buildApp(
+        initial: _base.copyWith(smokingStatus: SmokingStatus.current),
+      ));
       await tester.pump();
-
-      await tester.tap(find.text('현재 흡연 중'));
-      await tester.pumpAndSettle();
-
       expect(find.text('연초'), findsOneWidget);
       expect(find.text('가열식'), findsOneWidget);
       expect(find.text('전자담배'), findsOneWidget);
     });
 
-    testWidgets('현재 흡연 중 선택 + 저장 → smokingStatus=current 저장',
+    testWidgets('smokingStatus=current → 흡연 여부 SItem 값 "현재 흡연 중"',
         (tester) async {
       _setTallView(tester);
-      final (container, widget) = _buildWithContainer();
-      await tester.pumpWidget(widget);
+      await tester.pumpWidget(_buildApp(
+        initial: _base.copyWith(smokingStatus: SmokingStatus.current),
+      ));
       await tester.pump();
-
-      await tester.tap(find.text('현재 흡연 중'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('저장'));
-      await tester.pumpAndSettle();
-
-      expect(
-          container.read(profileProvider).smokingStatus, SmokingStatus.current);
+      expect(find.text('현재 흡연 중'), findsOneWidget);
     });
 
-    testWidgets('현재 흡연 → 끊었어요 선택 → 종류 숨김 (저장 전)', (tester) async {
+    testWidgets('smokingStatus=never → 흡연 종류 미표시', (tester) async {
       _setTallView(tester);
-      await tester.pumpWidget(
-        _buildApp(
-            initial: _base.copyWith(smokingStatus: SmokingStatus.current)),
-      );
+      await tester.pumpWidget(_buildApp());
       await tester.pump();
-
-      await tester.tap(find.text('끊었어요'));
-      await tester.pumpAndSettle();
-
       expect(find.text('연초'), findsNothing);
     });
 
@@ -350,8 +335,14 @@ void main() {
       await tester.pumpWidget(widget);
       await tester.pump();
 
+      // 흡연 여부 SItem 탭 → BottomSheet 오픈
+      await tester.tap(find.text('현재 흡연 중'));
+      await tester.pumpAndSettle();
+
+      // BottomSheet에서 "끊었어요" 선택
       await tester.tap(find.text('끊었어요'));
       await tester.pumpAndSettle();
+
       await tester.tap(find.text('저장'));
       await tester.pumpAndSettle();
 

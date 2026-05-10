@@ -1,12 +1,16 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_tokens.dart';
+import '../../core/constants/design_tokens.dart';
 import '../../data/models/user_profile.dart';
+import '../../features/settings/widgets/s_item.dart';
+import '../../features/settings/widgets/s_label.dart';
+import '../../features/settings/widgets/s_switch.dart';
+import '../../features/settings/widgets/settings_drill_header.dart';
 import '../../providers/profile_providers.dart';
+import '../../widgets/app_button.dart';
 
-/// 프로필 편집 화면
+/// 프로필 편집 화면 (건강 정보)
 ///
 /// _draft 패턴: 진입 시 현재 profile 복사 → 필드 변경 시 _draft 갱신
 /// [저장] 버튼: _draft를 profileProvider에 저장 후 pop
@@ -44,371 +48,163 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     Navigator.of(context).pop();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 20, color: AppColors.textPrimary),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text(
-          '프로필 수정',
-          style: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: _save,
-            child: const Text(
-              '저장',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primary,
+  // ── 성별 BottomSheet ──────────────────────────────────────────
+
+  void _showGenderSheet() {
+    showModalBottomSheet(
+      context: context,
+      useRootNavigator: true,
+      backgroundColor: DT.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: DT.border,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '성별',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: DT.text,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            _SheetItem(
+              label: '남성',
+              selected: _draft.gender == 'male',
+              onTap: () {
+                setState(() => _draft = _draft.copyWith(gender: 'male'));
+                Navigator.pop(ctx);
+              },
+            ),
+            _SheetItem(
+              label: '여성',
+              selected: _draft.gender == 'female',
+              onTap: () {
+                setState(() => _draft = _draft.copyWith(gender: 'female'));
+                Navigator.pop(ctx);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        children: [
-          // ── 기본 정보 ─────────────────────────────────────
-          _SectionLabel('기본 정보'),
-          const SizedBox(height: 10),
+    );
+  }
 
-          _FieldLabel('성별'),
-          const SizedBox(height: 8),
-          _ChipGroup<String>(
-            values: const ['male', 'female'],
-            // 기존에 'other' 등록한 경우 빈 문자열로 처리 (칩 미선택 상태)
-            selected: (_draft.gender == 'male' || _draft.gender == 'female')
-                ? _draft.gender
-                : '',
-            labelOf: (v) => v == 'male' ? '남성' : '여성',
-            onSelect: (v) => setState(() => _draft = _draft.copyWith(gender: v)),
-          ),
-          const SizedBox(height: 20),
+  // ── 흡연 여부 BottomSheet ─────────────────────────────────────
 
-          _FieldLabel('출생연도'),
-          const SizedBox(height: 8),
-          _BirthYearPicker(
-            birthYear: _draft.birthYear,
-            onChanged: (year) =>
-                setState(() => _draft = _draft.copyWith(birthYear: year)),
-          ),
-          const SizedBox(height: 20),
-
-          // ── 호흡기 질환 ───────────────────────────────────
-          _SectionLabel('호흡기 질환'),
-          const SizedBox(height: 10),
-          _SettingRow(
-            icon: '👃',
-            title: '비염',
-            subtitle: '알레르기성 또는 비알레르기성 비염',
-            isActive: _draft.rhinitis,
-            onToggle: (v) =>
-                setState(() => _draft = _draft.copyWith(rhinitis: v)),
-          ),
-          _SettingRow(
-            icon: '🫁',
-            title: '천식',
-            subtitle: '기관지 천식 진단 또는 증상',
-            isActive: _draft.asthma,
-            onToggle: (v) =>
-                setState(() => _draft = _draft.copyWith(asthma: v)),
-          ),
-          _SettingRow(
-            icon: '🌬️',
-            title: 'COPD (만성 폐쇄성 폐질환)',
-            subtitle: '만성기관지염, 폐기종 포함',
-            isActive: _draft.copd,
-            onToggle: (v) =>
-                setState(() => _draft = _draft.copyWith(copd: v)),
-          ),
-          _SettingRow(
-            icon: '🌸',
-            title: '알레르기 (꽃가루 등)',
-            subtitle: '꽃가루·먼지·음식 등 알레르기 반응',
-            isActive: _draft.allergy,
-            onToggle: (v) =>
-                setState(() => _draft = _draft.copyWith(allergy: v)),
-          ),
-          const SizedBox(height: 24),
-
-          // ── 심혈관 질환 ───────────────────────────────────
-          _SectionLabel('심혈관 질환'),
-          const SizedBox(height: 10),
-          _SettingRow(
-            icon: '🩺',
-            title: '고혈압',
-            subtitle: '고혈압 진단 또는 약 복용 중',
-            isActive: _draft.hypertension,
-            onToggle: (v) =>
-                setState(() => _draft = _draft.copyWith(hypertension: v)),
-          ),
-          _SettingRow(
-            icon: '❤️',
-            title: '심장 질환',
-            subtitle: '협심증, 심근경색, 부정맥 등',
-            isActive: _draft.heartDisease,
-            onToggle: (v) =>
-                setState(() => _draft = _draft.copyWith(heartDisease: v)),
-          ),
-          _SettingRow(
-            icon: '🧠',
-            title: '뇌졸중 (중풍 경험)',
-            subtitle: '뇌졸중 또는 뇌혈관 질환 병력',
-            isActive: _draft.stroke,
-            onToggle: (v) =>
-                setState(() => _draft = _draft.copyWith(stroke: v)),
-          ),
-          const SizedBox(height: 24),
-
-          // ── 흡연 ─────────────────────────────────────────
-          _SectionLabel('흡연'),
-          const SizedBox(height: 10),
-          _FieldLabel('흡연 여부'),
-          const SizedBox(height: 8),
-          _ChipGroup<SmokingStatus>(
-            values: SmokingStatus.values,
-            selected: _draft.smokingStatus,
-            labelOf: (v) => v == SmokingStatus.current
-                ? '현재 흡연 중'
-                : v == SmokingStatus.former
-                    ? '끊었어요'
-                    : '안 피워요',
-            onSelect: (v) {
-              if (v != SmokingStatus.current) {
+  void _showSmokingSheet() {
+    showModalBottomSheet(
+      context: context,
+      useRootNavigator: true,
+      backgroundColor: DT.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: DT.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '흡연 여부',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: DT.text,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            _SheetItem(
+              label: '안 피워요',
+              selected: _draft.smokingStatus == SmokingStatus.never,
+              onTap: () {
                 setState(() => _draft = _draft.copyWith(
-                      smokingStatus: v,
+                      smokingStatus: SmokingStatus.never,
                       smokesCigarette: false,
                       smokesHeated: false,
                       smokesVaping: false,
                     ));
-              } else {
-                setState(() => _draft = _draft.copyWith(smokingStatus: v));
-              }
-            },
-          ),
-          if (_draft.smokingStatus == SmokingStatus.current) ...[
-            const SizedBox(height: 16),
-            _FieldLabel('흡연 종류'),
+                Navigator.pop(ctx);
+              },
+            ),
+            _SheetItem(
+              label: '끊었어요',
+              selected: _draft.smokingStatus == SmokingStatus.former,
+              onTap: () {
+                setState(() => _draft = _draft.copyWith(
+                      smokingStatus: SmokingStatus.former,
+                      smokesCigarette: false,
+                      smokesHeated: false,
+                      smokesVaping: false,
+                    ));
+                Navigator.pop(ctx);
+              },
+            ),
+            _SheetItem(
+              label: '현재 흡연 중',
+              selected: _draft.smokingStatus == SmokingStatus.current,
+              onTap: () {
+                setState(
+                    () => _draft = _draft.copyWith(smokingStatus: SmokingStatus.current));
+                Navigator.pop(ctx);
+              },
+            ),
             const SizedBox(height: 8),
-            _SettingRow(
-              icon: '🚬',
-              title: '연초',
-              subtitle: '일반 담배',
-              isActive: _draft.smokesCigarette,
-              onToggle: (v) =>
-                  setState(() => _draft = _draft.copyWith(smokesCigarette: v)),
-            ),
-            _SettingRow(
-              icon: '💨',
-              title: '가열식',
-              subtitle: 'IQOS, glo 등',
-              isActive: _draft.smokesHeated,
-              onToggle: (v) =>
-                  setState(() => _draft = _draft.copyWith(smokesHeated: v)),
-            ),
-            _SettingRow(
-              icon: '☁️',
-              title: '전자담배',
-              subtitle: '액상형 전자담배',
-              isActive: _draft.smokesVaping,
-              onToggle: (v) =>
-                  setState(() => _draft = _draft.copyWith(smokesVaping: v)),
-            ),
           ],
-          const SizedBox(height: 40),
-        ],
-      ),
-    );
-  }
-}
-
-// ── 섹션 레이블 ───────────────────────────────────────────
-
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  const _SectionLabel(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w700,
-        color: AppColors.textSecondary,
-        letterSpacing: 0.3,
-      ),
-    );
-  }
-}
-
-// ── 필드 레이블 ───────────────────────────────────────────
-
-class _FieldLabel extends StatelessWidget {
-  final String text;
-  const _FieldLabel(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textPrimary,
-      ),
-    );
-  }
-}
-
-// ── 공통 설정 행 (Switch) ─────────────────────────────────
-
-class _SettingRow extends StatelessWidget {
-  final String icon;
-  final String title;
-  final String subtitle;
-  final bool isActive;
-  final ValueChanged<bool> onToggle;
-
-  const _SettingRow({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.isActive,
-    required this.onToggle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: isActive
-            ? AppColors.primary.withValues(alpha: 0.07)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(AppTokens.radiusMd),
-        border: Border.all(
-          color: isActive
-              ? AppColors.primary.withValues(alpha: 0.25)
-              : Colors.grey.shade200,
-        ),
-      ),
-      child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-        leading: Text(icon, style: const TextStyle(fontSize: 22)),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: isActive ? AppColors.primary : AppColors.textPrimary,
-          ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: const TextStyle(
-              fontSize: 12, color: AppColors.textSecondary),
-        ),
-        trailing: Switch(
-          value: isActive,
-          onChanged: onToggle,
-          activeColor: AppColors.primary,
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
       ),
     );
   }
-}
 
-// ── ChipGroup ─────────────────────────────────────────────
+  // ── 출생연도 피커 ─────────────────────────────────────────────
 
-class _ChipGroup<T> extends StatelessWidget {
-  final List<T> values;
-  final T selected;
-  final String Function(T) labelOf;
-  final ValueChanged<T> onSelect;
-
-  const _ChipGroup({
-    required this.values,
-    required this.selected,
-    required this.labelOf,
-    required this.onSelect,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: values.map((v) {
-        final isSelected = v == selected;
-        return GestureDetector(
-          onTap: () => onSelect(v),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-            decoration: BoxDecoration(
-              color: isSelected ? AppColors.primary : AppColors.surface,
-              border: Border.all(
-                color: isSelected ? AppColors.primary : AppColors.divider,
-              ),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              labelOf(v),
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight:
-                    isSelected ? FontWeight.w600 : FontWeight.normal,
-                color:
-                    isSelected ? Colors.white : AppColors.textPrimary,
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-}
-
-// ── 출생연도 피커 ──────────────────────────────────────────
-
-class _BirthYearPicker extends StatelessWidget {
-  final int birthYear;
-  final ValueChanged<int> onChanged;
-
-  const _BirthYearPicker({
-    required this.birthYear,
-    required this.onChanged,
-  });
-
-  void _showPicker(BuildContext context) {
+  void _showBirthYearPicker() {
     final now = DateTime.now().year;
     const startYear = 1930;
     final totalItems = now - startYear + 1;
-    int tempYear = birthYear;
-    final initialItem = (birthYear - startYear).clamp(0, totalItems - 1);
+    int tempYear = _draft.birthYear;
+    final initialItem =
+        (_draft.birthYear - startYear).clamp(0, totalItems - 1);
 
     showModalBottomSheet(
       context: context,
       useRootNavigator: true,
-      backgroundColor: Colors.white,
+      backgroundColor: DT.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -421,39 +217,40 @@ class _BirthYearPicker extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: DT.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 20, vertical: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(ctx),
                     child: const Text('취소',
-                        style: TextStyle(color: AppColors.textSecondary)),
+                        style: TextStyle(color: DT.gray)),
                   ),
                   const Text('출생연도',
                       style: TextStyle(
                           fontSize: 16, fontWeight: FontWeight.bold)),
                   TextButton(
                     onPressed: () {
-                      onChanged(tempYear);
+                      setState(
+                          () => _draft = _draft.copyWith(birthYear: tempYear));
                       Navigator.pop(ctx);
                     },
                     child: const Text('확인',
-                        style: TextStyle(color: AppColors.primary)),
+                        style: TextStyle(color: DT.primary)),
                   ),
                 ],
               ),
             ),
             Expanded(
               child: CupertinoPicker(
-                scrollController: FixedExtentScrollController(
-                    initialItem: initialItem),
+                scrollController:
+                    FixedExtentScrollController(initialItem: initialItem),
                 itemExtent: 44,
                 onSelectedItemChanged: (i) => tempYear = startYear + i,
                 children: List.generate(
@@ -473,41 +270,222 @@ class _BirthYearPicker extends StatelessWidget {
     );
   }
 
+  // ── 성별 값 레이블 ────────────────────────────────────────────
+
+  String get _genderLabel {
+    return switch (_draft.gender) {
+      'male' => '남성',
+      'female' => '여성',
+      _ => '선택 안 함',
+    };
+  }
+
+  // ── 흡연 값 레이블 ────────────────────────────────────────────
+
+  String get _smokingLabel {
+    return switch (_draft.smokingStatus) {
+      SmokingStatus.current => '현재 흡연 중',
+      SmokingStatus.former => '끊었어요',
+      SmokingStatus.never => '안 피워요',
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now().year;
-    final age = now - birthYear;
+    final age = now - _draft.birthYear;
 
-    return GestureDetector(
-      onTap: () => _showPicker(context),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.grey.shade300),
-        ),
-        child: Row(
+    return Scaffold(
+      backgroundColor: DT.background,
+      resizeToAvoidBottomInset: true,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.cake_outlined,
-                size: 18, color: AppColors.primary),
-            const SizedBox(width: 10),
-            Text(
-              '$birthYear년',
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.textPrimary,
+            // ── 헤더 ──────────────────────────────────────────────
+            SettingsDrillHeader(
+              title: '건강 정보',
+              onBack: () => Navigator.of(context).pop(),
+            ),
+
+            // ── 본문 (스크롤) ──────────────────────────────────────
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── 기본 정보 ────────────────────────────────
+                    const SLabel('기본 정보'),
+                    SItem(
+                      label: '성별',
+                      value: _genderLabel,
+                      onClick: _showGenderSheet,
+                    ),
+                    SItem(
+                      label: '출생연도',
+                      value: '${_draft.birthYear}년 (만 $age세)',
+                      onClick: _showBirthYearPicker,
+                      last: true,
+                    ),
+                    const Divider(height: 1, color: DT.border),
+
+                    // ── 호흡기 질환 ──────────────────────────────
+                    const SLabel('호흡기 질환'),
+                    SItem(
+                      label: '비염',
+                      trailing: SSwitch(
+                        value: _draft.rhinitis,
+                        onChange: (v) =>
+                            setState(() => _draft = _draft.copyWith(rhinitis: v)),
+                      ),
+                    ),
+                    SItem(
+                      label: '천식',
+                      trailing: SSwitch(
+                        value: _draft.asthma,
+                        onChange: (v) =>
+                            setState(() => _draft = _draft.copyWith(asthma: v)),
+                      ),
+                    ),
+                    SItem(
+                      label: 'COPD (만성 폐쇄성 폐질환)',
+                      trailing: SSwitch(
+                        value: _draft.copd,
+                        onChange: (v) =>
+                            setState(() => _draft = _draft.copyWith(copd: v)),
+                      ),
+                    ),
+                    SItem(
+                      label: '알레르기 (꽃가루 등)',
+                      trailing: SSwitch(
+                        value: _draft.allergy,
+                        onChange: (v) =>
+                            setState(() => _draft = _draft.copyWith(allergy: v)),
+                      ),
+                      last: true,
+                    ),
+                    const Divider(height: 1, color: DT.border),
+
+                    // ── 심혈관 질환 ──────────────────────────────
+                    const SLabel('심혈관 질환'),
+                    SItem(
+                      label: '고혈압',
+                      trailing: SSwitch(
+                        value: _draft.hypertension,
+                        onChange: (v) =>
+                            setState(() => _draft = _draft.copyWith(hypertension: v)),
+                      ),
+                    ),
+                    SItem(
+                      label: '심장 질환',
+                      trailing: SSwitch(
+                        value: _draft.heartDisease,
+                        onChange: (v) =>
+                            setState(() => _draft = _draft.copyWith(heartDisease: v)),
+                      ),
+                    ),
+                    SItem(
+                      label: '뇌졸중 (중풍 경험)',
+                      trailing: SSwitch(
+                        value: _draft.stroke,
+                        onChange: (v) =>
+                            setState(() => _draft = _draft.copyWith(stroke: v)),
+                      ),
+                      last: true,
+                    ),
+                    const Divider(height: 1, color: DT.border),
+
+                    // ── 흡연 ─────────────────────────────────────
+                    const SLabel('흡연'),
+                    SItem(
+                      label: '흡연 여부',
+                      value: _smokingLabel,
+                      onClick: _showSmokingSheet,
+                      last: _draft.smokingStatus != SmokingStatus.current,
+                    ),
+                    if (_draft.smokingStatus == SmokingStatus.current) ...[
+                      SItem(
+                        label: '연초',
+                        trailing: SSwitch(
+                          value: _draft.smokesCigarette,
+                          onChange: (v) => setState(
+                              () => _draft = _draft.copyWith(smokesCigarette: v)),
+                        ),
+                      ),
+                      SItem(
+                        label: '가열식',
+                        trailing: SSwitch(
+                          value: _draft.smokesHeated,
+                          onChange: (v) => setState(
+                              () => _draft = _draft.copyWith(smokesHeated: v)),
+                        ),
+                      ),
+                      SItem(
+                        label: '전자담배',
+                        trailing: SSwitch(
+                          value: _draft.smokesVaping,
+                          onChange: (v) => setState(
+                              () => _draft = _draft.copyWith(smokesVaping: v)),
+                        ),
+                        last: true,
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(width: 8),
-            Text(
-              '만 $age세',
-              style: const TextStyle(
-                  fontSize: 13, color: AppColors.textSecondary),
+
+            // ── 하단 고정 저장 버튼 (D-2) ─────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+              child: AppButton.primary(
+                label: '저장',
+                onTap: _save,
+              ),
             ),
-            const Spacer(),
-            const Icon(Icons.chevron_right,
-                size: 18, color: AppColors.textHint),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── BottomSheet 선택 항목 위젯 ─────────────────────────────────
+
+class _SheetItem extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _SheetItem({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight:
+                      selected ? FontWeight.w600 : FontWeight.w400,
+                  color: selected ? DT.primary : DT.text,
+                ),
+              ),
+            ),
+            if (selected)
+              const Icon(Icons.check_rounded, size: 20, color: DT.primary),
           ],
         ),
       ),
