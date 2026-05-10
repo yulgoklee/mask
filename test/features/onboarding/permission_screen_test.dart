@@ -7,6 +7,7 @@ import 'package:mask_alert/data/models/notification_setting.dart';
 import 'package:mask_alert/data/models/user_profile.dart';
 import 'package:mask_alert/data/repositories/profile_repository.dart';
 import 'package:mask_alert/features/onboarding/permission_screen.dart';
+import 'package:mask_alert/features/onboarding/widgets/onboarding_hero.dart';
 import 'package:mask_alert/providers/core_providers.dart';
 import 'package:mask_alert/providers/profile_providers.dart';
 
@@ -70,6 +71,12 @@ Widget _buildApp() {
   );
 }
 
+// flutter_animate 타이머(300~350ms) 완전 소진 헬퍼
+Future<void> _settle(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 500));
+}
+
 // ── 테스트 ────────────────────────────────────────────────────
 
 void main() {
@@ -81,7 +88,7 @@ void main() {
   group('PermissionScreen smoke', () {
     testWidgets('a: PopScope canPop=false', (tester) async {
       await tester.pumpWidget(_buildApp());
-      await tester.pump();
+      await _settle(tester);
       final popScope = tester.widget<PopScope>(find.byType(PopScope));
       expect(popScope.canPop, isFalse);
     });
@@ -91,21 +98,29 @@ void main() {
     // pump() 1회 후의 초기 로딩 상태를 검증
     testWidgets('b: 초기 로딩 상태 — CircularProgressIndicator 표시', (tester) async {
       await tester.pumpWidget(_buildApp());
-      await tester.pump(); // 첫 frame
+      await tester.pump(); // 첫 frame — _notifGranted still null
       // _notifGranted == null (케이스 A) → isLoading=true → CircularProgressIndicator
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      // 남은 animate 타이머 소진
+      await tester.pump(const Duration(milliseconds: 500));
     });
 
     testWidgets('c: 초기 로딩 상태 — PopScope 존재', (tester) async {
       await tester.pumpWidget(_buildApp());
-      await tester.pump();
+      await _settle(tester);
       expect(find.byType(PopScope), findsOneWidget);
     });
 
     testWidgets('d: 초기 로딩 상태 — Scaffold 존재', (tester) async {
       await tester.pumpWidget(_buildApp());
-      await tester.pump();
+      await _settle(tester);
       expect(find.byType(Scaffold), findsOneWidget);
+    });
+
+    testWidgets('e: OnboardingHero 위젯 사용', (tester) async {
+      await tester.pumpWidget(_buildApp());
+      await _settle(tester);
+      expect(find.byType(OnboardingHero), findsWidgets);
     });
   });
 }
