@@ -13,7 +13,6 @@ import '../../features/onboarding/diagnosis_result_screen.dart';
 import '../../features/onboarding/notification_time_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/onboarding/permission_screen.dart';
-import '../../features/onboarding/roadmap_screen.dart';
 import '../../features/onboarding/disclaimer_screen.dart';
 import '../../features/onboarding/welcome_screen.dart';
 import '../../features/profile/profile_edit_screen.dart';
@@ -25,7 +24,6 @@ import '../../features/settings/transparency/limits_screen.dart';
 import '../../features/settings/transparency/disclaimer_screen.dart';
 import '../../features/report_tab/report_tab.dart';
 import '../../features/splash/splash_screen.dart';
-import '../../features/tutorial/tutorial_screen.dart';
 import '../../widgets/main_shell.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -82,14 +80,6 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/welcome',
       pageBuilder: (_, state) => _fadePage(state, const WelcomeScreen()),
-    ),
-    GoRoute(
-      path: '/tutorial',
-      pageBuilder: (_, state) => _fadePage(state, const TutorialScreen()),
-    ),
-    GoRoute(
-      path: '/roadmap',
-      pageBuilder: (_, state) => _fadePage(state, const RoadmapScreen()),
     ),
     GoRoute(
       path: '/onboarding',
