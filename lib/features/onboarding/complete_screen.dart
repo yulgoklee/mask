@@ -1,8 +1,8 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_tokens.dart';
+import '../../core/constants/design_tokens.dart';
 import '../../core/services/app_logger.dart';
 import '../../core/services/workmanager_push_scheduler.dart';
 import '../../providers/providers.dart';
@@ -79,7 +79,7 @@ class _OnboardingCompleteScreenState
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: DT.background,
       body: SafeArea(
         child: AnimatedBuilder(
           animation: _ctrl,
@@ -99,12 +99,12 @@ class _OnboardingCompleteScreenState
                       width: 88,
                       height: 88,
                       decoration: BoxDecoration(
-                        color: AppColors.primaryLight,
+                        color: DT.primaryLt,
                         borderRadius: BorderRadius.circular(24),
                       ),
                       child: const Icon(
                         Icons.check_circle_outline,
-                        color: AppColors.primary,
+                        color: DT.primary,
                         size: 52,
                       ),
                     ),
@@ -115,7 +115,7 @@ class _OnboardingCompleteScreenState
                       style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color: DT.text,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -125,7 +125,7 @@ class _OnboardingCompleteScreenState
                         '내일 $firstAlertTime,\n여기서부터 시작돼요.',
                         style: const TextStyle(
                           fontSize: 17,
-                          color: AppColors.textSecondary,
+                          color: DT.gray,
                           height: 1.6,
                           fontWeight: FontWeight.w500,
                         ),
@@ -137,7 +137,7 @@ class _OnboardingCompleteScreenState
                             : '공기가 나빠지면 언제든 먼저 알려드릴게요.',
                         style: TextStyle(
                           fontSize: 14,
-                          color: AppColors.textSecondary.withValues(alpha: 0.8),
+                          color: DT.gray.withValues(alpha: 0.8),
                           height: 1.6,
                         ),
                       ),
@@ -146,7 +146,7 @@ class _OnboardingCompleteScreenState
                         '알림을 모두 끄셨어요.\n앱을 열면 언제든\n오늘의 미세먼지를 확인할 수 있어요.',
                         style: TextStyle(
                           fontSize: 17,
-                          color: AppColors.textSecondary,
+                          color: DT.gray,
                           height: 1.6,
                         ),
                       ),

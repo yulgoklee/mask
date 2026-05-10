@@ -64,7 +64,7 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen>
                 child: Transform.translate(
                   offset: Offset(0, _slide.value),
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -183,7 +183,7 @@ class _CtaButton extends StatelessWidget {
 }
 
 // ── _SourcesCompact ────────────────────────────────────────────
-// 11pt w500 DT.gray2, lineHeight 1.55
+// 11pt w500 DT.gray (WCAG AA 통과), lineHeight 1.55
 
 class _SourcesCompact extends StatelessWidget {
   const _SourcesCompact();
@@ -196,7 +196,7 @@ class _SourcesCompact extends StatelessWidget {
       style: TextStyle(
         fontSize: 11,
         fontWeight: FontWeight.w500,
-        color: DT.gray2,
+        color: DT.gray,
         height: 1.55,
       ),
     );
