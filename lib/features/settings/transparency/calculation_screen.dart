@@ -78,10 +78,10 @@ class CalculationScreen extends ConsumerWidget {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Expanded(
+                        const Expanded(
                           child: Text(
                             'PM10 기준치',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: DT.text,

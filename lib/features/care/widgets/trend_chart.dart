@@ -185,7 +185,7 @@ class _TrendChartPainter extends CustomPainter {
 
     // ── 4. 현재 시점 도트 (= index 0, "지금") ────────────
     // ChartPoint hour=0이 지금, 이후 +1, +2... 시간
-    final nowIdx = 0;
+    const nowIdx = 0;
     final nowX = xs[nowIdx];
     final nowY = ys[nowIdx];
 

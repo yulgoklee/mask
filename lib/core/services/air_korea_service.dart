@@ -41,6 +41,7 @@ class AirKoreaService implements DustDataSource {
   }
 
   /// 현재 미세먼지 데이터 조회 (캐시 우선)
+  @override
   Future<DustData?> getDustData(String stationName) async {
     // 1. 캐시 확인
     final cached = _getCachedData(stationName);
@@ -90,6 +91,7 @@ class AirKoreaService implements DustDataSource {
   /// 시간별 데이터 — 현재 측정값 + 24시간 예보
   /// 미래 시간은 측정 시각 기준으로 연속 생성 (DateTime.now()와 무관하게 시간 연속성 보장)
   /// DioException → rethrow (네트워크 오류는 UI에서 인지할 수 있도록)
+  @override
   Future<List<HourlyDustData>> getHourlyData(String stationName) async {
     try {
       final encodedStation = Uri.encodeComponent(stationName);
@@ -174,6 +176,7 @@ class AirKoreaService implements DustDataSource {
   }
 
   /// 시간별 과거 데이터 (24시간) — 상세 화면용
+  @override
   Future<List<HourlyDustData>> getHourlyHistory(String stationName) async {
     try {
       final encodedStation = Uri.encodeComponent(stationName);
@@ -209,6 +212,7 @@ class AirKoreaService implements DustDataSource {
   /// 에어코리아 API는 오늘 기준 최대 3일(오늘/내일/모레)만 제공
   /// 하루 3회 발표(05시·11시·17시) 중 가장 최신 발표를 사용
   /// ※ 자정~04시 사이는 당일 첫 발표(05시)가 없으므로 전날 날짜로 조회
+  @override
   Future<List<WeeklyForecastData>> getWeeklyForecast({String? sidoName}) async {
     try {
       final now = DateTime.now();
@@ -298,6 +302,7 @@ class AirKoreaService implements DustDataSource {
   }
 
   /// 측정소명 검색 (getMsrstnList) → 자동완성용
+  @override
   Future<List<String>> searchStations(String keyword) async {
     if (keyword.trim().isEmpty) return [];
     try {
@@ -448,6 +453,7 @@ class AirKoreaService implements DustDataSource {
   }
 
   /// 측정소의 시도명 조회 (로컬 매핑 우선, API fallback)
+  @override
   Future<String?> getSidoForStation(String stationName) async {
     // 1. 로컬 매핑 (자치구명 → 시도)
     final local = _localSidoMap(stationName);
@@ -596,6 +602,7 @@ class AirKoreaService implements DustDataSource {
   String? _localSidoMap(String station) => _localSidoMapStatic(station);
 
   /// 내일 예보 조회 - 해당 시도만 필터링
+  @override
   Future<String?> getTomorrowForecast({String? sidoName}) async {
     try {
       final now = DateTime.now();

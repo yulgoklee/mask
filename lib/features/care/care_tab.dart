@@ -113,11 +113,11 @@ class _MoreLink extends StatelessWidget {
     return GestureDetector(
       onTap: () => context.push('/care/details'),
       behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+      child: const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             Text(
               '더 자세히 보기',
               style: TextStyle(

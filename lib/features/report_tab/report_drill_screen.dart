@@ -211,7 +211,7 @@ class _HeatmapGrid extends StatelessWidget {
                       ),
                     ),
                   ),
-                  SizedBox(width: gap),
+                  const SizedBox(width: gap),
                   Expanded(
                     child: Row(
                       children: List.generate(24, (hIdx) {
@@ -239,7 +239,7 @@ class _HeatmapGrid extends StatelessWidget {
           // 시간 라벨 행
           const SizedBox(height: 4),
           Padding(
-            padding: EdgeInsets.only(left: labelW + gap),
+            padding: const EdgeInsets.only(left: labelW + gap),
             child: Row(
               children: [0, 6, 12, 18].map((h) {
                 return Expanded(

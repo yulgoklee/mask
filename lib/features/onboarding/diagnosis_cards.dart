@@ -92,9 +92,9 @@ class DiagQ2BirthYear extends StatefulWidget {
 }
 
 class _DiagQ2BirthYearState extends State<DiagQ2BirthYear> {
-  static final int _minYear = 1924;
+  static const int _minYear = 1924;
   static final int _maxYear = DateTime.now().year;
-  static final int _defaultYear = 1990;
+  static const int _defaultYear = 1990;
 
   late int _selectedYear;
   late final FixedExtentScrollController _scrollCtrl;

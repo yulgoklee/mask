@@ -48,9 +48,9 @@ class DustGaugeWidget extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
       decoration: BoxDecoration(
-        color: _gradeColor.withOpacity(0.07),
+        color: _gradeColor.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _gradeColor.withOpacity(0.25)),
+        border: Border.all(color: _gradeColor.withValues(alpha: 0.25)),
       ),
       child: Column(
         children: [
@@ -115,7 +115,7 @@ class DustGaugeWidget extends StatelessWidget {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                                 fontSize: 10,
-                                color: _gradeColor.withOpacity(0.7))),
+                                color: _gradeColor.withValues(alpha: 0.7))),
                       ],
                     ),
                   ),
@@ -178,7 +178,7 @@ class _SemiCirclePainter extends CustomPainter {
       Rect.fromCircle(center: Offset(cx, cy), radius: radius),
       pi, pi, false,
       Paint()
-        ..color = Colors.black.withOpacity(0.08)
+        ..color = Colors.black.withValues(alpha: 0.08)
         ..style = PaintingStyle.stroke
         ..strokeWidth = sw + 2
         ..strokeCap = StrokeCap.butt,

@@ -203,7 +203,7 @@ final weekReportProvider = FutureProvider.autoDispose<WeekReportData>((ref) asyn
         final mmdd    = '${dt.month}/${dt.day}';
         final h       = dt.hour;
         final pm25val = maxPm25Record.pm25Value ?? 0;
-        noteText = '$mmdd ${h}시 PM2.5 $pm25val㎍';
+        noteText = '$mmdd $h시 PM2.5 $pm25val㎍';
       }
 
       pattern = PatternData(
@@ -227,7 +227,7 @@ final weekReportProvider = FutureProvider.autoDispose<WeekReportData>((ref) asyn
 
         pattern = PatternData(
           discoveryText: '$wLabel $timeStr가 한 번 살짝 올라왔어요',
-          noteText: '$mmdd ${h}시 PM2.5 $pm25val㎍ · 내 기준 아래',
+          noteText: '$mmdd $h시 PM2.5 $pm25val㎍ · 내 기준 아래',
         );
       }
     }
@@ -396,7 +396,7 @@ String _buildWeekCaption(DateTime monday, DateTime sunday) {
   final weekNum = ((monday.day - 1) ~/ 7) + 1;
   final mm = monday.month;
   final sd = sunday.month;
-  return '${mm}월 ${weekNum}주차 · $mm/${monday.day} ~ $sd/${sunday.day}';
+  return '$mm월 $weekNum주차 · $mm/${monday.day} ~ $sd/${sunday.day}';
 }
 
 String _buildTimeLabel(DateTime dt) {

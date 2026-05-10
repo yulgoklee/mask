@@ -88,10 +88,10 @@ class _GradeTable extends StatelessWidget {
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppColors.surfaceVariant,
                   borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(14)),
+                      BorderRadius.vertical(top: Radius.circular(14)),
                 ),
                 child: const Row(
                   children: [

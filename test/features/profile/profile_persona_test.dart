@@ -192,7 +192,7 @@ void main() {
       final persona = PersonaData.fromProfile(_base(birthYear: 1990));
       final ageAxis = persona.axes[4];
       final expectedAge = DateTime.now().year - 1990;
-      expect(ageAxis.sub, '${expectedAge}세');
+      expect(ageAxis.sub, '$expectedAge세');
     });
   });
 

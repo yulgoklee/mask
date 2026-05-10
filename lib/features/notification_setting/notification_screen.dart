@@ -649,7 +649,7 @@ class _QuietHoursCard extends StatelessWidget {
                       color: accentColor.withValues(alpha: 0.8),
                     ),
                     const SizedBox(width: 8),
-                    Text(
+                    const Text(
                       '시작',
                       style: TextStyle(
                         fontSize: 13,
@@ -667,7 +667,7 @@ class _QuietHoursCard extends StatelessWidget {
                       ),
                       child: Text(
                         _hourLabel(setting.quietHoursStartHour),
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: accentColor,
@@ -716,7 +716,7 @@ class _QuietHoursCard extends StatelessWidget {
                       color: accentColor.withValues(alpha: 0.8),
                     ),
                     const SizedBox(width: 8),
-                    Text(
+                    const Text(
                       '종료',
                       style: TextStyle(
                         fontSize: 13,
@@ -734,7 +734,7 @@ class _QuietHoursCard extends StatelessWidget {
                       ),
                       child: Text(
                         _hourLabel(setting.quietHoursEndHour),
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: accentColor,

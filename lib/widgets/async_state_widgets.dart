@@ -50,7 +50,7 @@ class _SkeletonBoxState extends State<_SkeletonBox>
         width: widget.width,
         height: widget.height,
         decoration: BoxDecoration(
-          color: AppColors.textHint.withOpacity(_anim.value),
+          color: AppColors.textHint.withValues(alpha: _anim.value),
           borderRadius: BorderRadius.circular(widget.radius),
         ),
       ),
@@ -64,29 +64,29 @@ class HomeSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(20),
+    return const SingleChildScrollView(
+      physics: NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 위치 + 시간 행
           Row(
             children: [
-              const _SkeletonBox(width: 16, height: 16, radius: 4),
-              const SizedBox(width: 6),
-              const _SkeletonBox(width: 100, height: 14),
-              const Spacer(),
-              const _SkeletonBox(width: 80, height: 12),
+              _SkeletonBox(width: 16, height: 16, radius: 4),
+              SizedBox(width: 6),
+              _SkeletonBox(width: 100, height: 14),
+              Spacer(),
+              _SkeletonBox(width: 80, height: 12),
             ],
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
           // 위험도 카드
-          const _SkeletonBox(
+          _SkeletonBox(
               width: double.infinity, height: 130, radius: 16),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
           // 게이지 2열
-          const Row(
+          Row(
             children: [
               Expanded(
                   child: _SkeletonBox(
@@ -97,9 +97,9 @@ class HomeSkeleton extends StatelessWidget {
                       width: double.infinity, height: 120, radius: 16)),
             ],
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
           // 시간별 현황 카드
-          const _SkeletonBox(
+          _SkeletonBox(
               width: double.infinity, height: 220, radius: 16),
         ],
       ),

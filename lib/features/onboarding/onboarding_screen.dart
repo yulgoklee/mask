@@ -515,7 +515,7 @@ class OnboardingProgressRow extends StatelessWidget {
   final bool isRediag;
   final VoidCallback? onCancel;
 
-  const OnboardingProgressRow({
+  const OnboardingProgressRow({super.key, 
     required this.currentPage,
     required this.totalPages,
     required this.onBack,

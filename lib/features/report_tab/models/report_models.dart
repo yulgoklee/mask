@@ -112,7 +112,7 @@ class WeekReportData {
     final weekNum = ((monday.day - 1) ~/ 7) + 1;
     final mm = monday.month;
     final sd = sunday.month;
-    return '${mm}월 ${weekNum}주차 · $mm/${monday.day} ~ $sd/${sunday.day}';
+    return '$mm월 $weekNum주차 · $mm/${monday.day} ~ $sd/${sunday.day}';
   }
 
   static String _buildTimeLabel(DateTime dt) {
