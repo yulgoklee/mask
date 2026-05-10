@@ -98,8 +98,9 @@ void main() {
     await tester.pumpWidget(_buildApp());
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.textContaining('내 몸에 맞는'), findsWidgets);
-    expect(find.textContaining('미세먼지 알림'), findsWidgets);
+    // 사이클 #15: P1 "사람마다 호흡이 달라요"
+    expect(find.textContaining('사람마다'), findsWidgets);
+    expect(find.textContaining('호흡이 달라요'), findsWidgets);
   });
 
   testWidgets('b: 페이지 1에서 "다음 →" 버튼 표시, "시작할게요" 없음', (tester) async {
@@ -110,44 +111,25 @@ void main() {
     expect(find.text('시작할게요'), findsNothing);
   });
 
-  testWidgets('c: "다음 →" 탭 → 페이지 2 표시 (질문지 안내)', (tester) async {
+  testWidgets('c: "다음 →" 탭 → 페이지 2 표시 (흐름 설명)', (tester) async {
     await tester.pumpWidget(_buildApp());
     await tester.pump(const Duration(milliseconds: 200));
 
     await tester.tap(find.text('다음 →'));
     await tester.pumpAndSettle();
 
-    expect(find.text('이런 걸 여쭤볼게요'), findsOneWidget);
-    expect(find.text('호흡기 · 심혈관 질환'), findsOneWidget);
-  });
-
-  testWidgets('d: 페이지 2에서 "다음 →" 탭 → 페이지 3 표시 (흐름 설명)', (tester) async {
-    await tester.pumpWidget(_buildApp());
-    await tester.pump(const Duration(milliseconds: 200));
-
-    // 페이지 1 → 2
-    await tester.tap(find.text('다음 →'));
-    await tester.pumpAndSettle();
-
-    // 페이지 2 → 3
-    await tester.tap(find.text('다음 →'));
-    await tester.pumpAndSettle();
-
+    // 사이클 #15: P2 "이렇게 진행돼요"
     expect(find.text('이렇게 진행돼요'), findsOneWidget);
     expect(find.text('01'), findsOneWidget);
     expect(find.text('02'), findsOneWidget);
     expect(find.text('03'), findsOneWidget);
   });
 
-  testWidgets('e: 페이지 3에서 "시작할게요" 버튼 표시', (tester) async {
+  testWidgets('d: 페이지 2에서 "시작할게요" 버튼 표시', (tester) async {
     await tester.pumpWidget(_buildApp());
     await tester.pump(const Duration(milliseconds: 200));
 
     // 페이지 1 → 2
-    await tester.tap(find.text('다음 →'));
-    await tester.pumpAndSettle();
-
-    // 페이지 2 → 3
     await tester.tap(find.text('다음 →'));
     await tester.pumpAndSettle();
 
@@ -155,13 +137,11 @@ void main() {
     expect(find.text('다음 →'), findsNothing);
   });
 
-  testWidgets('f: "시작할게요" 탭 → /onboarding 이동', (tester) async {
+  testWidgets('e: "시작할게요" 탭 → /onboarding 이동', (tester) async {
     await tester.pumpWidget(_buildApp());
     await tester.pump(const Duration(milliseconds: 200));
 
-    // 페이지 1 → 2 → 3
-    await tester.tap(find.text('다음 →'));
-    await tester.pumpAndSettle();
+    // 페이지 1 → 2
     await tester.tap(find.text('다음 →'));
     await tester.pumpAndSettle();
 
@@ -171,17 +151,17 @@ void main() {
     expect(find.text('onboarding'), findsOneWidget);
   });
 
-  testWidgets('g: 도트 인디케이터 3개 표시', (tester) async {
+  testWidgets('f: 도트 인디케이터 2개 표시', (tester) async {
     await tester.pumpWidget(_buildApp());
     await tester.pump(const Duration(milliseconds: 200));
 
-    // _DotIndicator는 List.generate(3, ...) → AnimatedContainer 3개로 렌더링
+    // _DotIndicator는 List.generate(2, ...) → AnimatedContainer 2개로 렌더링
     final dotFinder = find.byWidgetPredicate(
       (w) =>
           w is AnimatedContainer &&
           w.duration == const Duration(milliseconds: 200) &&
           (w.constraints?.maxWidth == 6.0 || w.constraints?.maxWidth == 20.0),
     );
-    expect(dotFinder, findsNWidgets(3));
+    expect(dotFinder, findsNWidgets(2));
   });
 }

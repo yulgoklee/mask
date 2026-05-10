@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_tokens.dart';
 import '../../core/constants/design_tokens.dart';
@@ -10,7 +11,10 @@ import '../../widgets/app_button.dart';
 import 'widgets/onboarding_background.dart';
 import 'widgets/onboarding_hero.dart';
 
-/// 온보딩 완료 화면 — "준비됐어요, [이름]"
+/// 온보딩 완료 화면 — 사이클 #15 그룹1 개선
+///
+/// AnimationController 제거 → sub/CTA에 flutter_animate fadeIn 적용
+/// 보조 본문: "공기가 나빠지면 먼저 알림이 와요." (name 분기 단순화)
 class OnboardingCompleteScreen extends ConsumerStatefulWidget {
   const OnboardingCompleteScreen({super.key});
 
@@ -20,24 +24,10 @@ class OnboardingCompleteScreen extends ConsumerStatefulWidget {
 }
 
 class _OnboardingCompleteScreenState
-    extends ConsumerState<OnboardingCompleteScreen>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final Animation<double> _fadeIn;
-  late final Animation<double> _slideUp;
-
+    extends ConsumerState<OnboardingCompleteScreen> {
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
-    );
-    _fadeIn = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
-    _slideUp = Tween<double>(begin: 30, end: 0).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
-    );
-    _ctrl.forward();
     _registerBackgroundTask();
   }
 
@@ -47,12 +37,6 @@ class _OnboardingCompleteScreenState
     } catch (e, st) {
       AppLogger.error(e, st, reason: 'workmanager_register');
     }
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
   }
 
   /// 24h 시간 → "오전/오후 H:MM" 형식
@@ -87,73 +71,62 @@ class _OnboardingCompleteScreenState
       backgroundColor: Colors.transparent,
       body: OnboardingBackground(
         child: SafeArea(
-          child: AnimatedBuilder(
-            animation: _ctrl,
-            builder: (_, __) => FadeTransition(
-              opacity: _fadeIn,
-              child: Transform.translate(
-                offset: Offset(0, _slideUp.value),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppTokens.screenH),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Spacer(flex: 2),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppTokens.screenH),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Spacer(flex: 2),
 
-                      // ── Hero ────────────────────────────────────
-                      OnboardingHero(
-                        main: heroMain,
-                        heroSize: 64,
-                      ),
-                      const SizedBox(height: 32),
-
-                      if (firstAlertTime != null) ...[
-                        Text(
-                          '내일 $firstAlertTime,\n여기서부터 시작돼요.',
-                          style: const TextStyle(
-                            fontSize: 17,
-                            color: DT.gray,
-                            height: 1.6,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          name.isNotEmpty
-                              ? '공기가 나빠지면 언제든 먼저 알려드릴게요.\n$name, 저만 믿으세요.'
-                              : '공기가 나빠지면 언제든 먼저 알려드릴게요.',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: DT.gray.withValues(alpha: 0.8),
-                            height: 1.6,
-                          ),
-                        ),
-                      ] else
-                        const Text(
-                          '알림을 모두 끄셨어요.\n앱을 열면 언제든\n오늘의 미세먼지를 확인할 수 있어요.',
-                          style: TextStyle(
-                            fontSize: 17,
-                            color: DT.gray,
-                            height: 1.6,
-                          ),
-                        ),
-
-                      const Spacer(flex: 3),
-
-                      AppButton.primary(
-                        label: '시작할게요',
-                        onTap: () {
-                          if (ref.read(dustDataProvider).hasValue == false) {
-                            ref.invalidate(dustDataProvider);
-                          }
-                          context.go('/care');
-                        },
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
+                // ── Hero ────────────────────────────────────
+                OnboardingHero(
+                  main: heroMain,
+                  heroSize: 64,
                 ),
-              ),
+                const SizedBox(height: 32),
+
+                if (firstAlertTime != null) ...[
+                  Text(
+                    '내일 $firstAlertTime,\n여기서부터 시작돼요.',
+                    style: const TextStyle(
+                      fontSize: 17,
+                      color: DT.gray,
+                      height: 1.6,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ).animate(delay: 200.ms).fadeIn(duration: 400.ms),
+                  const SizedBox(height: 12),
+                  const Text(
+                    '공기가 나빠지면 먼저 알림이 와요.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: DT.gray,
+                      height: 1.6,
+                    ),
+                  ).animate(delay: 200.ms).fadeIn(duration: 400.ms),
+                ] else
+                  const Text(
+                    '알림을 모두 끄셨어요.\n앱을 열면 언제든\n오늘의 미세먼지를 확인할 수 있어요.',
+                    style: TextStyle(
+                      fontSize: 17,
+                      color: DT.gray,
+                      height: 1.6,
+                    ),
+                  ).animate(delay: 200.ms).fadeIn(duration: 400.ms),
+
+                const Spacer(flex: 3),
+
+                AppButton.primary(
+                  label: '시작할게요',
+                  onTap: () {
+                    if (ref.read(dustDataProvider).hasValue == false) {
+                      ref.invalidate(dustDataProvider);
+                    }
+                    context.go('/care');
+                  },
+                ).animate(delay: 200.ms).fadeIn(duration: 400.ms),
+                const SizedBox(height: 24),
+              ],
             ),
           ),
         ),
