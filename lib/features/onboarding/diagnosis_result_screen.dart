@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/constants/design_tokens.dart';
 import '../../providers/profile_providers.dart';
 import '../../widgets/app_button.dart';
+import '../onboarding/widgets/onboarding_background.dart';
 import '../profile/profile_persona.dart';
 import '../profile/widgets/axis_list.dart';
 import '../profile/widgets/profile_background.dart';
@@ -19,30 +20,8 @@ class DiagnosisResultScreen extends ConsumerStatefulWidget {
       _DiagnosisResultScreenState();
 }
 
-class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final Animation<double> _fade;
-  late final Animation<double> _slide;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
-    )..forward();
-    _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
-    _slide = Tween<double>(begin: 32.0, end: 0.0)
-        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
+class _DiagnosisResultScreenState
+    extends ConsumerState<DiagnosisResultScreen> {
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
@@ -50,30 +29,28 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen>
     final level = ProfileBackground.levelFromSum(persona.sum);
     final accent = ProfileBackground.accentColor(level);
 
-    return PopScope(
-      canPop: widget.isRediag,
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: ProfileBackground(
-          level: level,
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: PopScope(
+        canPop: widget.isRediag,
+        child: OnboardingBackground(
           child: SafeArea(
-            child: AnimatedBuilder(
-              animation: _ctrl,
-              builder: (_, __) => FadeTransition(
-                opacity: _fade,
-                child: Transform.translate(
-                  offset: Offset(0, _slide.value),
+            child: Column(
+              children: [
+                Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+                    physics: const ClampingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // ── Hero: 인사 + 숫자 + 페르소나 ─────────
                         ProfileHero(
-                          tFinal: persona.tFinal,
-                          greeting: persona.name.isNotEmpty
-                              ? persona.name
+                          cap: '내 기준은',
+                          greeting: profile.displayName.isNotEmpty
+                              ? profile.displayName
                               : null,
+                          tFinal: persona.tFinal,
                           sub: persona.labelDiscovery,
                         ),
                         const SizedBox(height: 44),
@@ -86,33 +63,28 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen>
                         ),
                         const SizedBox(height: 28),
 
-                        // ── 섹션 라벨 ─────────────────────────────
-                        const _SectionLabel('내 호흡기 정보'),
+                        // ── 섹션 라벨 ─────────────────────────────────────────────
+                        const _SectionLabel('내 건강 분석'),
                         const SizedBox(height: 8),
 
-                        // ── 5축 분석 ──────────────────────────────
+                        // ── 4축 분석 ──────────────────────────────
                         AxisList(
                           axes: persona.axes,
                           accentColor: accent,
                         ),
                         const SizedBox(height: 24),
 
-                        // ── CTA ───────────────────────────────────
-                        _CtaButton(
-                          label: widget.isRediag ? '확인' : '위치 설정으로',
-                          onTap: () => widget.isRediag
-                              ? context.go('/profile')
-                              : context.go('/location_setup', extra: true),
-                        ),
-                        const SizedBox(height: 10),
-
                         // ── 자료원 ────────────────────────────────
                         const _SourcesCompact(),
+                        const SizedBox(height: 16),
                       ],
                     ),
                   ),
                 ),
-              ),
+
+                // ── CTA 하단 고정 ──────────────────────────────
+                _BottomCta(isRediag: widget.isRediag),
+              ],
             ),
           ),
         ),
@@ -122,7 +94,7 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen>
 }
 
 // ── _SectionLabel ──────────────────────────────────────────────
-// 13pt w700 gray, letterSpacing 0.04em, uppercase 효과 (소문자 한국어)
+// 15pt w700 gray
 
 class _SectionLabel extends StatelessWidget {
   final String text;
@@ -133,10 +105,47 @@ class _SectionLabel extends StatelessWidget {
     return Text(
       text,
       style: const TextStyle(
-        fontSize: 13,
+        fontSize: 15,
         fontWeight: FontWeight.w700,
         color: DT.gray,
-        letterSpacing: 0.52, // 0.04em × 13pt
+      ),
+    );
+  }
+}
+
+// ── _BottomCta ─────────────────────────────────────────────────
+
+class _BottomCta extends StatelessWidget {
+  final bool isRediag;
+  const _BottomCta({required this.isRediag});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (!isRediag) ...[
+            const Text(
+              '내 동네 공기는 지금 어때요?',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: DT.gray,
+                letterSpacing: -0.06,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+          ],
+          _CtaButton(
+            label: isRediag ? '확인' : '내 동네 공기 보러 가기',
+            onTap: () => isRediag
+                ? context.go('/profile')
+                : context.go('/location_setup', extra: true),
+          ),
+        ],
       ),
     );
   }

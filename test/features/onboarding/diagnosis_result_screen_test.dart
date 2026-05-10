@@ -8,7 +8,7 @@ import 'package:mask_alert/data/models/notification_setting.dart';
 import 'package:mask_alert/data/models/user_profile.dart';
 import 'package:mask_alert/data/repositories/profile_repository.dart';
 import 'package:mask_alert/features/onboarding/diagnosis_result_screen.dart';
-import 'package:mask_alert/features/profile/widgets/profile_background.dart';
+import 'package:mask_alert/features/onboarding/widgets/onboarding_background.dart';
 import 'package:mask_alert/providers/core_providers.dart';
 import 'package:mask_alert/providers/profile_providers.dart';
 
@@ -130,21 +130,22 @@ void main() {
     _prefs = await SharedPreferences.getInstance();
   });
 
-  group('ProfileBackground 존재', () {
-    testWidgets('ProfileBackground 위젯 렌더링 확인', (tester) async {
+  group('OnboardingBackground 존재', () {
+    testWidgets('OnboardingBackground 위젯 렌더링 확인', (tester) async {
       _setTallView(tester);
       await tester.pumpWidget(_buildApp(_respiratory));
       await tester.pump();
-      expect(find.byType(ProfileBackground), findsOneWidget);
+      expect(find.byType(OnboardingBackground), findsOneWidget);
     });
   });
 
   group('닉네임 분기', () {
-    testWidgets('nickname 있으면 인사 표시 "지수,"', (tester) async {
+    testWidgets('nickname 있으면 인사 표시 "지수님,"', (tester) async {
       _setTallView(tester);
       await tester.pumpWidget(_buildApp(_respiratory));
       await tester.pump();
-      expect(find.text('지수,'), findsOneWidget);
+      // displayName = "지수님", ProfileHero에서 "지수님," 렌더
+      expect(find.text('지수님,'), findsOneWidget);
     });
 
     testWidgets('nickname 없으면 인사 없음', (tester) async {
@@ -172,11 +173,11 @@ void main() {
   });
 
   group('CTA 라우팅', () {
-    testWidgets('isRediag=false → CTA 버튼 "위치 설정으로" 표시', (tester) async {
+    testWidgets('isRediag=false → CTA 버튼 "내 동네 공기 보러 가기" 표시', (tester) async {
       _setTallView(tester);
       await tester.pumpWidget(_buildApp(_general, isRediag: false));
       await tester.pump();
-      expect(find.text('위치 설정으로'), findsOneWidget);
+      expect(find.text('내 동네 공기 보러 가기'), findsOneWidget);
     });
 
     testWidgets('isRediag=true → CTA 버튼 "확인" 표시', (tester) async {

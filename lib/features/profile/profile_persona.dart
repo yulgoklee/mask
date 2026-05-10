@@ -57,15 +57,6 @@ class PersonaData {
         delta: -ThresholdConfig.defaults.tBase * bd.wSmoking,
         isActive: bd.wSmoking > 0,
       ),
-      // 임신 축 — ThresholdEngine에 현재 없음. I-2 하드코딩.
-      const AxisItem(
-        key: 'special',
-        label: '임신·특별',
-        sub: null,
-        weight: 0,
-        delta: 0,
-        isActive: false,
-      ),
       AxisItem(
         key: 'age',
         label: '연령',

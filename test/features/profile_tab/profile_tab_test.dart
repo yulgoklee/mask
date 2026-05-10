@@ -123,11 +123,11 @@ void main() {
       expect(finder, findsOneWidget);
     });
 
-    testWidgets('섹션 라벨 "내 호흡기 정보" 표시', (tester) async {
+    testWidgets('섹션 라벨 "내 건강 분석" 표시', (tester) async {
       await tester.pumpWidget(_buildWithRouter());
       await tester.pumpAndSettle();
 
-      expect(find.text('내 호흡기 정보'), findsOneWidget);
+      expect(find.text('내 건강 분석'), findsOneWidget);
     });
 
     testWidgets('AxisList variant D 렌더링', (tester) async {

@@ -6,9 +6,12 @@ import '../../../widgets/korean_hero_text.dart';
 ///
 /// 구조:
 ///   greeting (있으면): "지수님,"  16pt w500 gray
+///   [SizedBox(4) — greeting+cap 동시 사용 시]
 ///   cap     (있으면): "내 기준은" 11pt w600 gray letterSpacing 0.04em
 ///   숫자+단위: Row baseline — 64pt w700 + "㎍/㎥" 23pt w600 gray
 ///   sub: 16pt w500 gray, KoreanHeroText, marginTop 14
+///
+/// greeting+cap 동시 사용 가능 — 결과지에서 사용
 class ProfileHero extends StatelessWidget {
   final double tFinal;
   final String sub;
@@ -50,6 +53,11 @@ class ProfileHero extends StatelessWidget {
               letterSpacing: -0.16,
             ),
           ),
+
+        // greeting + cap 동시 사용 시 간격
+        if (greeting != null && greeting!.isNotEmpty &&
+            cap != null && cap!.isNotEmpty)
+          const SizedBox(height: 4),
 
         // ── Cap (프로필 표면 전용) ─────────────────────────
         if (cap != null && cap!.isNotEmpty)
