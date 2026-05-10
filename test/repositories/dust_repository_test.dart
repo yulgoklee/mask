@@ -5,10 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mask_alert/core/constants/app_constants.dart';
 import 'package:mask_alert/core/services/dust_data_source.dart';
 import 'package:mask_alert/core/services/gps_service.dart';
-import 'package:mask_alert/core/services/geolocator_gps_service.dart';
 import 'package:mask_alert/core/services/location_service.dart';
 import 'package:mask_alert/data/models/dust_data.dart';
-import 'package:mask_alert/data/models/forecast_models.dart';
 import 'package:mask_alert/data/repositories/dust_repository.dart';
 
 // ── Mocks ─────────────────────────────────────────────────

@@ -93,7 +93,7 @@ void main() {
         pm25: 30,
         pm10: 50,
       );
-      final expected = 30.0 / 29.75;
+      const expected = 30.0 / 29.75;
       expect(ratio, closeTo(expected, 1e-4));
     });
   });

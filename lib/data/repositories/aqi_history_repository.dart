@@ -201,9 +201,9 @@ class SafeTimeResult {
       final displayH = h == 0 ? 12 : (h > 12 ? h - 12 : h);
       final timeStr = '$period $displayH:$m';
       if (name != null) {
-        return '$name, ${timeStr}이면 공기가 기준치 아래로 내려와요 😊 그때부터 편하게 숨 쉬셔도 됩니다';
+        return '$name, $timeStr이면 공기가 기준치 아래로 내려와요 😊 그때부터 편하게 숨 쉬셔도 됩니다';
       }
-      return '${timeStr}이면 공기가 맑아져요. 그때부터 마스크를 벗으셔도 좋습니다 😊';
+      return '$timeStr이면 공기가 맑아져요. 그때부터 마스크를 벗으셔도 좋습니다 😊';
     }
     if (isNotWithin3h) {
       if (name != null) {

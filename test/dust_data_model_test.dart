@@ -21,7 +21,7 @@ void main() {
     });
 
     test('등급 코드 → 한글 변환', () {
-      final grade = (String code) => DustData.fromJson({
+      String grade(String code) => DustData.fromJson({
             'stationName': '',
             'pm25Value': '10',
             'pm10Value': '10',

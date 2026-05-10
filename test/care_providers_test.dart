@@ -54,7 +54,7 @@ String _thresholdLabel(int dominantValue, double dominantTFinal) {
   final diff = dominantValue - dominantTFinal.round();
   if (diff < 0)  return '기준 이하';
   if (diff == 0) return '기준 도달';
-  return '+${diff}µg 초과';
+  return '+$diffµg 초과';
 }
 
 // ── 테스트 ────────────────────────────────────────────────

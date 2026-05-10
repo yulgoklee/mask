@@ -405,7 +405,7 @@ class NotificationService {
     );
 
     await _plugin.initialize(
-      InitializationSettings(
+      const InitializationSettings(
         android: androidSettings,
         iOS: iosSettings,
       ),
@@ -550,24 +550,24 @@ class NotificationService {
     if (maskRequired) {
       if (tFinalTriggered && tFinal != null) {
         // 개인 기준선 도달 → 이유를 명확히 설명
-        lines.add('PM2.5 ${pm25}µg/m³ · $gradeName');
+        lines.add('PM2.5 $pm25µg/m³ · $gradeName');
         lines.add('당신의 기준(${tFinal.toStringAsFixed(1)}µg/m³)을 넘었어요.');
         lines.add(maskType != null
             ? '$maskType 착용을 권해드려요 😊'
             : '마스크 착용을 권해드려요 😊');
       } else if (stateNote != null) {
-        lines.add('PM2.5 ${pm25}µg/m³ · $gradeName');
+        lines.add('PM2.5 $pm25µg/m³ · $gradeName');
         lines.add('$stateNote 상태라 더 신경 쓰는 게 좋아요.');
         if (maskType != null) lines.add('$maskType 착용을 권해드려요 😊');
       } else {
-        lines.add('PM2.5 ${pm25}µg/m³ · $gradeName');
+        lines.add('PM2.5 $pm25µg/m³ · $gradeName');
         lines.add('공기가 조금 무겁네요.');
         lines.add(maskType != null
             ? '$maskType 착용을 권해드려요 😊'
             : '마스크를 꼭 챙겨주세요 😊');
       }
     } else {
-      lines.add('PM2.5 ${pm25}µg/m³ · $gradeName');
+      lines.add('PM2.5 $pm25µg/m³ · $gradeName');
       if (stateNote != null) {
         lines.add('$stateNote 상태를 참고해 주세요.');
       } else {
@@ -691,7 +691,7 @@ class NotificationService {
     // 매우나쁨 = 안전 최우선 → 명확하되 당황하지 않게
     final title = '🚨 ${_p(name)}지금 KF94 마스크가 꼭 필요해요';
     final lines = <String>[
-      'PM2.5 ${pm25}µg/m³ · 매우나쁨',
+      'PM2.5 $pm25µg/m³ · 매우나쁨',
       '가능하면 야외 활동을 줄이시고, KF94 마스크를 착용해 주세요.',
     ];
     if (stateNote != null) {
@@ -716,7 +716,7 @@ class NotificationService {
 
     final title = '⚡ ${_p(name)}미리 $maskHint 마스크를 챙겨두세요';
     final lines = <String>[
-      'PM2.5 ${currentPm25}µg/m³ → 1시간 내 $targetGrade 예상',
+      'PM2.5 $currentPm25µg/m³ → 1시간 내 $targetGrade 예상',
       '지금은 괜찮지만 곧 나빠질 것 같아요.',
       '외출 전에 $maskHint 마스크를 챙겨두시면 안심이에요 😊',
     ];
@@ -735,7 +735,7 @@ class NotificationService {
   }) {
     final name = profile.displayName;
     final title = '✅ ${_p(name)}공기가 맑아졌어요!';
-    final body = 'PM2.5 ${pm25}µg/m³ — '
+    final body = 'PM2.5 $pm25µg/m³ — '
         '당신의 기준(${tFinal.toStringAsFixed(1)}µg/m³) 이하예요.\n'
         '잠시 마스크를 내려도 괜찮아요 😊';
     return NotificationContent(title: title, body: body);

@@ -485,7 +485,7 @@ void main() {
     });
 
     /// 헬퍼: getDailyAqiAverages SQL 재현
-    Future<List<Map<String, dynamic>>> _getDailyAqiAverages(
+    Future<List<Map<String, dynamic>>> getDailyAqiAverages(
       Database db, {
       required String stationName,
       required int days,
@@ -528,7 +528,7 @@ void main() {
         'fetched_at': '${dayStr}T15:00:00',
       });
 
-      final rows = await _getDailyAqiAverages(
+      final rows = await getDailyAqiAverages(
         db,
         stationName: station,
         days: 7,
@@ -555,7 +555,7 @@ void main() {
         'fetched_at': '${dayStr}T09:00:00',
       });
 
-      final rows = await _getDailyAqiAverages(
+      final rows = await getDailyAqiAverages(
         db,
         stationName: station,
         days: 7,
@@ -580,7 +580,7 @@ void main() {
         'fetched_at': '${dayStr}T09:00:00',
       });
 
-      final rows = await _getDailyAqiAverages(
+      final rows = await getDailyAqiAverages(
         db,
         stationName: station, // '서울' 기준
         days: 7,
@@ -601,7 +601,7 @@ void main() {
         'fetched_at': '${oldStr}T09:00:00',
       });
 
-      final rows = await _getDailyAqiAverages(
+      final rows = await getDailyAqiAverages(
         db,
         stationName: station,
         days: 3, // 3일 이내만 — 10일 전 데이터는 제외
@@ -625,7 +625,7 @@ void main() {
     });
 
     /// 헬퍼: getLogsGroupedByDate SQL 재현 (local_database.dart와 동일)
-    Future<Map<String, List<NotificationLog>>> _getLogsGroupedByDate(
+    Future<Map<String, List<NotificationLog>>> getLogsGroupedByDate(
       Database db, {
       int days = 7,
     }) async {
@@ -664,7 +664,7 @@ void main() {
         'user_action': 'none',
       });
 
-      final grouped = await _getLogsGroupedByDate(db, days: 7);
+      final grouped = await getLogsGroupedByDate(db, days: 7);
 
       expect(grouped.length, 2); // 2개 날짜 그룹
       final day1Key = day1.toIso8601String().substring(0, 10);
@@ -692,7 +692,7 @@ void main() {
         'user_action': 'maskWorn',
       });
 
-      final grouped = await _getLogsGroupedByDate(db, days: 7);
+      final grouped = await getLogsGroupedByDate(db, days: 7);
       final dayKey = day.toIso8601String().substring(0, 10);
 
       expect(grouped.length, 1); // 1개 날짜 그룹
@@ -709,12 +709,12 @@ void main() {
         'user_action': 'none',
       });
 
-      final grouped = await _getLogsGroupedByDate(db, days: 7);
+      final grouped = await getLogsGroupedByDate(db, days: 7);
       expect(grouped.isEmpty, true);
     });
 
     test('빈 DB → 빈 맵 반환', () async {
-      final grouped = await _getLogsGroupedByDate(db, days: 7);
+      final grouped = await getLogsGroupedByDate(db, days: 7);
       expect(grouped.isEmpty, true);
     });
   });

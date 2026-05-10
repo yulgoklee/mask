@@ -85,13 +85,10 @@ class NotificationScheduler {
       // AirKoreaService는 내부적으로 캐시를 관리하므로,
       // CloudFunctions 실패 시에도 캐시 데이터가 있으면 알림 발송 가능.
       var dust = await _fetchWithRetry(() => service.getDustData(stationName));
-      if (dust == null) {
-        // Fallback: AirKorea 캐시에서 마지막 유효 데이터 시도
-        dust = await _fetchWithRetry(
+      dust ??= await _fetchWithRetry(
           () => AirKoreaService(prefs).getDustData(stationName),
           maxRetries: 0, // 캐시 조회이므로 재시도 불필요
         );
-      }
       if (dust == null) {
         debugPrint('[NotificationScheduler] 데이터 조회 실패 (캐시 포함) — 알림 건너뜀');
         return;
@@ -715,15 +712,21 @@ bool _needsAnyScheduledAlert(
     SharedPreferences prefs, NotificationSetting setting, DateTime now) {
   if (setting.morningAlertEnabled &&
       _inWindow(now, setting.morningAlertHour, setting.morningAlertMinute) &&
-      !_sentToday(prefs, 'morning')) return true;
+      !_sentToday(prefs, 'morning')) {
+    return true;
+  }
 
   if (setting.eveningForecastEnabled &&
       _inWindow(now, setting.eveningForecastHour, setting.eveningForecastMinute) &&
-      !_sentToday(prefs, 'forecast')) return true;
+      !_sentToday(prefs, 'forecast')) {
+    return true;
+  }
 
   if (setting.eveningReturnEnabled &&
       _inWindow(now, setting.eveningReturnHour, setting.eveningReturnMinute) &&
-      !_sentToday(prefs, 'return')) return true;
+      !_sentToday(prefs, 'return')) {
+    return true;
+  }
 
   return false;
 }

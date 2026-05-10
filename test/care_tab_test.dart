@@ -45,7 +45,7 @@ void main() {
         for (var m in [0, 5, 30, 59]) {
           final r = dataTimeLabel(DateTime(2024, 1, 1, h, m));
           // "HH:mm 갱신" → 길이 8 (5자 시각 + 공백 + 2자)
-          expect(r.length, 8, reason: '${h}:$m 형식 길이 검증');
+          expect(r.length, 8, reason: '$h:$m 형식 길이 검증');
         }
       }
     });

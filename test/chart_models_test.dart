@@ -130,7 +130,7 @@ void main() {
         currentPm25: 10.0,
         currentPm10: 100,
       );
-      final expected = 100.0 / (tFinalPm25 * (80.0 / 35.0)); // ≈ 1.25
+      const expected = 100.0 / (tFinalPm25 * (80.0 / 35.0)); // ≈ 1.25
       expect(pts.first.finalRatio, closeTo(expected, 0.001));
     });
 
@@ -139,7 +139,7 @@ void main() {
         tFinalPm25:  tFinalPm25,
         currentPm25: 20.0,
       );
-      final expectedRatio = 20.0 / tFinalPm25; // ≈ 0.571
+      const expectedRatio = 20.0 / tFinalPm25; // ≈ 0.571
       expect(pts.first.finalRatio, closeTo(expectedRatio, 0.001));
     });
 
@@ -218,7 +218,7 @@ void main() {
 
   // 13포인트(h=0~12) 생성: splitAt 이전/이후로 ratio 분기
   // E-7: kThreshold=1.0 → safe=0.3 (<1.0), warn=1.2 (>=1.0)
-  List<ChartPoint> _pts13({required int splitAt, required bool startSafe}) =>
+  List<ChartPoint> pts13({required int splitAt, required bool startSafe}) =>
       List.generate(13, (h) => _pt(
             h.toDouble(),
             (startSafe ? h < splitAt : h >= splitAt) ? 0.3 : 1.2,
@@ -243,7 +243,7 @@ void main() {
     // now=오전9시: h=2→오전11시(오전), h=3→낮12시(낮) — 전환 시 시간대 달라짐
     test('안전→마스크 전환, 다른 시간대 → {A}까지 OK → {B}부터 마스크 필요', () {
       // h=0~2: safe(0.3), h=3~12: warn(1.2) — i=3에서 전환
-      final points = _pts13(splitAt: 3, startSafe: true);
+      final points = pts13(splitAt: 3, startSafe: true);
       final result = buildFlowText(points, DateTime(2024, 1, 1, 9, 0));
       expect(result, '오전까지 OK → 낮부터 마스크 필요');
     });
@@ -252,7 +252,7 @@ void main() {
     // now=오전9시: 동일 기준 — i=3 전환
     test('마스크→안전 전환, 다른 시간대 → {A}까지 마스크 필요 → {B}부터 OK', () {
       // h=0~2: warn(1.2), h=3~12: safe(0.3) — i=3에서 전환
-      final points = _pts13(splitAt: 3, startSafe: false);
+      final points = pts13(splitAt: 3, startSafe: false);
       final result = buildFlowText(points, DateTime(2024, 1, 1, 9, 0));
       expect(result, '오전까지 마스크 필요 → 낮부터 OK');
     });
@@ -262,7 +262,7 @@ void main() {
     // _nextDifferentLabel('낮'): h=5→저녁(18시, 다름) → '저녁'
     test('동일 시간대 중복 — nextDifferentLabel fallback → {A}까지 OK — {B}부터 마스크 필요 😷', () {
       // h=0~3: safe(0.3), h=4~12: warn(1.2) — i=4에서 전환
-      final points = _pts13(splitAt: 4, startSafe: true);
+      final points = pts13(splitAt: 4, startSafe: true);
       final result = buildFlowText(points, DateTime(2024, 1, 1, 13, 0));
       expect(result, '낮까지 OK — 저녁부터 마스크 필요 😷');
     });

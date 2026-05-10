@@ -24,7 +24,7 @@ class CareDrillScreen extends ConsumerWidget {
     final profile    = ref.watch(profileProvider);
     final level      = CareBackground.levelFromRatio(statusCard.finalRatio);
     final base       = CareBackground.baseColor(level);
-    final breakdown  = ThresholdEngine().breakdown(profile);
+    final breakdown  = const ThresholdEngine().breakdown(profile);
 
     // Hero compact 카피
     final compactHero = switch (level) {
