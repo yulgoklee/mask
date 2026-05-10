@@ -8,6 +8,7 @@ import '../../features/settings/widgets/s_label.dart';
 import '../../features/settings/widgets/settings_drill_header.dart';
 import '../../providers/providers.dart';
 import '../../widgets/app_button.dart';
+import '../onboarding/widgets/onboarding_background.dart';
 
 // 공유 상수 별칭 (하위 호환)
 const _sidoList = locationSidoList;
@@ -123,20 +124,21 @@ class _LocationSetupScreenState extends ConsumerState<LocationSetupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DT.background,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── 헤더 ──────────────────────────────────────────────
-            SettingsDrillHeader(
-              title: '관심 지역',
-              onBack: () => context.pop(),
-            ),
+      backgroundColor: Colors.transparent,
+      body: OnboardingBackground(
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── 헤더 ──────────────────────────────────────────────
+              SettingsDrillHeader(
+                title: '위치 설정',
+                onBack: () => context.pop(),
+              ),
 
-            // ── 본문 (스크롤) ──────────────────────────────────────
-            Expanded(
-              child: SingleChildScrollView(
+              // ── 본문 (스크롤) ──────────────────────────────────────
+              Expanded(
+                child: SingleChildScrollView(
                 controller: _scrollController,
                 padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
                 child: Column(
@@ -270,6 +272,7 @@ class _LocationSetupScreenState extends ConsumerState<LocationSetupScreen> {
               ),
             ),
           ],
+          ),
         ),
       ),
     );
