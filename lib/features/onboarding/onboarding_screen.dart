@@ -2,8 +2,8 @@ import 'package:go_router/go_router.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_tokens.dart';
+import '../../core/constants/design_tokens.dart';
 import '../../core/constants/feature_flags.dart';
 import '../../data/models/user_profile.dart';
 import '../../providers/providers.dart';
@@ -275,12 +275,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('계속 진행',
-                style: TextStyle(color: AppColors.textSecondary)),
+                style: TextStyle(color: DT.gray)),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: DT.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8)),
@@ -353,12 +353,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('취소',
-                style: TextStyle(color: AppColors.textSecondary)),
+                style: TextStyle(color: DT.gray)),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.error,
+              backgroundColor: DT.danger,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8)),
@@ -442,7 +442,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         if (_currentPage > 0) _prevPage();
       },
       child: Scaffold(
-      backgroundColor: AppColors.bgOnboarding,
+      backgroundColor: DT.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -537,13 +537,13 @@ class OnboardingProgressRow extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceVariant,
+                  color: DT.grayLt,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
                   Icons.arrow_back_ios_new,
                   size: 15,
-                  color: AppColors.textSecondary,
+                  color: DT.gray,
                 ),
               ),
             ),
@@ -554,8 +554,8 @@ class OnboardingProgressRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
                 value: (currentPage + 1) / totalPages,
-                backgroundColor: AppColors.divider,
-                color: AppColors.primary,
+                backgroundColor: DT.border,
+                color: DT.primary,
                 minHeight: 5,
               ),
             ),
@@ -567,7 +567,7 @@ class OnboardingProgressRow extends StatelessWidget {
                 : '${currentPage + 1} / $totalPages',
             style: const TextStyle(
               fontSize: 12,
-              color: AppColors.textSecondary,
+              color: DT.gray,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -579,7 +579,7 @@ class OnboardingProgressRow extends StatelessWidget {
                 '취소',
                 style: TextStyle(
                   fontSize: 13,
-                  color: AppColors.textSecondary,
+                  color: DT.gray,
                 ),
               ),
             )
@@ -590,7 +590,7 @@ class OnboardingProgressRow extends StatelessWidget {
                 '(선택 항목) 건너뛰기',
                 style: TextStyle(
                   fontSize: 13,
-                  color: AppColors.textSecondary,
+                  color: DT.gray,
                 ),
               ),
             ),
