@@ -3,11 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_tokens.dart';
+import '../../core/constants/design_tokens.dart';
 import '../../providers/providers.dart';
 import '../../widgets/app_button.dart';
-import '../../widgets/app_card.dart';
 
 /// 알림 권한 요청 — 맥락 있는 설명 화면
 class PermissionScreen extends ConsumerStatefulWidget {
@@ -35,7 +34,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen> {
     return PopScope(
       canPop: false, // 권한 화면에서 뒤로가기로 notification_time 스택 없어 앱 종료 방지
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: DT.background,
         body: SafeArea(
           child: FutureBuilder<bool>(
             future: _notifGrantedFuture,
@@ -63,15 +62,15 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen> {
             height: 80,
             decoration: BoxDecoration(
               color: notifGranted
-                  ? AppColors.success.withValues(alpha: 0.12)
-                  : AppColors.primaryLight,
+                  ? DT.safe.withValues(alpha: 0.12)
+                  : DT.primaryLt,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Icon(
               notifGranted
                   ? Icons.check_circle_outline
                   : Icons.notifications_active_outlined,
-              color: notifGranted ? AppColors.success : AppColors.primary,
+              color: notifGranted ? DT.safe : DT.primary,
               size: 44,
             ),
           ),
@@ -87,71 +86,54 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen> {
             style: const TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: DT.text,
               height: 1.35,
             ),
           ),
           const SizedBox(height: 16),
 
-          // 알림 상태 카드
+          // 알림 상태 — flat + hairline divider (D-4)
           if (notifGranted) ...[
-            // 상태 B: 알림 권한 확인 카드 (성공 톤)
-            AppCard(
-              padding: const EdgeInsets.all(AppTokens.cardMd),
-              child: const _ExampleRow(
-                icon: Icons.notifications_active_outlined,
-                text: '알림 권한이 허용되었어요',
-                iconColor: AppColors.success,
-              ),
+            // 상태 B: 알림 권한 확인 (성공 톤)
+            const _ExampleRow(
+              icon: Icons.notifications_active_outlined,
+              text: '알림 권한이 허용되었어요',
+              iconColor: DT.safe,
             ),
           ] else ...[
-            // 상태 A: 알림 예시 카드
-            AppCard(
-              padding: const EdgeInsets.all(AppTokens.cardMd),
-              child: const Column(
-                children: [
-                  _ExampleRow(
-                    icon: Icons.wb_sunny_outlined,
-                    text: '외출 30분 전, 마스크 필요 여부를 알려드려요',
-                  ),
-                  Divider(height: 20),
-                  _ExampleRow(
-                    icon: Icons.warning_amber_rounded,
-                    text: '미세먼지가 급등하면 즉시 알려드려요',
-                  ),
-                  Divider(height: 20),
-                  _ExampleRow(
-                    icon: Icons.nights_stay_outlined,
-                    text: '내일 예보를 미리 알려드려요',
-                  ),
-                ],
-              ),
+            // 상태 A: 알림 예시 rows
+            const _ExampleRow(
+              icon: Icons.wb_sunny_outlined,
+              text: '외출 30분 전, 마스크 필요 여부를 알려드려요',
+            ),
+            const Divider(color: DT.border),
+            const _ExampleRow(
+              icon: Icons.warning_amber_rounded,
+              text: '미세먼지가 급등하면 즉시 알려드려요',
+            ),
+            const Divider(color: DT.border),
+            const _ExampleRow(
+              icon: Icons.nights_stay_outlined,
+              text: '내일 예보를 미리 알려드려요',
             ),
             const SizedBox(height: 16),
             const Text(
               '알림은 언제든 끌 수 있어요.',
-              style: TextStyle(fontSize: 13, color: AppColors.textHint),
+              style: TextStyle(fontSize: 13, color: DT.gray2),
             ),
           ],
 
-          // 배터리 최적화 카드 (Android 전용)
+          // 배터리 최적화 섹션 (Android 전용)
           if (Platform.isAndroid) ...[
             const SizedBox(height: 20),
-            AppCard(
-              padding: const EdgeInsets.all(AppTokens.cardMd),
-              child: const Column(
-                children: [
-                  _ExampleRow(
-                    icon: Icons.battery_saver_outlined,
-                    text: '배터리 최적화 예외로 설정하면 알림이 더 안정적이에요',
-                  ),
-                ],
-              ),
+            const _ExampleRow(
+              icon: Icons.battery_saver_outlined,
+              text: '배터리 최적화 예외로 설정하면 알림이 더 안정적이에요',
             ),
             const SizedBox(height: 8),
             const Text(
               '삼성·샤오미 등 일부 기기는 배터리 최적화로 알림이 늦을 수 있어요.',
-              style: TextStyle(fontSize: 13, color: AppColors.textHint),
+              style: TextStyle(fontSize: 13, color: DT.gray2),
             ),
           ],
 
@@ -212,7 +194,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen> {
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
                 child: const Text('알림 없이 계속',
-                    style: TextStyle(color: AppColors.textSecondary)),
+                    style: TextStyle(color: DT.gray)),
               ),
             ],
           ),
@@ -245,26 +227,29 @@ class _ExampleRow extends StatelessWidget {
   const _ExampleRow({
     required this.icon,
     required this.text,
-    this.iconColor = AppColors.primary,
+    this.iconColor = DT.primary,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, color: iconColor, size: 22),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-              height: 1.4,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        children: [
+          Icon(icon, color: iconColor, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 14,
+                color: DT.gray,
+                height: 1.4,
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

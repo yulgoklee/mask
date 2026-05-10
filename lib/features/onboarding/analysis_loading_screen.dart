@@ -2,7 +2,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import '../../core/constants/app_colors.dart';
+import '../../core/constants/design_tokens.dart';
 import '../../providers/providers.dart';
 
 /// 온보딩 완료 후 분석 로딩 화면
@@ -75,7 +75,7 @@ class _AnalysisLoadingScreenState
     final name = profile.displayName;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: DT.background,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -88,7 +88,7 @@ class _AnalysisLoadingScreenState
                   width: 88,
                   height: 88,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.10),
+                    color: DT.primary.withValues(alpha: 0.10),
                     shape: BoxShape.circle,
                   ),
                   child: const Center(
@@ -105,7 +105,7 @@ class _AnalysisLoadingScreenState
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: DT.text,
                     height: 1.4,
                   ),
                 ),
@@ -114,7 +114,7 @@ class _AnalysisLoadingScreenState
 
                 // ── Spinkit 로딩 ────────────────────────────────
                 const SpinKitThreeBounce(
-                  color: AppColors.primary,
+                  color: DT.primary,
                   size: 32,
                 ),
 
@@ -128,7 +128,7 @@ class _AnalysisLoadingScreenState
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 15,
-                      color: AppColors.textSecondary,
+                      color: DT.gray,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
