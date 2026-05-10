@@ -45,8 +45,8 @@ void main() {
     await tester.pumpWidget(_buildApp());
     await tester.pump(const Duration(milliseconds: 200));
 
-    // 헤드라인
-    expect(find.text('잠깐, 알려드릴게요'), findsOneWidget);
+    // 헤드라인 (OnboardingHero, \n 포함 → textContaining)
+    expect(find.textContaining('알려드릴게요'), findsWidgets);
     // 각 항목 라벨
     expect(find.text('참고 정보'), findsOneWidget);
     expect(find.text('의료진 우선'), findsOneWidget);

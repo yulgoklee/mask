@@ -115,28 +115,22 @@ void main() {
       expect(find.byType(SpinKitThreeBounce), findsOneWidget);
     });
 
-    testWidgets('b: nickname 있을 때 헤드라인 인사 표시', (tester) async {
+    testWidgets('b: nickname 있을 때 cap 인사 표시', (tester) async {
       await tester.runAsync(() async {
         await tester.pumpWidget(_buildApp(_profileWithName));
         await tester.pump(const Duration(milliseconds: 50));
       });
-      expect(
-        find.byWidgetPredicate(
-          (w) =>
-              w is Text &&
-              (w.data?.contains('지수') ?? false) &&
-              (w.data?.contains('맞춤형 알고리즘') ?? false),
-        ),
-        findsOneWidget,
-      );
+      // displayName = '지수님' → cap: "지수님만을 위한"
+      expect(find.textContaining('만을 위한'), findsOneWidget);
+      expect(find.textContaining('만드는 중이에요'), findsWidgets);
     });
 
-    testWidgets('c: nickname 없을 때 헤드라인 (이름 없는 버전)', (tester) async {
+    testWidgets('c: nickname 없을 때 Hero main만 표시 (cap 없음)', (tester) async {
       await tester.runAsync(() async {
         await tester.pumpWidget(_buildApp(_profileNoName));
         await tester.pump(const Duration(milliseconds: 50));
       });
-      expect(find.textContaining('맞춤형 알고리즘'), findsOneWidget);
+      expect(find.textContaining('만드는 중이에요'), findsWidgets);
     });
 
     testWidgets('d: 초기 메시지 "프로필을 분석하고 있어요..." 표시', (tester) async {

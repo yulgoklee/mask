@@ -33,9 +33,6 @@ class DT {
   // ── Pink ──────────────────────────────────────────────────
   static const Color pinkLt     = Color(0xFFFBDBED); // 페르소나 - 예민한 감지형 (Tailwind 100→150)
 
-  // ── Splash ────────────────────────────────────────────────
-  static const Color splashBg   = Color(0xFFEBF3FF);  // 브랜드 청색 10% 틴트 — 스플래시 전용
-
   // ── Neutral ───────────────────────────────────────────────
   static const Color text       = Color(0xFF111827);
   static const Color gray       = Color(0xFF6B7280);

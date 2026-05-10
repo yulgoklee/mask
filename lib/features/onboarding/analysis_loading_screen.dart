@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../core/constants/design_tokens.dart';
 import '../../providers/providers.dart';
+import 'widgets/onboarding_background.dart';
+import 'widgets/onboarding_hero.dart';
 
 /// 온보딩 완료 후 분석 로딩 화면
 ///
@@ -29,7 +31,7 @@ class _AnalysisLoadingScreenState
     '프로필을 분석하고 있어요...',
     '내 몸에 맞는 임계치를 계산 중이에요...',
     '맞춤형 알림 기준을 설정하고 있어요...',
-    '거의 다 됐어요! ✨',
+    '거의 다 됐어요!',
   ];
 
   @override
@@ -74,68 +76,59 @@ class _AnalysisLoadingScreenState
     final profile = ref.watch(profileProvider);
     final name = profile.displayName;
 
+    // cap: name 있을 때 "$name만을 위한" / 없을 때 null
+    final cap = name.isNotEmpty ? '$name만을 위한' : null;
+    const heroMain = '내 알림 기준,\n맞춤형으로\n만드는 중이에요';
+
     return Scaffold(
-      backgroundColor: DT.background,
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // ── 로고 아이콘 ─────────────────────────────────
-                Container(
-                  width: 88,
-                  height: 88,
-                  decoration: BoxDecoration(
-                    color: DT.primary.withValues(alpha: 0.10),
-                    shape: BoxShape.circle,
+      backgroundColor: Colors.transparent,
+      body: OnboardingBackground(
+        child: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Hero ──────────────────────────────────────
+                  OnboardingHero(
+                    cap: cap,
+                    main: heroMain,
+                    heroSize: 48,
                   ),
-                  child: const Center(
-                    child: Text('😷', style: TextStyle(fontSize: 44)),
-                  ),
-                ),
 
-                const SizedBox(height: 36),
+                  const SizedBox(height: 52),
 
-                // ── 헤드라인 ────────────────────────────────────
-                Text(
-                  name.isNotEmpty ? '$name만을 위한\n맞춤형 알고리즘을\n설계 중입니다' : '맞춤형 알고리즘을\n설계 중입니다',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: DT.text,
-                    height: 1.4,
-                  ),
-                ),
-
-                const SizedBox(height: 40),
-
-                // ── Spinkit 로딩 ────────────────────────────────
-                const SpinKitThreeBounce(
-                  color: DT.primary,
-                  size: 32,
-                ),
-
-                const SizedBox(height: 32),
-
-                // ── 단계별 메시지 ────────────────────────────────
-                FadeTransition(
-                  opacity: _fadeAnim,
-                  child: Text(
-                    _messages[_messageIndex],
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      color: DT.gray,
-                      fontWeight: FontWeight.w500,
+                  // ── Spinkit 로딩 ──────────────────────────────
+                  const Center(
+                    child: SpinKitThreeBounce(
+                      color: DT.primary,
+                      size: 32,
                     ),
                   ),
-                ),
 
-                const SizedBox(height: 56),
-              ],
+                  const SizedBox(height: 32),
+
+                  // ── 단계별 메시지 ─────────────────────────────
+                  Center(
+                    child: FadeTransition(
+                      opacity: _fadeAnim,
+                      child: Text(
+                        _messages[_messageIndex],
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: DT.gray,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 56),
+                ],
+              ),
             ),
           ),
         ),
@@ -143,4 +136,3 @@ class _AnalysisLoadingScreenState
     );
   }
 }
-

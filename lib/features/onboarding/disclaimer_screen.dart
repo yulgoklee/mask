@@ -6,115 +6,86 @@ import '../../core/constants/app_constants.dart';
 import '../../core/constants/app_tokens.dart';
 import '../../providers/core_providers.dart';
 import '../../widgets/app_button.dart';
+import 'widgets/onboarding_background.dart';
+import 'widgets/onboarding_hero.dart';
 
-/// 의료 면책 확인 화면 — 사이클 #11 [A] 재설계
+/// 의료 면책 확인 화면 — 사이클 #12 PR1 재설계
 ///
-/// - AppCard 제거 (카드 0 원칙)
-/// - _DisclaimerItem에 제목 라벨 추가 (가독성 향상)
-/// - hairline 구분선 사용
-/// - DT 토큰으로 통일
+/// - 56×56 아이콘 컨테이너 제거 → OnboardingHero 48pt
+/// - OnboardingBackground (safe 그라디언트)
+/// - 이모지 없음
 class DisclaimerScreen extends ConsumerWidget {
   const DisclaimerScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: DT.background,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppTokens.screenH),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 52),
+      backgroundColor: Colors.transparent,
+      body: OnboardingBackground(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppTokens.screenH),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 52),
 
-              // ── 아이콘 (카드 없이) ──────────────────────────
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: DT.primaryLt,
-                  borderRadius: BorderRadius.circular(16),
+                // ── Hero ──────────────────────────────────────────
+                const OnboardingHero(
+                  main: '잠깐,\n알려드릴게요',
+                  sub: '더 정확한 정보를 위해 읽어주세요',
+                  heroSize: 48,
                 ),
-                child: const Icon(
-                  Icons.info_outline_rounded,
-                  color: DT.primary,
-                  size: 30,
+                const SizedBox(height: 32),
+
+                // ── 항목 1 ────────────────────────────────────────
+                const _DisclaimerItem(
+                  icon: Icons.health_and_safety_outlined,
+                  label: '참고 정보',
+                  text: '위험도와 마스크 추천은 참고용이에요. 몸이 보내는 신호가 더 정확할 수 있어요.',
                 ),
-              ),
-              const SizedBox(height: 24),
-
-              // ── 헤드라인 ────────────────────────────────────
-              const Text(
-                '잠깐, 알려드릴게요',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: DT.text,
-                  height: 1.35,
-                  letterSpacing: -0.52,
+                Divider(
+                  height: 1,
+                  color: DT.text.withValues(alpha: 0.06),
                 ),
-              ),
-              const SizedBox(height: 8),
 
-              // ── 서브 캡션 (신규) ────────────────────────────
-              const Text(
-                '더 정확한 정보를 위해 읽어주세요',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  color: DT.gray,
+                // ── 항목 2 ────────────────────────────────────────
+                const _DisclaimerItem(
+                  icon: Icons.medical_services_outlined,
+                  label: '의료진 우선',
+                  text: '호흡기 질환·임신·항암 치료 중이시면 의료진의 안내를 우선해주세요.',
                 ),
-              ),
-              const SizedBox(height: 32),
+                Divider(
+                  height: 1,
+                  color: DT.text.withValues(alpha: 0.06),
+                ),
 
-              // ── 항목 1 ──────────────────────────────────────
-              const _DisclaimerItem(
-                icon: Icons.health_and_safety_outlined,
-                label: '참고 정보',
-                text: '위험도와 마스크 추천은 참고용이에요. 몸이 보내는 신호가 더 정확할 수 있어요.',
-              ),
-              Divider(
-                height: 1,
-                color: DT.text.withValues(alpha: 0.06),
-              ),
+                // ── 항목 3 ────────────────────────────────────────
+                const _DisclaimerItem(
+                  icon: Icons.air_outlined,
+                  label: '측정 한계',
+                  text: '미세먼지 수치는 개인 환경에 따라 체감과 다를 수 있어요.',
+                  isLast: true,
+                ),
 
-              // ── 항목 2 ──────────────────────────────────────
-              const _DisclaimerItem(
-                icon: Icons.medical_services_outlined,
-                label: '의료진 우선',
-                text: '호흡기 질환·임신·항암 치료 중이시면 의료진의 안내를 우선해주세요.',
-              ),
-              Divider(
-                height: 1,
-                color: DT.text.withValues(alpha: 0.06),
-              ),
+                const Spacer(),
 
-              // ── 항목 3 ──────────────────────────────────────
-              const _DisclaimerItem(
-                icon: Icons.air_outlined,
-                label: '측정 한계',
-                text: '미세먼지 수치는 개인 환경에 따라 체감과 다를 수 있어요.',
-                isLast: true,
-              ),
-
-              const Spacer(),
-
-              // ── CTA ─────────────────────────────────────────
-              AppButton.primary(
-                label: '확인했습니다',
-                onTap: () async {
-                  final prefs = ref.read(sharedPreferencesProvider);
-                  await prefs.setString(
-                    AppConstants.prefDisclaimerAgreedAt,
-                    DateTime.now().toIso8601String(),
-                  );
-                  if (!context.mounted) return;
-                  context.go('/welcome');
-                },
-              ),
-              const SizedBox(height: 24),
-            ],
+                // ── CTA ───────────────────────────────────────────
+                AppButton.primary(
+                  label: '확인했습니다',
+                  onTap: () async {
+                    final prefs = ref.read(sharedPreferencesProvider);
+                    await prefs.setString(
+                      AppConstants.prefDisclaimerAgreedAt,
+                      DateTime.now().toIso8601String(),
+                    );
+                    if (!context.mounted) return;
+                    context.go('/welcome');
+                  },
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
         ),
       ),
