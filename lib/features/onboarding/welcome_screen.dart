@@ -4,13 +4,17 @@ import 'package:go_router/go_router.dart';
 import '../../core/constants/design_tokens.dart';
 import '../../providers/providers.dart';
 import '../../widgets/app_button.dart';
+import 'widgets/onboarding_background.dart';
+import 'widgets/onboarding_hero.dart';
 
-/// 웰컴 화면 — 사이클 #11 [A] PageView 3페이지 재설계
+/// 웰컴 화면 — 사이클 #12 PR1 PageView 3페이지 재설계
 ///
-/// 페이지 1: 앱 소개
-/// 페이지 2: 질문지 안내
-/// 페이지 3: 흐름 설명
+/// 페이지 1: 앱 소개 (Hero 56pt)
+/// 페이지 2: 질문지 안내 (Hero 40pt)
+/// 페이지 3: 흐름 설명 (Hero 40pt)
 ///
+/// 이모지 제거 (😷 → Hero 승격)
+/// OnboardingBackground (safe 그라디언트)
 /// 하단 도트 인디케이터 + 다음/시작 버튼
 /// 마지막 페이지 → completeTutorial() → /onboarding
 class WelcomeScreen extends ConsumerStatefulWidget {
@@ -74,60 +78,62 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DT.background,
-      body: SafeArea(
-        child: AnimatedBuilder(
-          animation: _ctrl,
-          builder: (_, __) => FadeTransition(
-            opacity: _fade,
-            child: Transform.translate(
-              offset: Offset(0, _slide.value),
-              child: Column(
-                children: [
-                  // ── PageView ─────────────────────────────────
-                  Expanded(
-                    child: PageView(
-                      controller: _pageController,
-                      physics: const BouncingScrollPhysics(),
-                      onPageChanged: (page) {
-                        setState(() => _currentPage = page);
-                      },
-                      children: const [
-                        _WelcomePage1(),
-                        _WelcomePage2(),
-                        _WelcomePage3(),
-                      ],
+      backgroundColor: Colors.transparent,
+      body: OnboardingBackground(
+        child: SafeArea(
+          child: AnimatedBuilder(
+            animation: _ctrl,
+            builder: (_, __) => FadeTransition(
+              opacity: _fade,
+              child: Transform.translate(
+                offset: Offset(0, _slide.value),
+                child: Column(
+                  children: [
+                    // ── PageView ────────────────────────────────
+                    Expanded(
+                      child: PageView(
+                        controller: _pageController,
+                        physics: const BouncingScrollPhysics(),
+                        onPageChanged: (page) {
+                          setState(() => _currentPage = page);
+                        },
+                        children: const [
+                          _WelcomePage1(),
+                          _WelcomePage2(),
+                          _WelcomePage3(),
+                        ],
+                      ),
                     ),
-                  ),
 
-                  // ── 도트 인디케이터 ──────────────────────────
-                  _DotIndicator(currentPage: _currentPage, pageCount: 3),
-                  const SizedBox(height: 20),
+                    // ── 도트 인디케이터 ──────────────────────────
+                    _DotIndicator(currentPage: _currentPage, pageCount: 3),
+                    const SizedBox(height: 20),
 
-                  // ── CTA 버튼 ─────────────────────────────────
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 200),
-                      child: _currentPage < 2
-                          ? KeyedSubtree(
-                              key: const ValueKey('next'),
-                              child: AppButton.secondary(
-                                label: '다음 →',
-                                onTap: _nextPage,
+                    // ── CTA 버튼 ─────────────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        child: _currentPage < 2
+                            ? KeyedSubtree(
+                                key: const ValueKey('next'),
+                                child: AppButton.secondary(
+                                  label: '다음 →',
+                                  onTap: _nextPage,
+                                ),
+                              )
+                            : KeyedSubtree(
+                                key: const ValueKey('start'),
+                                child: AppButton.primary(
+                                  label: '시작할게요',
+                                  onTap: _start,
+                                ),
                               ),
-                            )
-                          : KeyedSubtree(
-                              key: const ValueKey('start'),
-                              child: AppButton.primary(
-                                label: '시작할게요',
-                                onTap: _start,
-                              ),
-                            ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 32),
-                ],
+                    const SizedBox(height: 32),
+                  ],
+                ),
               ),
             ),
           ),
@@ -137,7 +143,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   }
 }
 
-// ── 페이지 1: 앱 소개 ────────────────────────────────────────────
+// ── 페이지 1: 앱 소개 ─────────────────────────────────────────────
 
 class _WelcomePage1 extends StatelessWidget {
   const _WelcomePage1();
@@ -151,21 +157,14 @@ class _WelcomePage1 extends StatelessWidget {
         children: [
           SizedBox(height: 48),
 
-          Text('😷', style: TextStyle(fontSize: 64)),
-          SizedBox(height: 24),
-
-          Text(
-            '내 몸에 맞는\n미세먼지 알림',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: DT.text,
-              height: 1.3,
-              letterSpacing: -0.56,
-            ),
+          // Hero 56pt (이모지 대체)
+          OnboardingHero(
+            main: '내 몸에 맞는\n미세먼지 알림',
+            heroSize: 56,
           ),
           SizedBox(height: 16),
 
+          // sub: 별도 Text (line-height 1.6 지원)
           Text(
             '같은 공기도 사람마다 다르게 영향을 줘요.\n건강 정보를 바탕으로 당신만의 기준을 만들어드려요.',
             style: TextStyle(
@@ -183,7 +182,7 @@ class _WelcomePage1 extends StatelessWidget {
   }
 }
 
-// ── 페이지 2: 질문지 안내 ──────────────────────────────────────────
+// ── 페이지 2: 질문지 안내 ────────────────────────────────────────
 
 class _WelcomePage2 extends StatelessWidget {
   const _WelcomePage2();
@@ -197,24 +196,11 @@ class _WelcomePage2 extends StatelessWidget {
         children: [
           const SizedBox(height: 48),
 
-          const Text(
-            '이런 걸 여쭤볼게요',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: DT.text,
-              letterSpacing: -0.44,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            '호흡기 상태에 맞춘 기준을 만들기 위해\n몇 가지만 확인할게요.',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w400,
-              color: DT.gray,
-              height: 1.6,
-            ),
+          // Hero 40pt
+          const OnboardingHero(
+            main: '이런 걸 여쭤볼게요',
+            sub: '호흡기 상태에 맞춘 기준을 만들기 위해 몇 가지만 확인할게요.',
+            heroSize: 40,
           ),
           const SizedBox(height: 36),
 
@@ -252,7 +238,7 @@ class _WelcomePage2 extends StatelessWidget {
   }
 }
 
-// ── 페이지 3: 흐름 설명 ──────────────────────────────────────────
+// ── 페이지 3: 흐름 설명 ───────────────────────────────────────────
 
 class _WelcomePage3 extends StatelessWidget {
   const _WelcomePage3();
@@ -266,24 +252,11 @@ class _WelcomePage3 extends StatelessWidget {
         children: [
           const SizedBox(height: 48),
 
-          const Text(
-            '이렇게 진행돼요',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: DT.text,
-              letterSpacing: -0.44,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            '단계별로 알려드릴게요.',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w400,
-              color: DT.gray,
-              height: 1.6,
-            ),
+          // Hero 40pt
+          const OnboardingHero(
+            main: '이렇게 진행돼요',
+            sub: '단계별로 알려드릴게요.',
+            heroSize: 40,
           ),
           const SizedBox(height: 36),
 
@@ -314,7 +287,7 @@ class _WelcomePage3 extends StatelessWidget {
   }
 }
 
-// ── 도트 인디케이터 ───────────────────────────────────────────────
+// ── 도트 인디케이터 ──────────────────────────────────────────────
 
 class _DotIndicator extends StatelessWidget {
   final int currentPage;
@@ -343,7 +316,7 @@ class _DotIndicator extends StatelessWidget {
   }
 }
 
-// ── 질문 미리보기 행 ─────────────────────────────────────────────
+// ── 질문 미리보기 행 ──────────────────────────────────────────────
 
 class _QuestionPreviewRow extends StatelessWidget {
   final IconData icon;
@@ -378,7 +351,7 @@ class _QuestionPreviewRow extends StatelessWidget {
   }
 }
 
-// ── 단계 행 ──────────────────────────────────────────────────────
+// ── 단계 행 ─────────────────────────────────────────────────────
 
 class _StepRow extends StatelessWidget {
   final String number;

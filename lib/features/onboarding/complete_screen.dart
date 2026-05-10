@@ -7,8 +7,10 @@ import '../../core/services/app_logger.dart';
 import '../../core/services/workmanager_push_scheduler.dart';
 import '../../providers/providers.dart';
 import '../../widgets/app_button.dart';
+import 'widgets/onboarding_background.dart';
+import 'widgets/onboarding_hero.dart';
 
-/// 온보딩 완료 화면 — "준비됐어요, [이름]님"
+/// 온보딩 완료 화면 — "준비됐어요, [이름]"
 class OnboardingCompleteScreen extends ConsumerStatefulWidget {
   const OnboardingCompleteScreen({super.key});
 
@@ -78,92 +80,78 @@ class _OnboardingCompleteScreenState
       firstAlertTime = _formatTime(setting.eveningReturnHour, setting.eveningReturnMinute);
     }
 
+    // Hero 메인 카피: name 있을 때 "준비됐어요,\n$name" / 없을 때 "준비됐어요"
+    final heroMain = name.isNotEmpty ? '준비됐어요,\n$name' : '준비됐어요';
+
     return Scaffold(
-      backgroundColor: DT.background,
-      body: SafeArea(
-        child: AnimatedBuilder(
-          animation: _ctrl,
-          builder: (_, __) => FadeTransition(
-            opacity: _fadeIn,
-            child: Transform.translate(
-              offset: Offset(0, _slideUp.value),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppTokens.screenH),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Spacer(flex: 2),
+      backgroundColor: Colors.transparent,
+      body: OnboardingBackground(
+        child: SafeArea(
+          child: AnimatedBuilder(
+            animation: _ctrl,
+            builder: (_, __) => FadeTransition(
+              opacity: _fadeIn,
+              child: Transform.translate(
+                offset: Offset(0, _slideUp.value),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppTokens.screenH),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Spacer(flex: 2),
 
-                    // 완료 아이콘
-                    Container(
-                      width: 88,
-                      height: 88,
-                      decoration: BoxDecoration(
-                        color: DT.primaryLt,
-                        borderRadius: BorderRadius.circular(24),
+                      // ── Hero ────────────────────────────────────
+                      OnboardingHero(
+                        main: heroMain,
+                        heroSize: 64,
                       ),
-                      child: const Icon(
-                        Icons.check_circle_outline,
-                        color: DT.primary,
-                        size: 52,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
+                      const SizedBox(height: 32),
 
-                    Text(
-                      name.isNotEmpty ? '준비됐어요, $name 🎉' : '준비됐어요! 🎉',
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: DT.text,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    if (firstAlertTime != null) ...[
-                      Text(
-                        '내일 $firstAlertTime,\n여기서부터 시작돼요.',
-                        style: const TextStyle(
-                          fontSize: 17,
-                          color: DT.gray,
-                          height: 1.6,
-                          fontWeight: FontWeight.w500,
+                      if (firstAlertTime != null) ...[
+                        Text(
+                          '내일 $firstAlertTime,\n여기서부터 시작돼요.',
+                          style: const TextStyle(
+                            fontSize: 17,
+                            color: DT.gray,
+                            height: 1.6,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        name.isNotEmpty
-                            ? '공기가 나빠지면 언제든 먼저 알려드릴게요.\n$name, 저만 믿으세요.'
-                            : '공기가 나빠지면 언제든 먼저 알려드릴게요.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: DT.gray.withValues(alpha: 0.8),
-                          height: 1.6,
+                        const SizedBox(height: 12),
+                        Text(
+                          name.isNotEmpty
+                              ? '공기가 나빠지면 언제든 먼저 알려드릴게요.\n$name, 저만 믿으세요.'
+                              : '공기가 나빠지면 언제든 먼저 알려드릴게요.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: DT.gray.withValues(alpha: 0.8),
+                            height: 1.6,
+                          ),
                         ),
-                      ),
-                    ] else
-                      const Text(
-                        '알림을 모두 끄셨어요.\n앱을 열면 언제든\n오늘의 미세먼지를 확인할 수 있어요.',
-                        style: TextStyle(
-                          fontSize: 17,
-                          color: DT.gray,
-                          height: 1.6,
+                      ] else
+                        const Text(
+                          '알림을 모두 끄셨어요.\n앱을 열면 언제든\n오늘의 미세먼지를 확인할 수 있어요.',
+                          style: TextStyle(
+                            fontSize: 17,
+                            color: DT.gray,
+                            height: 1.6,
+                          ),
                         ),
+
+                      const Spacer(flex: 3),
+
+                      AppButton.primary(
+                        label: '시작할게요',
+                        onTap: () {
+                          if (ref.read(dustDataProvider).hasValue == false) {
+                            ref.invalidate(dustDataProvider);
+                          }
+                          context.go('/care');
+                        },
                       ),
-
-                    const Spacer(flex: 3),
-
-                    AppButton.primary(
-                      label: '시작할게요',
-                      onTap: () {
-                        if (ref.read(dustDataProvider).hasValue == false) {
-                          ref.invalidate(dustDataProvider);
-                        }
-                        context.go('/care');
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                  ],
+                      const SizedBox(height: 24),
+                    ],
+                  ),
                 ),
               ),
             ),

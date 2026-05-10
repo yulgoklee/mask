@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/constants/design_tokens.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/services/app_logger.dart';
+import '../../features/onboarding/widgets/onboarding_background.dart';
+import '../../features/onboarding/widgets/onboarding_hero.dart';
 import '../../providers/providers.dart';
 
-/// 스플래시 화면 — 사이클 #11 [A] 재설계
+/// 스플래시 화면 — 사이클 #12 PR1 재설계
 ///
-/// 배경색: DT.splashBg (#EBF3FF) — 브랜드 청색 10% 틴트
-/// 아이콘: 😷 72pt 직접 (Container/boxShadow 없음)
-/// 헤드라인: "같은 공기,\n다른 기준." 32pt Bold
-/// 서브: "내 건강 상태에 맞게 알려드려요." 16pt w500 DT.gray
-/// 노출 시간: 1800ms (이전 2200ms에서 단축)
+/// 배경: OnboardingBackground (safe 그라디언트)
+/// Hero: 64pt 좌측 정렬 (케어 탭 일관성)
+/// 슬로건: "같은 공기,\n다른 기준." / 서브: "내 건강 상태에 맞게 알려드려요."
+/// 노출 시간: 1800ms
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -21,12 +21,8 @@ class SplashScreen extends ConsumerStatefulWidget {
 }
 
 class _SplashScreenState extends ConsumerState<SplashScreen>
-    with TickerProviderStateMixin {
-  late final AnimationController _iconCtrl;
+    with SingleTickerProviderStateMixin {
   late final AnimationController _textCtrl;
-
-  late final Animation<double> _iconFade;
-  late final Animation<double> _iconScale;
   late final Animation<double> _textFade;
   late final Animation<Offset> _textSlide;
 
@@ -34,17 +30,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   void initState() {
     super.initState();
 
-    // 아이콘 애니메이션 (0 → 0.7초)
-    _iconCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
-    );
-    _iconFade = CurvedAnimation(parent: _iconCtrl, curve: Curves.easeOut);
-    _iconScale = Tween<double>(begin: 0.75, end: 1.0).animate(
-      CurvedAnimation(parent: _iconCtrl, curve: Curves.easeOutBack),
-    );
-
-    // 텍스트 애니메이션 (0.35초 딜레이 후)
+    // 텍스트 애니메이션
     _textCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -60,8 +46,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 
   Future<void> _startAnimations() async {
-    _iconCtrl.forward();
-    await Future.delayed(const Duration(milliseconds: 350));
+    await Future.delayed(const Duration(milliseconds: 100));
     if (mounted) _textCtrl.forward();
   }
 
@@ -96,7 +81,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   void dispose() {
-    _iconCtrl.dispose();
     _textCtrl.dispose();
     super.dispose();
   }
@@ -104,58 +88,29 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DT.splashBg,
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 36),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // ── 앱 아이콘 (Container/boxShadow 없이 직접) ───────
-              FadeTransition(
-                opacity: _iconFade,
-                child: ScaleTransition(
-                  scale: _iconScale,
-                  child: const Text('😷', style: TextStyle(fontSize: 72)),
-                ),
-              ),
-
-              const SizedBox(height: 40),
-
-              // ── 헤드라인 텍스트 ──────────────────────────────
-              FadeTransition(
-                opacity: _textFade,
-                child: SlideTransition(
-                  position: _textSlide,
-                  child: const Column(
-                    children: [
-                      Text(
-                        '같은 공기,\n다른 기준.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: DT.text,
-                          height: 1.3,
-                          letterSpacing: -0.64,
-                        ),
-                      ),
-                      SizedBox(height: 14),
-                      Text(
-                        '내 건강 상태에 맞게 알려드려요.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: DT.gray,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: -0.32,
-                        ),
-                      ),
-                    ],
+      backgroundColor: Colors.transparent,
+      body: OnboardingBackground(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // ── Hero + 서브 ──────────────────────────────────
+                FadeTransition(
+                  opacity: _textFade,
+                  child: SlideTransition(
+                    position: _textSlide,
+                    child: const OnboardingHero(
+                      main: '같은 공기,\n다른 기준.',
+                      sub: '내 건강 상태에 맞게 알려드려요.',
+                      heroSize: 64,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

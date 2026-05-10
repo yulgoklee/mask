@@ -98,8 +98,8 @@ void main() {
     await tester.pumpWidget(_buildApp());
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('내 몸에 맞는\n미세먼지 알림'), findsOneWidget);
-    expect(find.text('😷'), findsOneWidget);
+    expect(find.textContaining('내 몸에 맞는'), findsWidgets);
+    expect(find.textContaining('미세먼지 알림'), findsWidgets);
   });
 
   testWidgets('b: 페이지 1에서 "다음 →" 버튼 표시, "시작할게요" 없음', (tester) async {

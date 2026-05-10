@@ -118,27 +118,39 @@ void main() {
 
   group('OnboardingCompleteScreen smoke', () {
     testWidgets('a: "준비됐어요" 텍스트 표시', (tester) async {
-      await tester.pumpWidget(_buildApp());
-      await tester.pump(const Duration(milliseconds: 100));
-      expect(find.textContaining('준비됐어요'), findsOneWidget);
+      await tester.runAsync(() async {
+        await tester.pumpWidget(_buildApp());
+        await tester.pump(const Duration(milliseconds: 100));
+      });
+      await tester.pumpAndSettle();
+      expect(find.textContaining('준비됐어요'), findsWidgets);
     });
 
     testWidgets('b: firstAlertTime — 오전 8:00 형식 표시', (tester) async {
-      await tester.pumpWidget(_buildApp(setting: _settingWithMorning));
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.runAsync(() async {
+        await tester.pumpWidget(_buildApp(setting: _settingWithMorning));
+        await tester.pump(const Duration(milliseconds: 100));
+      });
+      await tester.pumpAndSettle();
       // _formatTime(8, 0) = '오전 8:00'
       expect(find.textContaining('오전 8:00'), findsOneWidget);
     });
 
     testWidgets('c: "시작할게요" CTA 버튼 표시', (tester) async {
-      await tester.pumpWidget(_buildApp());
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.runAsync(() async {
+        await tester.pumpWidget(_buildApp());
+        await tester.pump(const Duration(milliseconds: 100));
+      });
+      await tester.pumpAndSettle();
       expect(find.text('시작할게요'), findsOneWidget);
     });
 
     testWidgets('d: 모든 알림 꺼진 경우 다른 문구 표시', (tester) async {
-      await tester.pumpWidget(_buildApp(setting: _settingAllOff));
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.runAsync(() async {
+        await tester.pumpWidget(_buildApp(setting: _settingAllOff));
+        await tester.pump(const Duration(milliseconds: 100));
+      });
+      await tester.pumpAndSettle();
       expect(find.textContaining('알림을 모두 끄셨어요'), findsOneWidget);
     });
   });
