@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
+import '../../core/constants/design_tokens.dart';
 import '../../core/constants/location_stations.dart';
 import '../../data/models/user_profile.dart';
 
@@ -151,7 +151,7 @@ class _DiagQ2BirthYearState extends State<DiagQ2BirthYear> {
                         style: const TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.primary,
+                          color: DT.primary,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -162,7 +162,7 @@ class _DiagQ2BirthYearState extends State<DiagQ2BirthYear> {
                             '만 $_age세',
                             style: const TextStyle(
                               fontSize: 16,
-                              color: AppColors.textSecondary,
+                              color: DT.gray,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -172,7 +172,7 @@ class _DiagQ2BirthYearState extends State<DiagQ2BirthYear> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
-                                color: AppColors.coral.withValues(alpha: 0.15),
+                                color: DT.danger.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Text(
@@ -180,7 +180,7 @@ class _DiagQ2BirthYearState extends State<DiagQ2BirthYear> {
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
-                                  color: AppColors.coral,
+                                  color: DT.danger,
                                 ),
                               ),
                             ),
@@ -203,7 +203,7 @@ class _DiagQ2BirthYearState extends State<DiagQ2BirthYear> {
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Container(
               decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
+                color: DT.grayLt,
                 borderRadius: BorderRadius.circular(18),
               ),
               child: Stack(
@@ -215,7 +215,7 @@ class _DiagQ2BirthYearState extends State<DiagQ2BirthYear> {
                       height: 44,
                       margin: const EdgeInsets.symmetric(horizontal: 16),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.12),
+                        color: DT.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
@@ -241,8 +241,8 @@ class _DiagQ2BirthYearState extends State<DiagQ2BirthYear> {
                                 ? FontWeight.w700
                                 : FontWeight.w400,
                             color: isSelected
-                                ? AppColors.primary
-                                : AppColors.textSecondary,
+                                ? DT.primary
+                                : DT.gray,
                           ),
                         ),
                       );
@@ -313,11 +313,11 @@ class DiagQ3Gender extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 36),
                       decoration: BoxDecoration(
                         color: selected
-                            ? AppColors.primary.withValues(alpha: 0.08)
-                            : AppColors.surfaceVariant,
+                            ? DT.primary.withValues(alpha: 0.08)
+                            : DT.grayLt,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: selected ? AppColors.primary : AppColors.divider,
+                          color: selected ? DT.primary : DT.border,
                           width: selected ? 2 : 1,
                         ),
                       ),
@@ -328,7 +328,7 @@ class DiagQ3Gender extends StatelessWidget {
                           Text(
                             label,
                             style: TextStyle(
-                              color: selected ? AppColors.primary : AppColors.textPrimary,
+                              color: selected ? DT.primary : DT.text,
                               fontWeight: FontWeight.w700,
                               fontSize: 17,
                             ),
@@ -428,11 +428,11 @@ class DiagQ4Respiratory extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: sel
-                        ? AppColors.coral.withValues(alpha: 0.07)
-                        : AppColors.surface,
+                        ? DT.caution.withValues(alpha: 0.07)
+                        : DT.white,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: sel ? AppColors.coral : AppColors.divider,
+                      color: sel ? DT.caution : DT.border,
                       width: sel ? 2 : 1,
                     ),
                   ),
@@ -449,7 +449,7 @@ class DiagQ4Respiratory extends StatelessWidget {
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 15,
-                                color: sel ? AppColors.coral : AppColors.textPrimary,
+                                color: sel ? DT.caution : DT.text,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -457,14 +457,14 @@ class DiagQ4Respiratory extends StatelessWidget {
                               hint,
                               style: const TextStyle(
                                   fontSize: 12,
-                                  color: AppColors.textSecondary),
+                                  color: DT.gray),
                             ),
                           ],
                         ),
                       ),
                       Icon(
                         sel ? Icons.check_box : Icons.check_box_outline_blank,
-                        color: sel ? AppColors.coral : AppColors.textHint,
+                        color: sel ? DT.caution : DT.gray2,
                         size: 22,
                       ),
                     ],
@@ -477,7 +477,7 @@ class DiagQ4Respiratory extends StatelessWidget {
           // ── 구분선 ────────────────────────────────────────────
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 6),
-            child: Divider(color: AppColors.divider),
+            child: Divider(color: DT.border),
           ),
 
           // ── "진단 받은 게 없어요" 라디오 ─────────────────────
@@ -489,11 +489,11 @@ class DiagQ4Respiratory extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: noneSelected
-                    ? AppColors.success.withValues(alpha: 0.07)
-                    : AppColors.surface,
+                    ? DT.safe.withValues(alpha: 0.07)
+                    : DT.white,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: noneSelected ? AppColors.success : AppColors.divider,
+                  color: noneSelected ? DT.safe : DT.border,
                   width: noneSelected ? 2 : 1,
                 ),
               ),
@@ -508,8 +508,8 @@ class DiagQ4Respiratory extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
                         color: noneSelected
-                            ? AppColors.success
-                            : AppColors.textPrimary,
+                            ? DT.safe
+                            : DT.text,
                       ),
                     ),
                   ),
@@ -517,7 +517,7 @@ class DiagQ4Respiratory extends StatelessWidget {
                     noneSelected
                         ? Icons.radio_button_checked
                         : Icons.radio_button_off,
-                    color: noneSelected ? AppColors.success : AppColors.textHint,
+                    color: noneSelected ? DT.safe : DT.gray2,
                     size: 22,
                   ),
                 ],
@@ -527,9 +527,8 @@ class DiagQ4Respiratory extends StatelessWidget {
 
           const SizedBox(height: 20),
           _insightBox(
-            '비염·천식이 있으면 미세먼지에 더 민감하게 반응해요. '
-            'COPD·알레르기가 있으면 더 일찍 마스크를 착용해야 해요. '
-            '입력한 정보를 바탕으로 마스크 타이밍을 개인화해드려요.',
+            '호흡기 질환이 있으면 같은 농도에서 더 일찍 반응해요.\n'
+            '기준치를 최대 30%까지 낮춰 더 일찍 알려드려요.',
           ),
           const SizedBox(height: 32),
         ],
@@ -613,11 +612,11 @@ class DiagQ5Cardiovascular extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: sel
-                        ? AppColors.coral.withValues(alpha: 0.07)
-                        : AppColors.surface,
+                        ? DT.caution.withValues(alpha: 0.07)
+                        : DT.white,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: sel ? AppColors.coral : AppColors.divider,
+                      color: sel ? DT.caution : DT.border,
                       width: sel ? 2 : 1,
                     ),
                   ),
@@ -634,7 +633,7 @@ class DiagQ5Cardiovascular extends StatelessWidget {
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 15,
-                                color: sel ? AppColors.coral : AppColors.textPrimary,
+                                color: sel ? DT.caution : DT.text,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -642,14 +641,14 @@ class DiagQ5Cardiovascular extends StatelessWidget {
                               hint,
                               style: const TextStyle(
                                   fontSize: 12,
-                                  color: AppColors.textSecondary),
+                                  color: DT.gray),
                             ),
                           ],
                         ),
                       ),
                       Icon(
                         sel ? Icons.check_box : Icons.check_box_outline_blank,
-                        color: sel ? AppColors.coral : AppColors.textHint,
+                        color: sel ? DT.caution : DT.gray2,
                         size: 22,
                       ),
                     ],
@@ -662,7 +661,7 @@ class DiagQ5Cardiovascular extends StatelessWidget {
           // ── 구분선 ────────────────────────────────────────────
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 6),
-            child: Divider(color: AppColors.divider),
+            child: Divider(color: DT.border),
           ),
 
           // ── "진단 받은 게 없어요" 라디오 ─────────────────────
@@ -674,11 +673,11 @@ class DiagQ5Cardiovascular extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: noneSelected
-                    ? AppColors.success.withValues(alpha: 0.07)
-                    : AppColors.surface,
+                    ? DT.safe.withValues(alpha: 0.07)
+                    : DT.white,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: noneSelected ? AppColors.success : AppColors.divider,
+                  color: noneSelected ? DT.safe : DT.border,
                   width: noneSelected ? 2 : 1,
                 ),
               ),
@@ -693,8 +692,8 @@ class DiagQ5Cardiovascular extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
                         color: noneSelected
-                            ? AppColors.success
-                            : AppColors.textPrimary,
+                            ? DT.safe
+                            : DT.text,
                       ),
                     ),
                   ),
@@ -702,7 +701,7 @@ class DiagQ5Cardiovascular extends StatelessWidget {
                     noneSelected
                         ? Icons.radio_button_checked
                         : Icons.radio_button_off,
-                    color: noneSelected ? AppColors.success : AppColors.textHint,
+                    color: noneSelected ? DT.safe : DT.gray2,
                     size: 22,
                   ),
                 ],
@@ -712,9 +711,8 @@ class DiagQ5Cardiovascular extends StatelessWidget {
 
           const SizedBox(height: 20),
           _insightBox(
-            '고혈압·심장 질환이 있으면 미세먼지가 혈관에 더 큰 영향을 줘요. '
-            '뇌졸중 경험이 있으면 혈관이 더 예민한 상태예요. '
-            '입력한 정보를 바탕으로 마스크 타이밍을 개인화해드려요.',
+            '혈관 질환이 있으면 미세먼지가 혈관 벽에 더 큰 자극을 줘요.\n'
+            '기준치를 최대 25%까지 낮춰 더 일찍 알려드려요.',
           ),
           const SizedBox(height: 32),
         ],
@@ -822,11 +820,11 @@ class DiagSignalSelfCheck extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: sel
-                        ? AppColors.coral.withValues(alpha: 0.07)
-                        : AppColors.surface,
+                        ? DT.caution.withValues(alpha: 0.07)
+                        : DT.white,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: sel ? AppColors.coral : AppColors.divider,
+                      color: sel ? DT.caution : DT.border,
                       width: sel ? 2 : 1,
                     ),
                   ),
@@ -844,8 +842,8 @@ class DiagSignalSelfCheck extends StatelessWidget {
                                 fontWeight: FontWeight.w700,
                                 fontSize: 14,
                                 color: sel
-                                    ? AppColors.coral
-                                    : AppColors.textPrimary,
+                                    ? DT.caution
+                                    : DT.text,
                                 height: 1.35,
                               ),
                             ),
@@ -854,7 +852,7 @@ class DiagSignalSelfCheck extends StatelessWidget {
                               hint,
                               style: const TextStyle(
                                 fontSize: 12,
-                                color: AppColors.textSecondary,
+                                color: DT.gray,
                                 height: 1.4,
                               ),
                             ),
@@ -863,7 +861,7 @@ class DiagSignalSelfCheck extends StatelessWidget {
                       ),
                       Icon(
                         sel ? Icons.check_box : Icons.check_box_outline_blank,
-                        color: sel ? AppColors.coral : AppColors.textHint,
+                        color: sel ? DT.caution : DT.gray2,
                         size: 22,
                       ),
                     ],
@@ -937,11 +935,11 @@ class DiagQ6Smoking extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: sel
-                        ? AppColors.primary.withValues(alpha: 0.07)
-                        : AppColors.surface,
+                        ? DT.primary.withValues(alpha: 0.07)
+                        : DT.white,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: sel ? AppColors.primary : AppColors.divider,
+                      color: sel ? DT.primary : DT.border,
                       width: sel ? 2 : 1,
                     ),
                   ),
@@ -959,8 +957,8 @@ class DiagQ6Smoking extends StatelessWidget {
                                 fontWeight: FontWeight.w700,
                                 fontSize: 15,
                                 color: sel
-                                    ? AppColors.primary
-                                    : AppColors.textPrimary,
+                                    ? DT.primary
+                                    : DT.text,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -968,7 +966,7 @@ class DiagQ6Smoking extends StatelessWidget {
                               hint,
                               style: const TextStyle(
                                   fontSize: 12,
-                                  color: AppColors.textSecondary),
+                                  color: DT.gray),
                             ),
                           ],
                         ),
@@ -977,7 +975,7 @@ class DiagQ6Smoking extends StatelessWidget {
                         sel
                             ? Icons.radio_button_checked
                             : Icons.radio_button_off,
-                        color: sel ? AppColors.primary : AppColors.textHint,
+                        color: sel ? DT.primary : DT.gray2,
                         size: 22,
                       ),
                     ],
@@ -989,9 +987,8 @@ class DiagQ6Smoking extends StatelessWidget {
 
           const SizedBox(height: 20),
           _insightBox(
-            '현재 흡연 중이면 폐 점막이 더 민감한 상태예요. '
-            '금연 후에도 수년간 영향이 남아요. '
-            '흡연 이력을 바탕으로 개인 기준을 더 정밀하게 계산해드려요.',
+            '현재 흡연 중이면 기준치를 20% 더 낮춰요.\n'
+            '금연 후에도 폐 민감도가 수년간 높게 유지돼요.',
           ),
           const SizedBox(height: 32),
         ],
@@ -1071,11 +1068,11 @@ class DiagQ6_1SmokingType extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: sel
-                        ? AppColors.primary.withValues(alpha: 0.07)
-                        : AppColors.surface,
+                        ? DT.primary.withValues(alpha: 0.07)
+                        : DT.white,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: sel ? AppColors.primary : AppColors.divider,
+                      color: sel ? DT.primary : DT.border,
                       width: sel ? 2 : 1,
                     ),
                   ),
@@ -1093,8 +1090,8 @@ class DiagQ6_1SmokingType extends StatelessWidget {
                                 fontWeight: FontWeight.w700,
                                 fontSize: 15,
                                 color: sel
-                                    ? AppColors.primary
-                                    : AppColors.textPrimary,
+                                    ? DT.primary
+                                    : DT.text,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -1102,14 +1099,14 @@ class DiagQ6_1SmokingType extends StatelessWidget {
                               hint,
                               style: const TextStyle(
                                   fontSize: 12,
-                                  color: AppColors.textSecondary),
+                                  color: DT.gray),
                             ),
                           ],
                         ),
                       ),
                       Icon(
                         sel ? Icons.check_box : Icons.check_box_outline_blank,
-                        color: sel ? AppColors.primary : AppColors.textHint,
+                        color: sel ? DT.primary : DT.gray2,
                         size: 22,
                       ),
                     ],
@@ -1139,13 +1136,13 @@ class DiagQ6_1SmokingType extends StatelessWidget {
 Widget _qBadge(String text) => Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
       decoration: BoxDecoration(
-        color: AppColors.primaryLight.withValues(alpha: 0.5),
+        color: DT.primaryLt.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         text,
         style: const TextStyle(
-          color: AppColors.primary,
+          color: DT.primary,
           fontWeight: FontWeight.w700,
           fontSize: 13,
         ),
@@ -1158,7 +1155,7 @@ Widget _qTitle(BuildContext context, String title) =>
       title,
       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+            color: DT.text,
             height: 1.3,
           ),
     );
@@ -1168,7 +1165,7 @@ Widget _qSubtitle(BuildContext context, String subtitle) =>
     Text(
       subtitle,
       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: AppColors.textSecondary,
+            color: DT.gray,
           ),
     );
 
@@ -1176,9 +1173,9 @@ Widget _qSubtitle(BuildContext context, String subtitle) =>
 Widget _insightBox(String text) => Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primaryLight.withValues(alpha: 0.25),
+        color: DT.primaryLt.withValues(alpha: 0.25),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryLight),
+        border: Border.all(color: DT.primaryLt),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1189,7 +1186,7 @@ Widget _insightBox(String text) => Container(
             child: Text(
               text,
               style: const TextStyle(
-                color: AppColors.textSecondary,
+                color: DT.gray,
                 fontSize: 13,
                 height: 1.5,
               ),
@@ -1203,7 +1200,7 @@ Widget _insightBox(String text) => Container(
 Widget _fieldLabel(String text) => Text(
       text,
       style: const TextStyle(
-        color: AppColors.textPrimary,
+        color: DT.text,
         fontWeight: FontWeight.w600,
         fontSize: 15,
       ),
@@ -1212,9 +1209,9 @@ Widget _fieldLabel(String text) => Text(
 /// 텍스트 필드 데코레이션
 InputDecoration _inputDecoration(String hint) => InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: AppColors.textHint),
+      hintStyle: const TextStyle(color: DT.gray2),
       filled: true,
-      fillColor: AppColors.surfaceVariant,
+      fillColor: DT.grayLt,
       counterText: '',
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -1222,118 +1219,11 @@ InputDecoration _inputDecoration(String hint) => InputDecoration(
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+        borderSide: const BorderSide(color: DT.primary, width: 1.5),
       ),
       contentPadding:
           const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
     );
-
-
-// ══════════════════════════════════════════════════════════════
-//  Yes / No 두 버튼 Row
-// ══════════════════════════════════════════════════════════════
-
-class _YesNoRow extends StatelessWidget {
-  final bool selectedYes;
-  final String yesEmoji;
-  final String yesLabel;
-  final String noEmoji;
-  final String noLabel;
-  final VoidCallback onYes;
-  final VoidCallback onNo;
-  final Color yesColor;
-  /// 선택 시 "아니요" 버튼 색상 — 기본은 primary(파랑)
-  final Color noColor;
-
-  const _YesNoRow({
-    required this.selectedYes,
-    required this.yesEmoji,
-    required this.yesLabel,
-    required this.noEmoji,
-    required this.noLabel,
-    required this.onYes,
-    required this.onNo,
-    required this.yesColor,
-    this.noColor = AppColors.primary,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: GestureDetector(
-            onTap: onYes,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              padding: const EdgeInsets.symmetric(vertical: 28),
-              decoration: BoxDecoration(
-                color: selectedYes
-                    ? yesColor.withValues(alpha: 0.10)
-                    : AppColors.surface,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: selectedYes ? yesColor : AppColors.divider,
-                  width: selectedYes ? 2.5 : 1,
-                ),
-              ),
-              child: Column(
-                children: [
-                  Text(yesEmoji, style: const TextStyle(fontSize: 32)),
-                  const SizedBox(height: 10),
-                  Text(
-                    yesLabel,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      color: selectedYes ? yesColor : AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: GestureDetector(
-            onTap: onNo,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              padding: const EdgeInsets.symmetric(vertical: 28),
-              decoration: BoxDecoration(
-                color: !selectedYes
-                    ? noColor.withValues(alpha: 0.08)
-                    : AppColors.surface,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: !selectedYes ? noColor : AppColors.divider,
-                  width: !selectedYes ? 2.5 : 1,
-                ),
-              ),
-              child: Column(
-                children: [
-                  Text(noEmoji, style: const TextStyle(fontSize: 32)),
-                  const SizedBox(height: 10),
-                  Text(
-                    noLabel,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      color: !selectedYes ? noColor : AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 // ══════════════════════════════════════════════════════════════
 //  QLocation — 관심 지역 (집 / 회사·학교)
@@ -1456,7 +1346,7 @@ class _DiagQLocationState extends State<DiagQLocation> {
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+            color: DT.text,
           ),
         ),
         const SizedBox(height: 10),
@@ -1491,7 +1381,7 @@ class _DiagQLocationState extends State<DiagQLocation> {
             '측정소: ${_stationFor(sido, district) ?? '-'}',
             style: const TextStyle(
               fontSize: 11,
-              color: AppColors.primary,
+              color: DT.primary,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -1510,11 +1400,11 @@ class _DiagQLocationState extends State<DiagQLocation> {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: onChanged == null
-            ? AppColors.divider
-            : AppColors.surfaceVariant,
+            ? DT.border
+            : DT.grayLt,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: value != null ? AppColors.primary : AppColors.divider,
+          color: value != null ? DT.primary : DT.border,
           width: value != null ? 1.5 : 1,
         ),
       ),
@@ -1525,14 +1415,14 @@ class _DiagQLocationState extends State<DiagQLocation> {
             hint,
             style: const TextStyle(
               fontSize: 13,
-              color: AppColors.textSecondary,
+              color: DT.gray,
             ),
           ),
           isExpanded: true,
           icon: const Icon(Icons.keyboard_arrow_down, size: 18),
           style: const TextStyle(
             fontSize: 13,
-            color: AppColors.textPrimary,
+            color: DT.text,
           ),
           onChanged: onChanged,
           items: items
