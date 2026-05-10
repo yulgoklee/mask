@@ -59,8 +59,8 @@ class DiagQ4Respiratory extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 32),
-          qBadge('Q$questionNumber · 호흡기'),
-          const SizedBox(height: 14),
+          const Icon(Icons.air, size: 40, color: DT.caution),
+          const SizedBox(height: 12),
           qTitle(context, '호흡기 상태를 알려주세요'),
           const SizedBox(height: 6),
           qSubtitle(context, '호흡기 상태는 마스크 판단에 가장 중요해요'),
@@ -182,7 +182,7 @@ class DiagQ4Respiratory extends StatelessWidget {
           const SizedBox(height: 20),
           insightBox(
             '호흡기 질환이 있으면 같은 농도에서 더 일찍 반응해요.\n'
-            '기준치를 최대 30%까지 낮춰 더 일찍 알려드려요.',
+            '기준치가 최대 30%까지 낮아지고, 더 일찍 알림이 와요.',
           ),
           const SizedBox(height: 32),
         ],

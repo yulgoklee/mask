@@ -147,7 +147,7 @@ void main() {
     testWidgets('두 번째 줄 카피 확인 (30% 수치)', (tester) async {
       await tester.pumpWidget(_wrap(const _Q4Harness()));
       expect(
-        find.textContaining('기준치를 최대 30%까지 낮춰 더 일찍 알려드려요'),
+        find.textContaining('기준치가 최대 30%까지 낮아지고, 더 일찍 알림이 와요'),
         findsOneWidget,
       );
     });
@@ -165,7 +165,7 @@ void main() {
     testWidgets('두 번째 줄 카피 확인 (25% 수치)', (tester) async {
       await tester.pumpWidget(_wrap(const _Q5Harness()));
       expect(
-        find.textContaining('기준치를 최대 25%까지 낮춰 더 일찍 알려드려요'),
+        find.textContaining('기준치가 최대 25%까지 낮아지고, 더 일찍 알림이 와요'),
         findsOneWidget,
       );
     });

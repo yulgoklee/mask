@@ -13,14 +13,17 @@ import 'widgets/onboarding_background.dart';
 
 final _analytics = FirebaseAnalytics.instance;
 
-/// 온보딩 — Q1~Q6 카드 PageView
+/// 온보딩 — 기본정보 + Q4~Q6 카드 PageView
 ///
-/// Q1 닉네임       Q4 호흡기 (비염/천식/COPD/알레르기)
-/// Q2 출생연도      Q5 심혈관 (고혈압/심장/뇌졸중)
-/// Q3 성별          Q6 흡연 (필수)  Q6-1 흡연 종류 (현재 흡연만)
+/// index 0: 기본정보 (이름·출생연도·성별 통합)
+/// index 1: Q4 호흡기
+/// index 2: Q5 심혈관
+/// (조건부) Q5.5 잠재 신호 자가 점검 — Flag ON 시
+/// (필수)   Q6 흡연
+/// (조건부) Q6-1 흡연 종류 — 현재 흡연 중인 경우만
 ///
-/// 총: 7단계(현재흡연) / 6단계(비흡연·금연)
-/// 완료 → analysis_loading_screen → dashboard
+/// 총: 4단계(Flag·종류 모두 OFF) ~ 6단계(둘 다 ON)
+/// 완료 → analysis_loading_screen → diagnosis_result
 class OnboardingScreen extends ConsumerStatefulWidget {
   final bool isRediag;
   const OnboardingScreen({super.key, this.isRediag = false});
@@ -33,14 +36,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  // ── Q1: 닉네임 ───────────────────────────────────────────────
+  // ── 기본정보 (index 0) ───────────────────────────────────────
   String? _nickname;
-
-  // ── Q2: 출생연도 ─────────────────────────────────────────────
   int? _birthYear;
-  bool _birthYearEdited = false; // 사용자가 picker를 한 번이라도 조작했는지
-
-  // ── Q3: 성별 ─────────────────────────────────────────────────
   String? _genderStr; // 'male'|'female'|null
 
   // ── Q4: 호흡기 ──────────────────────────────────────────────
@@ -51,13 +49,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   bool _hasNoneRespiratory  = true; // 초기값: "없어요" 선택
 
   // ── Q5: 심혈관 ──────────────────────────────────────────────
-  bool _hasHypertension     = false;
-  bool _hasHeartDisease     = false;
-  bool _hasStroke           = false;
+  bool _hasHypertension       = false;
+  bool _hasHeartDisease       = false;
+  bool _hasStroke             = false;
   bool _hasNoneCardiovascular = true; // 초기값: "없어요" 선택
 
   // ── Q5.5: 잠재 신호 자가 점검 (Flag ON 시만, 선택) ──────────
-  // SignalId.* → bool. 빈 맵 = 모두 답 안 함 / 건너뛰기.
   Map<String, bool> _signalAnswers = const {};
 
   // ── Q6: 흡연 ────────────────────────────────────────────────
@@ -74,47 +71,46 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   // ── 동적 페이지 조건 ─────────────────────────────────────────
 
   /// Q5.5(신호 자가 점검) 포함 여부 — Feature Flag ON 시
-  bool get _includeSignalSelfCheck =>
-      FeatureFlags.kEnableSignalSelfCheck;
+  bool get _includeSignalSelfCheck => FeatureFlags.kEnableSignalSelfCheck;
 
   /// Q6-1(흡연 종류) 포함 여부 — 현재 흡연 중인 경우만
   bool get _includeSmokingType =>
       _smokingStatusChoice == SmokingStatus.current;
 
   /// 전체 페이지 수 (조건부 페이지 반영)
+  /// 기본정보(1) + Q4(1) + Q5(1) + [Q5.5] + Q6(1) + [Q6-1]
   int get _totalPages {
-    int n = 6; // Q1~Q6 고정
+    int n = 4; // 기본정보·Q4·Q5·Q6 고정
     if (_includeSignalSelfCheck) n++;
     if (_includeSmokingType) n++;
     return n;
   }
 
-  /// Q6(흡연) 페이지 인덱스 — 자가 점검 페이지가 들어가면 +1.
-  int get _smokingPageIndex => _includeSignalSelfCheck ? 6 : 5;
+  /// Q6(흡연) 페이지 인덱스
+  int get _smokingPageIndex => _includeSignalSelfCheck ? 4 : 3;
+
+  /// 단계명 목록 (OnboardingProgressRow 표시용)
+  List<String> get _stageNames {
+    final names = ['기본정보', '호흡기', '심혈관'];
+    if (_includeSignalSelfCheck) names.add('자가점검');
+    names.add('흡연');
+    if (_includeSmokingType) names.add('흡연 종류');
+    return names;
+  }
 
   /// 실제 렌더할 페이지 위젯 목록
   List<Widget> get _pages => [
-        // ── 기본 ───────────────────────────────────────────
-        DiagQ1Nickname(
-          questionNumber: 1,
-          initialValue: _nickname,
-          onChanged: (v) => setState(() => _nickname = v),
-        ),
-        DiagQ2BirthYear(
-          questionNumber: 2,
-          initialValue: _birthYear,
-          onChanged: (v) => setState(() {
-            _birthYear = v;
-            _birthYearEdited = true;
-          }),
-        ),
-        DiagQ3Gender(
-          questionNumber: 3,
-          value: _genderStr,
-          onChanged: (v) => setState(() => _genderStr = v),
+        // ── index 0: 기본정보 (Q1·Q2·Q3 통합) ─────────────────
+        DiagBasicInfo(
+          nickname:          _nickname,
+          birthYear:         _birthYear,
+          gender:            _genderStr,
+          onNicknameChanged: (v) => setState(() => _nickname = v),
+          onBirthYearChanged:(v) => setState(() => _birthYear = v),
+          onGenderChanged:   (v) => setState(() => _genderStr = v),
         ),
 
-        // ── Q4: 호흡기 (다중 체크박스) ──────────────────────
+        // ── index 1: Q4 호흡기 ──────────────────────────────────
         DiagQ4Respiratory(
           questionNumber: 4,
           rhinitis:     _hasRhinitis,
@@ -123,15 +119,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           allergy:      _hasAllergy,
           noneSelected: _hasNoneRespiratory,
           onChanged: (r, a, c, al, none) => setState(() {
-            _hasRhinitis         = r;
-            _hasAsthma           = a;
-            _hasCopd             = c;
-            _hasAllergy          = al;
-            _hasNoneRespiratory  = none;
+            _hasRhinitis        = r;
+            _hasAsthma          = a;
+            _hasCopd            = c;
+            _hasAllergy         = al;
+            _hasNoneRespiratory = none;
           }),
         ),
 
-        // ── Q5: 심혈관 (다중 체크박스) ──────────────────────
+        // ── index 2: Q5 심혈관 ──────────────────────────────────
         DiagQ5Cardiovascular(
           questionNumber: 5,
           hypertension: _hasHypertension,
@@ -146,7 +142,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           }),
         ),
 
-        // ── Q5.5: 잠재 신호 자가 점검 (Flag ON 시만, 선택) ─
+        // ── (조건부) Q5.5 자가 점검 ─────────────────────────────
         if (_includeSignalSelfCheck)
           DiagSignalSelfCheck(
             questionNumber: 6,
@@ -154,13 +150,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             onChanged: (m) => setState(() => _signalAnswers = m),
           ),
 
-        // ── Q6: 흡연 이력 (라디오) ─────────────────────────
+        // ── Q6: 흡연 이력 ────────────────────────────────────────
         DiagQ6Smoking(
           questionNumber: _includeSignalSelfCheck ? 7 : 6,
           value: _smokingStatusChoice,
           onChanged: (v) => setState(() {
             _smokingStatusChoice = v;
-            // 비흡연/금연으로 변경 시 흡연 종류 초기화
             if (v != SmokingStatus.current) {
               _smokesCigarette = false;
               _smokesHeated    = false;
@@ -169,7 +164,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           }),
         ),
 
-        // ── Q6-1: 흡연 종류 (현재 흡연 중인 경우만) ────────
+        // ── (조건부) Q6-1 흡연 종류 ─────────────────────────────
         if (_includeSmokingType)
           DiagQ6p1SmokingType(
             questionNumber: _includeSignalSelfCheck ? 8 : 7,
@@ -198,7 +193,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         setState(() {
           _nickname        = profile.nickname;
           _birthYear       = profile.birthYear;
-          _birthYearEdited = true;
           _genderStr       = profile.gender.isNotEmpty ? profile.gender : null;
           _hasRhinitis     = profile.rhinitis;
           _hasAsthma       = profile.asthma;
@@ -215,14 +209,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           _smokesCigarette     = profile.smokesCigarette;
           _smokesHeated        = profile.smokesHeated;
           _smokesVaping        = profile.smokesVaping;
-          // Flag ON 시에만 기존 신호 답변 복원 — OFF 시 빈 맵 유지
           _signalAnswers = FeatureFlags.kEnableSignalSelfCheck
               ? Map<String, bool>.from(profile.signalAnswers)
               : const {};
-          // Q3(성별)부터 시작
-          _currentPage = 2;
+          // 재진단: 기본정보부터 시작 (편집 가능하게)
+          _currentPage = 0;
         });
-        _pageController.jumpToPage(2);
+        _pageController.jumpToPage(0);
       });
     }
   }
@@ -231,6 +224,44 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  // ── 다음 버튼 활성화 여부 ────────────────────────────────────
+
+  bool get _isNextDisabled {
+    if (_saving) return true;
+    switch (_currentPage) {
+      case 0:
+        // 기본정보: 이름·출생연도·성별 모두 필수
+        return !(_nickname != null && _nickname!.trim().isNotEmpty) ||
+            _birthYear == null ||
+            _genderStr == null;
+      case 1:
+        // Q4 호흡기: 최소 1개 선택 또는 "없어요"
+        return !_hasRhinitis &&
+            !_hasAsthma &&
+            !_hasCopd &&
+            !_hasAllergy &&
+            !_hasNoneRespiratory;
+      case 2:
+        // Q5 심혈관: 최소 1개 선택 또는 "없어요"
+        return !_hasHypertension &&
+            !_hasHeartDisease &&
+            !_hasStroke &&
+            !_hasNoneCardiovascular;
+      default:
+        // Q5.5(자가 점검): 항상 통과
+        if (_includeSignalSelfCheck && _currentPage == 3) return false;
+        // Q6(흡연): 반드시 선택
+        if (_currentPage == _smokingPageIndex) {
+          return _smokingStatusChoice == null;
+        }
+        // Q6-1(흡연 종류): 1개 이상 선택
+        if (_currentPage == _smokingPageIndex + 1 && _includeSmokingType) {
+          return !_smokesCigarette && !_smokesHeated && !_smokesVaping;
+        }
+        return false;
+    }
   }
 
   // ── 네비게이션 ───────────────────────────────────────────────
@@ -249,8 +280,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   void _prevPage() {
-    // 재진단 모드에서 Q3(index 2) 이하로는 뒤로 이동 불가
-    if (widget.isRediag && _currentPage <= 2) return;
+    // 재진단 모드에서 기본정보(index 0) 이하로는 뒤로 이동 불가
+    if (widget.isRediag && _currentPage <= 0) return;
     if (_currentPage > 0) {
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),
@@ -320,7 +351,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
 
     if (mounted) setState(() => _saving = false);
-    if (!saved) return; // 저장 실패 시 이동하지 않음
+    if (!saved) return;
 
     await _analytics.logEvent(name: 'onboarding_completed');
 
@@ -398,8 +429,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     if (!saved) return;
 
     if (mounted) {
-      context.go('/location_setup',
-          extra: true);
+      context.go('/location_setup', extra: true);
     }
   }
 
@@ -420,9 +450,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         smokesCigarette: _smokesCigarette,
         smokesHeated:    _smokesHeated,
         smokesVaping:    _smokesVaping,
-        homeStationName:  '',
+        homeStationName:   '',
         officeStationName: '',
-        // Flag OFF 시 항상 빈 맵. ON 시에는 사용자가 체크한 키만.
         signalAnswers: FeatureFlags.kEnableSignalSelfCheck
             ? Map<String, bool>.unmodifiable(_signalAnswers)
             : const {},
@@ -435,68 +464,59 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final pages = _pages; // getter 한 번만 호출
 
     return PopScope(
-      canPop: false, // 항상 직접 처리 — Q1에서 뒤로가기 차단, Q2+에서는 이전 질문으로
+      canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
-        // 재진단 모드에서 Q1·Q2(index 0·1·2) 범위는 시스템 뒤로가기로도 진입 불가
-        if (widget.isRediag && _currentPage <= 2) return;
+        // 재진단 모드에서 기본정보(index 0)에서 시스템 뒤로가기 차단
+        if (widget.isRediag && _currentPage <= 0) return;
         if (_currentPage > 0) _prevPage();
       },
       child: Scaffold(
-      backgroundColor: Colors.transparent,
-      body: OnboardingBackground(child: SafeArea(
-        child: Column(
-          children: [
-            // ── 상단 진행 표시 ─────────────────────────────────
-            OnboardingProgressRow(
-              currentPage: _currentPage,
-              totalPages: _totalPages,
-              onBack: _prevPage,
-              onSkip: _skipOnboarding,
-              isRediag: widget.isRediag,
-              onCancel: widget.isRediag ? _cancelRediag : null,
-            ),
+        backgroundColor: Colors.transparent,
+        body: OnboardingBackground(
+          child: SafeArea(
+            child: Column(
+              children: [
+                // ── 상단 진행 표시 ───────────────────────────────
+                OnboardingProgressRow(
+                  currentPage: _currentPage,
+                  totalPages: _totalPages,
+                  stageName: _stageNames.length > _currentPage
+                      ? _stageNames[_currentPage]
+                      : '',
+                  onBack: _prevPage,
+                  onSkip: _skipOnboarding,
+                  isRediag: widget.isRediag,
+                  onCancel: widget.isRediag ? _cancelRediag : null,
+                ),
 
-            // ── PageView ───────────────────────────────────────
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                children: pages,
-              ),
-            ),
+                // ── PageView ─────────────────────────────────────
+                Expanded(
+                  child: PageView(
+                    controller: _pageController,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: pages,
+                  ),
+                ),
 
-            // ── 다음 버튼 ──────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppTokens.screenH, 8, AppTokens.screenH, 24),
-              child: AppButton.primary(
-                label: _currentPage == _totalPages - 1 ? '분석 시작하기  →' : '다음',
-                onTap: (_saving ||
-                        (_currentPage == 0 && !(_nickname?.trim().isNotEmpty ?? false)) ||
-                        (_currentPage == 1 && !_birthYearEdited) ||
-                        // Q3(성별): 반드시 선택
-                        (_currentPage == 2 && (_genderStr == null || _genderStr!.isEmpty)) ||
-                        // Q4(호흡기): 최소 1개 선택 또는 "없어요"
-                        (_currentPage == 3 && !_hasRhinitis && !_hasAsthma && !_hasCopd && !_hasAllergy && !_hasNoneRespiratory) ||
-                        // Q5(심혈관): 최소 1개 선택 또는 "없어요"
-                        (_currentPage == 4 && !_hasHypertension && !_hasHeartDisease && !_hasStroke && !_hasNoneCardiovascular) ||
-                        // Q5.5(자가 점검): 항상 통과 — 답하지 않아도 다음 가능 (건너뛰기 의도).
-                        // Q6(흡연): 반드시 선택. 자가 점검 페이지가 들어가면 인덱스 +1.
-                        (_currentPage == _smokingPageIndex && _smokingStatusChoice == null) ||
-                        // Q6-1(흡연 종류): 현재 흡연 중인 경우 최소 1개 선택
-                        (_currentPage == _smokingPageIndex + 1 && _includeSmokingType &&
-                            !_smokesCigarette && !_smokesHeated && !_smokesVaping))
-                    ? null
-                    : _nextPage,
-                isLoading: _saving,
-              ),
+                // ── 다음 버튼 ─────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppTokens.screenH, 8, AppTokens.screenH, 24),
+                  child: AppButton.primary(
+                    label: _currentPage == _totalPages - 1
+                        ? '분석 시작하기  →'
+                        : '다음',
+                    onTap: _isNextDisabled ? null : _nextPage,
+                    isLoading: _saving,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      )),  // SafeArea, OnboardingBackground
-    ),   // Scaffold
-    );   // PopScope
+      ),
+    );
   }
 }
 
@@ -504,20 +524,24 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 //
 // 조건부 규칙:
 //   뒤로 버튼  : page > 0
-//   카운터     : page 0~2 → "Q1"/"Q2"/"Q3" 라벨, page >= 3 → "X/Y"
-//   건너뛰기   : page >= 2  (Q3+, Q1·Q2 는 진단 핵심 정보)
+//   진행 바    : LinearProgressIndicator (value = (page+1)/total)
+//   단계명     : _stageNames[currentPage] (예: "기본정보", "호흡기" 등)
+//   건너뛰기   : page >= 1 (기본정보 다음부터)
 
 class OnboardingProgressRow extends StatelessWidget {
   final int currentPage;
   final int totalPages;
+  final String stageName;
   final VoidCallback onBack;
   final VoidCallback onSkip;
   final bool isRediag;
   final VoidCallback? onCancel;
 
-  const OnboardingProgressRow({super.key, 
+  const OnboardingProgressRow({
+    super.key,
     required this.currentPage,
     required this.totalPages,
+    required this.stageName,
     required this.onBack,
     required this.onSkip,
     this.isRediag = false,
@@ -552,7 +576,7 @@ class OnboardingProgressRow extends StatelessWidget {
           ],
           Expanded(
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(3),
               child: LinearProgressIndicator(
                 value: (currentPage + 1) / totalPages,
                 backgroundColor: DT.border,
@@ -563,9 +587,7 @@ class OnboardingProgressRow extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Text(
-            currentPage < 3
-                ? 'Q${currentPage + 1}'
-                : '${currentPage + 1} / $totalPages',
+            stageName,
             style: const TextStyle(
               fontSize: 12,
               color: DT.gray,
@@ -578,21 +600,15 @@ class OnboardingProgressRow extends StatelessWidget {
               onTap: onCancel,
               child: const Text(
                 '취소',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: DT.gray,
-                ),
+                style: TextStyle(fontSize: 13, color: DT.gray),
               ),
             )
-          else if (currentPage >= 2)
+          else if (currentPage >= 1)
             GestureDetector(
               onTap: onSkip,
               child: const Text(
                 '(선택 항목) 건너뛰기',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: DT.gray,
-                ),
+                style: TextStyle(fontSize: 13, color: DT.gray),
               ),
             ),
         ],

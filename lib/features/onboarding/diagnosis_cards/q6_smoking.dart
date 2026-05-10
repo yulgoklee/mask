@@ -42,8 +42,8 @@ class DiagQ6Smoking extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 32),
-          qBadge('Q$questionNumber · 흡연'),
-          const SizedBox(height: 14),
+          const Icon(Icons.smoking_rooms, size: 40, color: DT.caution),
+          const SizedBox(height: 12),
           qTitle(context, '흡연 이력을 알려주세요'),
           const SizedBox(height: 8),
           qSubtitle(context, '흡연은 폐 민감도에 직접적인 영향을 줘요'),

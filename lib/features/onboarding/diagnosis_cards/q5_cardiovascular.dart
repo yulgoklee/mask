@@ -54,8 +54,8 @@ class DiagQ5Cardiovascular extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 32),
-          qBadge('Q$questionNumber · 심혈관'),
-          const SizedBox(height: 14),
+          const Icon(Icons.monitor_heart_outlined, size: 40, color: DT.caution),
+          const SizedBox(height: 12),
           qTitle(context, '혈관 건강을 알려주세요'),
           const SizedBox(height: 6),
           qSubtitle(context, '혈관 건강도 미세먼지 영향을 받아요'),
@@ -177,7 +177,7 @@ class DiagQ5Cardiovascular extends StatelessWidget {
           const SizedBox(height: 20),
           insightBox(
             '혈관 질환이 있으면 미세먼지가 혈관 벽에 더 큰 자극을 줘요.\n'
-            '기준치를 최대 25%까지 낮춰 더 일찍 알려드려요.',
+            '기준치가 최대 25%까지 낮아지고, 더 일찍 알림이 와요.',
           ),
           const SizedBox(height: 32),
         ],
