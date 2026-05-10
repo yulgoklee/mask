@@ -61,12 +61,11 @@ class ProfileTab extends ConsumerWidget {
 
                         // ── 섹션 라벨 ──────────────────────────────────
                         const Text(
-                          '내 호흡기 정보',
+                          '내 건강 분석',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: DT.gray,
-                            letterSpacing: 0.52,
                           ),
                         ),
                         const SizedBox(height: 10),

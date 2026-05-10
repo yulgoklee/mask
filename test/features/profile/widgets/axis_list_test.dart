@@ -31,14 +31,6 @@ const _axes5 = [
     isActive: false,
   ),
   AxisItem(
-    key: 'special',
-    label: '임신·특별',
-    sub: null,
-    weight: 0,
-    delta: 0,
-    isActive: false,
-  ),
-  AxisItem(
     key: 'age',
     label: '연령',
     sub: '36세',
@@ -71,14 +63,6 @@ const _allNeutral = [
     sub: null,
     weight: 0.0,
     delta: 0.0,
-    isActive: false,
-  ),
-  AxisItem(
-    key: 'special',
-    label: '임신·특별',
-    sub: null,
-    weight: 0,
-    delta: 0,
     isActive: false,
   ),
   AxisItem(
@@ -123,30 +107,29 @@ void main() {
 
     testWidgets('active 항목 delta 표시 (-7.0 → "-7.0")', (tester) async {
       await tester.pumpWidget(buildList(_axes5));
+      // 새 구조: "-{deltaAbs}" 형식
       expect(find.text('-7.0'), findsOneWidget);
     });
   });
 
   group('AxisList — neutral 항목 압축', () {
-    testWidgets('비활성 항목들은 한 줄 "해당 없음" 압축', (tester) async {
+    testWidgets('비활성 항목들은 한 줄 "해당 없어요" 압축', (tester) async {
       await tester.pumpWidget(buildList(_axes5));
-      // 심혈관, 흡연, 임신·특별은 비활성 → 한 줄 압축
-      expect(find.textContaining('해당 없음'), findsOneWidget);
+      // 심혈관, 흡연은 비활성 → "그 외: ... — 해당 없어요" 한 줄 압축
+      expect(find.textContaining('해당 없어요'), findsOneWidget);
       expect(find.textContaining('심혈관'), findsOneWidget);
     });
 
-    testWidgets('모두 비활성이면 전체 압축 한 줄', (tester) async {
+    testWidgets('모두 비활성이면 빈약 처리 위젯 표시', (tester) async {
       await tester.pumpWidget(buildList(_allNeutral));
-      expect(find.textContaining('해당 없음'), findsOneWidget);
+      expect(find.textContaining('특별히 민감한 항목이 없어요'), findsOneWidget);
       // 활성 행 없음
       expect(find.text('-7.0'), findsNothing);
     });
 
     testWidgets('비활성 항목들은 개별 행으로 표시되지 않음', (tester) async {
       await tester.pumpWidget(buildList(_axes5));
-      // 심혈관은 개별 라벨로 단독 렌더 없어야 함
-      // (압축 줄에 포함돼 있음)
-      // 단독 Text('심혈관')이 없는 대신 textContaining으로 압축 줄에서 찾음
+      // 심혈관은 개별 라벨로 단독 렌더 없어야 함 (압축 줄에 포함돼 있음)
       final independentLabel = find.byWidgetPredicate(
         (w) =>
             w is Text &&
@@ -157,24 +140,24 @@ void main() {
     });
   });
 
-  group('AxisList — 단위 표시', () {
-    testWidgets('"㎍/㎥" 단위 active 항목마다 표시', (tester) async {
+  group('AxisList — 아이콘 표시', () {
+    testWidgets('active 항목 아이콘 표시됨', (tester) async {
       await tester.pumpWidget(buildList(_axes5));
-      // active 2개 → ㎍/㎥ 2개
-      expect(find.text('㎍/㎥'), findsNWidgets(2));
+      // 호흡기: Icons.air, 연령: Icons.person_outline
+      expect(find.byIcon(Icons.air), findsOneWidget);
+      expect(find.byIcon(Icons.person_outline), findsOneWidget);
     });
   });
 
   // ── Variant F 테스트 ────────────────────────────────────────
 
-  group('AxisList variant F — 5축 전체 렌더링', () {
-    testWidgets('F: 5축 모두 표시 (isActive 무관)', (tester) async {
+  group('AxisList variant F — 4축 전체 렌더링', () {
+    testWidgets('F: 4축 모두 표시 (isActive 무관)', (tester) async {
       await tester.pumpWidget(buildListF(_axes5));
-      // active: 호흡기 민감, 연령 (sub 포함), inactive: 심혈관, 흡연, 임신·특별
+      // active: 호흡기 민감, 연령 (sub 포함), inactive: 심혈관, 흡연
       expect(find.textContaining('호흡기 민감'), findsOneWidget);
       expect(find.textContaining('심혈관'), findsOneWidget);
       expect(find.textContaining('흡연'), findsOneWidget);
-      expect(find.textContaining('임신·특별'), findsOneWidget);
       expect(find.textContaining('연령'), findsOneWidget);
     });
 
@@ -190,8 +173,8 @@ void main() {
 
     testWidgets('F: inactive 항목은 "해당 없음" 표시', (tester) async {
       await tester.pumpWidget(buildListF(_axes5));
-      // 심혈관, 흡연, 임신·특별, 연령 모두 inactive → 3개 해당 없음 (연령 active이므로 3개)
-      expect(find.text('해당 없음'), findsNWidgets(3));
+      // 심혈관, 흡연 inactive → 2개 해당 없음 (연령 active이므로 2개)
+      expect(find.text('해당 없음'), findsNWidgets(2));
     });
 
     testWidgets('F: 비활성 항목에 "해당 없음" 한 줄 압축 없음 (개별 행)', (tester) async {
@@ -202,8 +185,8 @@ void main() {
 
     testWidgets('F: 모두 비활성이면 모든 행 "해당 없음" 표시', (tester) async {
       await tester.pumpWidget(buildListF(_allNeutral));
-      // 5축 전부 inactive
-      expect(find.text('해당 없음'), findsNWidgets(5));
+      // 4축 전부 inactive
+      expect(find.text('해당 없음'), findsNWidgets(4));
     });
   });
 }

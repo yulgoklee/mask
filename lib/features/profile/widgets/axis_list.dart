@@ -139,85 +139,54 @@ class AxisList extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ── 활성 0개: 일반 그룹 빈약 처리 ────────────────────
+        if (active.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(Icons.check_circle_outline,
+                      size: 28, color: DT.safe),
+                  SizedBox(height: 12),
+                  Text(
+                    '4가지 기준을 모두 분석했어요',
+                    style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: DT.text),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    '특별히 민감한 항목이 없어요',
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: DT.gray),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
         // ── 활성 항목 ─────────────────────────────────────
         ...active.asMap().entries.map((entry) {
           final i = entry.key;
           final a = entry.value;
           final isLast = i == active.length - 1;
-          final showDivider = !isLast || neutral.isNotEmpty;
+          final showDivider = !isLast;
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    // 좌: label + sub
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            a.label,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: DT.text,
-                              letterSpacing: -0.15,
-                            ),
-                          ),
-                          if (a.sub != null && a.sub!.isNotEmpty) ...[
-                            const SizedBox(height: 3),
-                            Text(
-                              a.sub!,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: DT.gray,
-                                letterSpacing: -0.06,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    // 우: delta + 단위
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Text(
-                          a.delta.toStringAsFixed(1),
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: DT.text,
-                            letterSpacing: -0.36,
-                            fontFeatures: [FontFeature.tabularFigures()],
-                          ),
-                        ),
-                        const SizedBox(width: 3),
-                        const Text(
-                          '㎍/㎥',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: DT.gray,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+              _ActiveAxisRow(axis: a, accentColor: accentColor),
               if (showDivider)
                 Divider(
                   height: 1,
                   thickness: 1,
-                  color: DT.text.withValues(alpha: 0.08),
+                  color: DT.text.withValues(alpha: 0.06),
                 ),
             ],
           );
@@ -226,19 +195,113 @@ class AxisList extends StatelessWidget {
         // ── 비활성 항목 한 줄 압축 ─────────────────────────
         if (neutral.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.only(top: 12),
+            padding: const EdgeInsets.only(top: 14, bottom: 4),
             child: Text(
-              '${neutral.map((n) => n.label).join(' · ')} — 해당 없음',
+              '그 외: ${neutral.map((n) => n.label).join(' · ')} — 해당 없어요',
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: DT.gray2,
-                letterSpacing: -0.06,
-                height: 1.55,
+                color: DT.gray,
+                letterSpacing: -0.07,
               ),
             ),
           ),
       ],
+    );
+  }
+}
+
+// ── _ActiveAxisRow ──────────────────────────────────────────────
+
+class _ActiveAxisRow extends StatelessWidget {
+  final AxisItem axis;
+  final Color accentColor;
+
+  static const _maxDelta = 35.0; // ThresholdConfig.defaults.tBase
+  static const _iconMap = {
+    'respiratory': Icons.air,
+    'cardiovascular': Icons.monitor_heart_outlined,
+    'smoking': Icons.smoking_rooms,
+    'age': Icons.person_outline,
+  };
+
+  const _ActiveAxisRow({required this.axis, required this.accentColor});
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = _iconMap[axis.key] ?? Icons.help_outline;
+    final deltaAbs = axis.delta.abs();
+    final progress = (deltaAbs / _maxDelta).clamp(0.0, 1.0);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 18),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Icon(icon, size: 32, color: accentColor),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  axis.label,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: DT.text,
+                    letterSpacing: -0.16,
+                  ),
+                ),
+                if (axis.sub != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    axis.sub!,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: DT.gray,
+                      letterSpacing: -0.065,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 10),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 6,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(accentColor),
+                          backgroundColor: DT.text.withValues(alpha: 0.08),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      '-${deltaAbs.toStringAsFixed(1)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: accentColor,
+                        letterSpacing: -0.06,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

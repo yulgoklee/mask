@@ -135,8 +135,8 @@ void main() {
       persona = PersonaData.fromProfile(_base(asthma: true));
     });
 
-    test('axes 길이 == 5', () {
-      expect(persona.axes.length, 5);
+    test('axes 길이 == 4', () {
+      expect(persona.axes.length, 4);
     });
 
     test('axes[0] key == "respiratory"', () {
@@ -151,37 +151,8 @@ void main() {
       expect(persona.axes[2].key, 'smoking');
     });
 
-    test('axes[3] key == "special" (임신·특별)', () {
-      expect(persona.axes[3].key, 'special');
-    });
-
-    test('axes[4] key == "age"', () {
-      expect(persona.axes[4].key, 'age');
-    });
-  });
-
-  // ── special 축 하드코딩 ──────────────────────────────────────
-
-  group('PersonaData special 축', () {
-    test('special 축 isActive == false 항상', () {
-      // 어떤 프로필이어도 special은 항상 비활성
-      for (final profile in [
-        _base(),
-        _base(asthma: true),
-        _base(hypertension: true),
-      ]) {
-        final persona = PersonaData.fromProfile(profile);
-        final special = persona.axes[3];
-        expect(special.isActive, isFalse,
-            reason: 'special 축은 항상 isActive=false');
-      }
-    });
-
-    test('special 축 weight == 0, delta == 0', () {
-      final persona = PersonaData.fromProfile(_base());
-      final special = persona.axes[3];
-      expect(special.weight, 0.0);
-      expect(special.delta, 0.0);
+    test('axes[3] key == "age"', () {
+      expect(persona.axes[3].key, 'age');
     });
   });
 
@@ -190,7 +161,7 @@ void main() {
   group('PersonaData age 축 sub', () {
     test('birthYear=1990 → age 축 sub == "${DateTime.now().year - 1990}세"', () {
       final persona = PersonaData.fromProfile(_base(birthYear: 1990));
-      final ageAxis = persona.axes[4];
+      final ageAxis = persona.axes[3];
       final expectedAge = DateTime.now().year - 1990;
       expect(ageAxis.sub, '$expectedAge세');
     });
