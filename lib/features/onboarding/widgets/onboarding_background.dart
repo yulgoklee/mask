@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../widgets/gradient_background.dart';
 
 /// 온보딩 공통 배경 그라디언트 (brand 파랑 고정)
 ///
@@ -10,28 +11,12 @@ class OnboardingBackground extends StatelessWidget {
 
   const OnboardingBackground({super.key, required this.child});
 
-  static const List<Color> _colors = [
-    Color(0xFFE8F0FE),
-    Color(0xFFE8F0FE),
-    Color(0xFFF9FAFB),
-  ];
-
-  static const List<double> _stops = [0.0, 0.3, 1.0];
-
   @override
   Widget build(BuildContext context) {
-    return SizedBox.expand(
-      child: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: _colors,
-            stops: _stops,
-          ),
-        ),
-        child: child,
-      ),
+    return GradientBackground(
+      colors: const [Color(0xFFE8F0FE), Color(0xFFE8F0FE), Color(0xFFF9FAFB)],
+      animated: false,
+      child: child,
     );
   }
 }

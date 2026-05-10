@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/design_tokens.dart';
+import '../../../widgets/gradient_background.dart';
 
 /// 케어 탭 위험도별 배경 그라디언트 (시안 v3 정확)
 ///
@@ -56,8 +57,6 @@ class CareBackground extends StatelessWidget {
     }
   }
 
-  List<double> get _stops => const [0.0, 0.3, 1.0];
-
   /// 위험도 베이스 색 (다른 위젯에서 참조)
   static Color baseColor(CareRiskLevel level) {
     switch (level) {
@@ -69,20 +68,9 @@ class CareBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox.expand(
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: _colors,
-            stops: _stops,
-          ),
-        ),
-        child: child,
-      ),
+    return GradientBackground(
+      colors: _colors,
+      child: child,
     );
   }
 }

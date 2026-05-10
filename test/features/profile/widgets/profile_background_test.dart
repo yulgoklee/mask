@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mask_alert/core/constants/design_tokens.dart';
 import 'package:mask_alert/features/profile/widgets/profile_background.dart';
+import 'package:mask_alert/widgets/gradient_background.dart';
 
 void main() {
   group('ProfileBackground.levelFromSum', () {
@@ -52,7 +53,8 @@ void main() {
   });
 
   group('ProfileBackground 위젯', () {
-    testWidgets('AnimatedContainer 포함 — child 렌더링', (tester) async {
+    testWidgets('GradientBackground(animated:true) 포함 — child 렌더링',
+        (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: ProfileBackground(
@@ -61,6 +63,8 @@ void main() {
           ),
         ),
       );
+      expect(find.byType(GradientBackground), findsOneWidget);
+      // animated:true → AnimatedContainer 경로
       expect(find.byType(AnimatedContainer), findsOneWidget);
       expect(find.text('hello'), findsOneWidget);
     });

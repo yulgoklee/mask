@@ -2,6 +2,7 @@
 export 'async_state_widgets.dart';
 export 'dust_gauge_widget.dart';
 export 'grade_badge.dart';
+export 'gradient_background.dart';
 
 // 신규 공용 컴포넌트
 export 'app_button.dart';

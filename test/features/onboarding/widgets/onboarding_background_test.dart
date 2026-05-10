@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mask_alert/features/onboarding/widgets/onboarding_background.dart';
+import 'package:mask_alert/widgets/gradient_background.dart';
 
 void main() {
   group('OnboardingBackground', () {
-    testWidgets('a: DecoratedBox(gradient) 렌더링', (tester) async {
+    testWidgets('a: GradientBackground(animated:false) 렌더링', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: OnboardingBackground(
@@ -14,8 +15,9 @@ void main() {
         ),
       );
 
-      // DecoratedBox가 렌더링되는지 확인
       expect(find.byType(OnboardingBackground), findsOneWidget);
+      // animated:false → DecoratedBox 경로
+      expect(find.byType(GradientBackground), findsOneWidget);
       expect(find.byType(DecoratedBox), findsWidgets);
     });
 
@@ -40,7 +42,7 @@ void main() {
         ),
       );
 
-      // 위젯 트리 내 DecoratedBox 찾기
+      // GradientBackground(animated:false) → DecoratedBox 경로
       final decoratedBox = tester.widget<DecoratedBox>(
         find.byType(DecoratedBox).first,
       );
@@ -49,7 +51,7 @@ void main() {
 
       expect(gradient.colors.length, 3);
       expect(gradient.stops, const [0.0, 0.3, 1.0]);
-      // brand 파랑 톱 색상 (T11: #E0F0E8 → #E8F0FE)
+      // brand 파랑 톱 색상
       expect(gradient.colors[0], const Color(0xFFE8F0FE));
       // 바텀 색상
       expect(gradient.colors[2], const Color(0xFFF9FAFB));
