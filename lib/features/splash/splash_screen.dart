@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/constants/app_colors.dart';
+import '../../core/constants/design_tokens.dart';
 import '../../core/constants/app_constants.dart';
-import '../../providers/core_providers.dart';
 import '../../core/services/app_logger.dart';
 import '../../providers/providers.dart';
 
-/// 스플래시 화면 — Phase 1 리디자인
+/// 스플래시 화면 — 사이클 #11 [A] 재설계
 ///
-/// 배경색: #E8F1FB (AppColors.splashBackground)
-/// 헤드라인: "당신의 기관지는 남들과 다릅니다."
-/// 서브: "당신만을 위한 마스크 타이밍."
+/// 배경색: DT.splashBg (#EBF3FF) — 브랜드 청색 10% 틴트
+/// 아이콘: 😷 72pt 직접 (Container/boxShadow 없음)
+/// 헤드라인: "같은 공기,\n다른 기준." 32pt Bold
+/// 서브: "내 건강 상태에 맞게 알려드려요." 16pt w500 DT.gray
+/// 노출 시간: 1800ms (이전 2200ms에서 단축)
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -65,7 +66,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 
   Future<void> _navigate() async {
-    await Future.delayed(const Duration(milliseconds: 2200));
+    await Future.delayed(const Duration(milliseconds: 1800));
     if (!mounted) return;
 
     try {
@@ -103,36 +104,19 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.splashBackground,
+      backgroundColor: DT.splashBg,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 36),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // ── 앱 아이콘 ────────────────────────────────────
+              // ── 앱 아이콘 (Container/boxShadow 없이 직접) ───────
               FadeTransition(
                 opacity: _iconFade,
                 child: ScaleTransition(
                   scale: _iconScale,
-                  child: Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(28),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.25),
-                          blurRadius: 28,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: const Center(
-                      child: Text('😷', style: TextStyle(fontSize: 52)),
-                    ),
-                  ),
+                  child: const Text('😷', style: TextStyle(fontSize: 72)),
                 ),
               ),
 
@@ -143,28 +127,28 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 opacity: _textFade,
                 child: SlideTransition(
                   position: _textSlide,
-                  child: Column(
+                  child: const Column(
                     children: [
-                      const Text(
+                      Text(
                         '같은 공기,\n다른 기준.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 28,
+                          fontSize: 32,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                          color: DT.text,
                           height: 1.3,
-                          letterSpacing: -0.5,
+                          letterSpacing: -0.64,
                         ),
                       ),
-                      const SizedBox(height: 14),
+                      SizedBox(height: 14),
                       Text(
                         '내 건강 상태에 맞게 알려드려요.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 16,
-                          color: AppColors.textPrimary.withValues(alpha: 0.65),
+                          color: DT.gray,
                           fontWeight: FontWeight.w500,
-                          letterSpacing: -0.3,
+                          letterSpacing: -0.32,
                         ),
                       ),
                     ],
