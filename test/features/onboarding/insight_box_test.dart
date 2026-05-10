@@ -117,7 +117,7 @@ class _Q61HarnessState extends State<_Q61Harness> {
 
   @override
   Widget build(BuildContext context) {
-    return DiagQ6_1SmokingType(
+    return DiagQ6p1SmokingType(
       cigarette: cigarette,
       heated: heated,
       vaping: vaping,
