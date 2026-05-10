@@ -278,9 +278,9 @@ class DiagQ3Gender extends StatelessWidget {
 
   const DiagQ3Gender({super.key, this.value, required this.onChanged, this.questionNumber = 3});
 
-  static const _options = [
-    ('male',   '👨', '남성'),
-    ('female', '👩', '여성'),
+  static const _options = <(String, String)>[
+    ('male',   '남성'),
+    ('female', '여성'),
   ];
 
   @override
@@ -297,7 +297,7 @@ class DiagQ3Gender extends StatelessWidget {
           const SizedBox(height: 40),
           Row(
             children: List.generate(_options.length, (i) {
-              final (val, emoji, label) = _options[i];
+              final (val, label) = _options[i];
               final selected = value == val;
               // 카드 사이 간격만 오른쪽 패딩 — 마지막 카드는 패딩 없음
               final isLast = i == _options.length - 1;
@@ -323,7 +323,11 @@ class DiagQ3Gender extends StatelessWidget {
                       ),
                       child: Column(
                         children: [
-                          Text(emoji, style: const TextStyle(fontSize: 40)),
+                          Icon(
+                            val == 'male' ? Icons.male : Icons.female,
+                            size: 40,
+                            color: selected ? DT.primary : DT.gray2,
+                          ),
                           const SizedBox(height: 12),
                           Text(
                             label,
@@ -372,11 +376,11 @@ class DiagQ4Respiratory extends StatelessWidget {
     this.questionNumber = 4,
   });
 
-  static const _conditions = [
-    ('rhinitis', '👃', '비염 (알레르기성·비알레르기성)',  '콧물·코막힘·재채기·코 가려움'),
-    ('asthma',   '🫁', '천식 (운동 유발 포함)',         '쌕쌕거림·가슴 답답함·만성 기침'),
-    ('copd',     '🌬️', 'COPD / 만성 기관지염',         '만성 기침·가래·계단 시 숨 참'),
-    ('allergy',  '🌸', '흡입성 알레르기',                '꽃가루·먼지·동물 털 등에 반응'),
+  static const _conditions = <(String, IconData, String, String)>[
+    ('rhinitis', Icons.water_drop_outlined,   '비염 (알레르기성·비알레르기성)',  '콧물·코막힘·재채기·코 가려움'),
+    ('asthma',   Icons.air,                   '천식 (운동 유발 포함)',         '쌕쌕거림·가슴 답답함·만성 기침'),
+    ('copd',     Icons.waves_outlined,        'COPD / 만성 기관지염',         '만성 기침·가래·계단 시 숨 참'),
+    ('allergy',  Icons.local_florist_outlined, '흡입성 알레르기',              '꽃가루·먼지·동물 털 등에 반응'),
   ];
 
   bool _valueOf(String key) {
@@ -416,7 +420,7 @@ class DiagQ4Respiratory extends StatelessWidget {
 
           // ── 체크박스 항목 (4개) ──────────────────────────────
           ..._conditions.map((opt) {
-            final (key, emoji, label, hint) = opt;
+            final (key, iconData, label, hint) = opt;
             final sel = _valueOf(key);
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
@@ -438,7 +442,7 @@ class DiagQ4Respiratory extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Text(emoji, style: const TextStyle(fontSize: 26)),
+                      Icon(iconData, size: 26, color: sel ? DT.caution : DT.gray2),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
@@ -499,7 +503,7 @@ class DiagQ4Respiratory extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Text('😊', style: TextStyle(fontSize: 26)),
+                  Icon(Icons.check_circle_outline, size: 26, color: noneSelected ? DT.safe : DT.gray2),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Text(
@@ -559,10 +563,10 @@ class DiagQ5Cardiovascular extends StatelessWidget {
     this.questionNumber = 5,
   });
 
-  static const _conditions = [
-    ('hypertension', '🩺', '고혈압',           '혈압이 높아 심혈관 부담이 있어요'),
-    ('heartDisease', '❤️', '심장 질환',         '심장 관련 질환을 진단받았어요'),
-    ('stroke',       '🧠', '뇌졸중 (중풍) 경험', '뇌혈관 질환을 경험한 적 있어요'),
+  static const _conditions = <(String, IconData, String, String)>[
+    ('hypertension', Icons.monitor_heart_outlined, '고혈압',           '혈압이 높아 심혈관 부담이 있어요'),
+    ('heartDisease', Icons.favorite_outline,       '심장 질환',         '심장 관련 질환을 진단받았어요'),
+    ('stroke',       Icons.electric_bolt_outlined, '뇌졸중 (중풍) 경험', '뇌혈관 질환을 경험한 적 있어요'),
   ];
 
   bool _valueOf(String key) {
@@ -600,7 +604,7 @@ class DiagQ5Cardiovascular extends StatelessWidget {
 
           // ── 체크박스 항목 (3개) ──────────────────────────────
           ..._conditions.map((opt) {
-            final (key, emoji, label, hint) = opt;
+            final (key, iconData, label, hint) = opt;
             final sel = _valueOf(key);
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
@@ -622,7 +626,7 @@ class DiagQ5Cardiovascular extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Text(emoji, style: const TextStyle(fontSize: 26)),
+                      Icon(iconData, size: 26, color: sel ? DT.caution : DT.gray2),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
@@ -683,7 +687,7 @@ class DiagQ5Cardiovascular extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Text('💚', style: TextStyle(fontSize: 26)),
+                  Icon(Icons.check_circle_outline, size: 26, color: noneSelected ? DT.safe : DT.gray2),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Text(
@@ -747,31 +751,31 @@ class DiagSignalSelfCheck extends StatelessWidget {
     this.questionNumber = 6,
   });
 
-  /// 신호 카드 정의 (id, emoji, label, hint)
+  /// 신호 카드 정의 (id, iconData, label, hint)
   ///
   /// 라벨은 의학적 진단 표현이 아닌 일상 언어. 답하기 쉬운 형태.
-  static const _signals = [
+  static const _signals = <(String, IconData, String, String)>[
     (
       'signal_a1', // SignalId.a1
-      '🤧',
+      Icons.water_drop_outlined,
       '콧물·코막힘이 한 주에 4일 이상 있다',
       '계절·환경과 관계없이 자주 반복되는 경우',
     ),
     (
       'signal_b1', // SignalId.b1
-      '🌙',
+      Icons.nights_stay_outlined,
       '자다가 천식 증상으로 깬 적 있다',
       '쌕쌕거림·가슴 답답함으로 새벽에 깬 경험',
     ),
     (
       'signal_c1', // SignalId.c1
-      '🏃',
+      Icons.directions_run,
       '운동 시작 5~10분 후 가슴 답답함·기침',
       '평소 활동량 대비 호흡이 더 거칠어지는 경우',
     ),
     (
       'signal_d3', // SignalId.d3
-      '🫁',
+      Icons.air,
       '만성 가래 동반 기침이 3개월 이상 지속',
       '겨울·아침에 가래가 더 심한 편',
     ),
@@ -808,7 +812,7 @@ class DiagSignalSelfCheck extends StatelessWidget {
 
           // ── 4개 신호 체크리스트 ─────────────────────────────
           ..._signals.map((sig) {
-            final (id, emoji, label, hint) = sig;
+            final (id, iconData, label, hint) = sig;
             final sel = _isChecked(id);
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
@@ -830,7 +834,7 @@ class DiagSignalSelfCheck extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Text(emoji, style: const TextStyle(fontSize: 26)),
+                      Icon(iconData, size: 26, color: sel ? DT.caution : DT.gray2),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
@@ -901,10 +905,10 @@ class DiagQ6Smoking extends StatelessWidget {
     this.questionNumber = 6,
   });
 
-  static const _options = [
-    (SmokingStatus.current, '🚬', '현재 흡연 중',  '지금도 담배를 피워요'),
-    (SmokingStatus.former,  '🌱', '끊었어요',      '과거에 피웠지만 지금은 아니에요'),
-    (SmokingStatus.never,   '✅', '안 피워요',     '흡연 이력이 없어요'),
+  static const _options = <(SmokingStatus, IconData, String, String)>[
+    (SmokingStatus.current, Icons.smoking_rooms,       '현재 흡연 중',  '지금도 담배를 피워요'),
+    (SmokingStatus.former,  Icons.eco,                 '끊었어요',      '과거에 피웠지만 지금은 아니에요'),
+    (SmokingStatus.never,   Icons.check_circle_outline, '안 피워요',    '흡연 이력이 없어요'),
   ];
 
   @override
@@ -923,7 +927,7 @@ class DiagQ6Smoking extends StatelessWidget {
           const SizedBox(height: 28),
 
           ..._options.map((opt) {
-            final (status, emoji, label, hint) = opt;
+            final (status, iconData, label, hint) = opt;
             final sel = value == status;
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
@@ -945,7 +949,7 @@ class DiagQ6Smoking extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Text(emoji, style: const TextStyle(fontSize: 26)),
+                      Icon(iconData, size: 26, color: sel ? DT.primary : DT.gray2),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
@@ -1017,10 +1021,10 @@ class DiagQ6_1SmokingType extends StatelessWidget {
     this.questionNumber = 7,
   });
 
-  static const _options = [
-    ('cigarette', '🚬', '연초',    '일반 담배'),
-    ('heated',    '💨', '가열식',  'IQOS, glo, lil 등'),
-    ('vaping',    '☁️', '전자담배', '액상형'),
+  static const _options = <(String, IconData, String, String)>[
+    ('cigarette', Icons.smoking_rooms,     '연초',    '일반 담배'),
+    ('heated',    Icons.device_thermostat, '가열식',  'IQOS, glo, lil 등'),
+    ('vaping',    Icons.cloud_outlined,    '전자담배', '액상형'),
   ];
 
   bool _valueOf(String key) {
@@ -1056,7 +1060,7 @@ class DiagQ6_1SmokingType extends StatelessWidget {
           const SizedBox(height: 28),
 
           ..._options.map((opt) {
-            final (key, emoji, label, hint) = opt;
+            final (key, iconData, label, hint) = opt;
             final sel = _valueOf(key);
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
@@ -1078,7 +1082,7 @@ class DiagQ6_1SmokingType extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Text(emoji, style: const TextStyle(fontSize: 26)),
+                      Icon(iconData, size: 26, color: sel ? DT.primary : DT.gray2),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
@@ -1169,7 +1173,7 @@ Widget _qSubtitle(BuildContext context, String subtitle) =>
           ),
     );
 
-/// 💡 인사이트 박스
+/// 인사이트 박스
 Widget _insightBox(String text) => Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1180,7 +1184,7 @@ Widget _insightBox(String text) => Container(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('💡', style: TextStyle(fontSize: 16)),
+          const Icon(Icons.info_outline, size: 18, color: DT.primary),
           const SizedBox(width: 10),
           Expanded(
             child: Text(

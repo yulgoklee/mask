@@ -9,6 +9,7 @@ import '../../data/models/user_profile.dart';
 import '../../providers/providers.dart';
 import '../../widgets/app_button.dart';
 import 'diagnosis_cards.dart';
+import 'widgets/onboarding_background.dart';
 
 final _analytics = FirebaseAnalytics.instance;
 
@@ -442,8 +443,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         if (_currentPage > 0) _prevPage();
       },
       child: Scaffold(
-      backgroundColor: DT.background,
-      body: SafeArea(
+      backgroundColor: Colors.transparent,
+      body: OnboardingBackground(child: SafeArea(
         child: Column(
           children: [
             // ── 상단 진행 표시 ─────────────────────────────────
@@ -493,7 +494,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
           ],
         ),
-      ),
+      )),  // SafeArea, OnboardingBackground
     ),   // Scaffold
     );   // PopScope
   }
