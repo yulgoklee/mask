@@ -8,6 +8,7 @@ import '../../core/constants/design_tokens.dart';
 import '../../providers/core_providers.dart';
 import '../../providers/profile_providers.dart';
 import 'widgets/s_cap.dart';
+import 'widgets/s_dnd_child.dart';
 import 'widgets/s_label.dart';
 import 'widgets/s_item.dart';
 import 'widgets/s_switch.dart';
@@ -17,32 +18,6 @@ const _kPrivacyPolicyUrl = 'https://yulgoklee.github.io/mask/';
 const _kHelpUrl = 'https://yulgoklee.github.io/mask/';
 const _kContactEmail = 'mailto:leeyulgok96@gmail.com';
 const _kGpsEnabledKey = 'gps_enabled';
-
-/// 방해 금지 시간 펼침 자식 — 시안 DndChild 정합
-/// borderLeft 2px + paddingLeft 16 + marginLeft 2
-class _DndChild extends StatelessWidget {
-  final Widget child;
-  final bool last;
-
-  const _DndChild({required this.child, this.last = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(left: 2),
-      padding: const EdgeInsets.only(left: 16),
-      decoration: BoxDecoration(
-        border: Border(
-          left: BorderSide(
-            width: 2,
-            color: DT.text.withValues(alpha: 0.06),
-          ),
-        ),
-      ),
-      child: child,
-    );
-  }
-}
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -262,15 +237,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     // 방해 금지 시간 펼침 — quietHoursEnabled 시 자식 2개 표시
                     if (notifSetting.quietHoursEnabled) ...[
-                      _DndChild(
+                      SDndChild(
                         child: SItem(
                           label: '시작 시간',
                           value: _fmtHour(notifSetting.quietHoursStartHour),
                           onClick: () => context.push('/notification_time'),
                         ),
                       ),
-                      _DndChild(
-                        last: true,
+                      SDndChild(
                         child: SItem(
                           label: '종료 시간',
                           value: _fmtHour(notifSetting.quietHoursEndHour),
