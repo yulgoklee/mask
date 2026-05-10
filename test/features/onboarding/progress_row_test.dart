@@ -4,13 +4,15 @@ import 'package:mask_alert/features/onboarding/onboarding_screen.dart';
 
 Widget _buildRow({
   required int currentPage,
-  int totalPages = 9,
+  int totalPages = 6,
+  String stageName = '기본정보',
 }) {
   return MaterialApp(
     home: Scaffold(
       body: OnboardingProgressRow(
         currentPage: currentPage,
         totalPages: totalPages,
+        stageName: stageName,
         onBack: () {},
         onSkip: () {},
       ),
@@ -20,65 +22,57 @@ Widget _buildRow({
 
 void main() {
   group('OnboardingProgressRow — 건너뛰기 버튼 조건부 표시', () {
-    testWidgets('Q1 (page=0): 건너뛰기 보이지 않음', (tester) async {
-      await tester.pumpWidget(_buildRow(currentPage: 0));
+    testWidgets('기본정보 (page=0): 건너뛰기 보이지 않음', (tester) async {
+      await tester.pumpWidget(_buildRow(currentPage: 0, stageName: '기본정보'));
       expect(find.text('(선택 항목) 건너뛰기'), findsNothing);
     });
 
-    testWidgets('Q2 (page=1): 건너뛰기 보이지 않음', (tester) async {
-      await tester.pumpWidget(_buildRow(currentPage: 1));
-      expect(find.text('(선택 항목) 건너뛰기'), findsNothing);
-    });
-
-    testWidgets('Q3 (page=2): 건너뛰기 보임', (tester) async {
-      await tester.pumpWidget(_buildRow(currentPage: 2));
+    testWidgets('호흡기 (page=1): 건너뛰기 보임', (tester) async {
+      await tester.pumpWidget(_buildRow(currentPage: 1, stageName: '호흡기'));
       expect(find.text('(선택 항목) 건너뛰기'), findsOneWidget);
     });
 
-    testWidgets('Q4 (page=3): 건너뛰기 보임', (tester) async {
-      await tester.pumpWidget(_buildRow(currentPage: 3));
+    testWidgets('심혈관 (page=2): 건너뛰기 보임', (tester) async {
+      await tester.pumpWidget(_buildRow(currentPage: 2, stageName: '심혈관'));
+      expect(find.text('(선택 항목) 건너뛰기'), findsOneWidget);
+    });
+
+    testWidgets('흡연 (page=3): 건너뛰기 보임', (tester) async {
+      await tester.pumpWidget(_buildRow(currentPage: 3, stageName: '흡연'));
       expect(find.text('(선택 항목) 건너뛰기'), findsOneWidget);
     });
   });
 
-  group('OnboardingProgressRow — 카운터 조건부 표시', () {
-    testWidgets('Q1 (page=0): "Q1" 라벨 표시', (tester) async {
-      await tester.pumpWidget(_buildRow(currentPage: 0));
-      expect(find.text('Q1'), findsOneWidget);
-      expect(find.textContaining('/ 9'), findsNothing);
+  group('OnboardingProgressRow — 단계명 표시', () {
+    testWidgets('기본정보 (page=0): "기본정보" 라벨 표시', (tester) async {
+      await tester.pumpWidget(_buildRow(currentPage: 0, stageName: '기본정보'));
+      expect(find.text('기본정보'), findsOneWidget);
     });
 
-    testWidgets('Q2 (page=1): "Q2" 라벨 표시', (tester) async {
-      await tester.pumpWidget(_buildRow(currentPage: 1));
-      expect(find.text('Q2'), findsOneWidget);
-      expect(find.textContaining('/ 9'), findsNothing);
+    testWidgets('호흡기 (page=1): "호흡기" 라벨 표시', (tester) async {
+      await tester.pumpWidget(_buildRow(currentPage: 1, stageName: '호흡기'));
+      expect(find.text('호흡기'), findsOneWidget);
     });
 
-    testWidgets('Q3 (page=2): "Q3" 라벨 표시', (tester) async {
-      await tester.pumpWidget(_buildRow(currentPage: 2));
-      expect(find.text('Q3'), findsOneWidget);
-      expect(find.textContaining('/ 9'), findsNothing);
+    testWidgets('심혈관 (page=2): "심혈관" 라벨 표시', (tester) async {
+      await tester.pumpWidget(_buildRow(currentPage: 2, stageName: '심혈관'));
+      expect(find.text('심혈관'), findsOneWidget);
     });
 
-    testWidgets('Q4 (page=3): 카운터 보임 (4 / 9)', (tester) async {
-      await tester.pumpWidget(_buildRow(currentPage: 3));
-      expect(find.text('4 / 9'), findsOneWidget);
-    });
-
-    testWidgets('Q5 (page=4): 카운터 보임 (5 / 9)', (tester) async {
-      await tester.pumpWidget(_buildRow(currentPage: 4));
-      expect(find.text('5 / 9'), findsOneWidget);
+    testWidgets('흡연 (page=3): "흡연" 라벨 표시', (tester) async {
+      await tester.pumpWidget(_buildRow(currentPage: 3, stageName: '흡연'));
+      expect(find.text('흡연'), findsOneWidget);
     });
   });
 
   group('OnboardingProgressRow — 뒤로 버튼 조건부 표시', () {
-    testWidgets('Q1 (page=0): 뒤로 버튼 보이지 않음', (tester) async {
-      await tester.pumpWidget(_buildRow(currentPage: 0));
+    testWidgets('기본정보 (page=0): 뒤로 버튼 보이지 않음', (tester) async {
+      await tester.pumpWidget(_buildRow(currentPage: 0, stageName: '기본정보'));
       expect(find.byIcon(Icons.arrow_back_ios_new), findsNothing);
     });
 
-    testWidgets('Q2 (page=1): 뒤로 버튼 보임', (tester) async {
-      await tester.pumpWidget(_buildRow(currentPage: 1));
+    testWidgets('호흡기 (page=1): 뒤로 버튼 보임', (tester) async {
+      await tester.pumpWidget(_buildRow(currentPage: 1, stageName: '호흡기'));
       expect(find.byIcon(Icons.arrow_back_ios_new), findsOneWidget);
     });
   });

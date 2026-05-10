@@ -28,9 +28,9 @@ class _AnalysisLoadingScreenState
   int _messageIndex = 0;
 
   static const _messages = [
-    '프로필을 분석하고 있어요...',
-    '내 몸에 맞는 임계치를 계산 중이에요...',
-    '맞춤형 알림 기준을 설정하고 있어요...',
+    '건강 정보를 읽고 있어요',
+    '내 기준값을 계산하고 있어요',
+    '알림 시간을 맞추고 있어요',
     '거의 다 됐어요!',
   ];
 
@@ -78,7 +78,7 @@ class _AnalysisLoadingScreenState
 
     // cap: name 있을 때 "$name만을 위한" / 없을 때 null
     final cap = name.isNotEmpty ? '$name만을 위한' : null;
-    const heroMain = '내 알림 기준,\n맞춤형으로\n만드는 중이에요';
+    const heroMain = '내 알림 기준이\n만들어지고 있어요';
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -104,11 +104,37 @@ class _AnalysisLoadingScreenState
                   const Center(
                     child: SpinKitThreeBounce(
                       color: DT.primary,
-                      size: 32,
+                      size: 24,
                     ),
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 20),
+
+                  // ── 4단계 도트 ────────────────────────────────
+                  Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(4, (i) {
+                        final isCurrent = i == _messageIndex;
+                        final isPast = i <= _messageIndex;
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOut,
+                          margin:
+                              const EdgeInsets.symmetric(horizontal: 4),
+                          width: isCurrent ? 10 : 8,
+                          height: isCurrent ? 10 : 8,
+                          decoration: BoxDecoration(
+                            color: isPast ? DT.primary : DT.border,
+                            shape: BoxShape.circle,
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
 
                   // ── 단계별 메시지 ─────────────────────────────
                   Center(

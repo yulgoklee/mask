@@ -22,20 +22,24 @@ Widget qBadge(String text) => Container(
 Widget qTitle(BuildContext context, String title) =>
     Text(
       title,
-      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: DT.text,
-            height: 1.3,
-          ),
+      style: const TextStyle(
+        fontSize: 26,
+        fontWeight: FontWeight.bold,
+        color: DT.text,
+        height: 1.3,
+      ),
     );
 
 /// 서브타이틀
 Widget qSubtitle(BuildContext context, String subtitle) =>
     Text(
       subtitle,
-      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: DT.gray,
-          ),
+      style: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+        color: DT.gray,
+        height: 1.5,
+      ),
     );
 
 /// 인사이트 박스
@@ -56,7 +60,7 @@ Widget insightBox(String text) => Container(
               text,
               style: const TextStyle(
                 color: DT.gray,
-                fontSize: 13,
+                fontSize: 14,
                 height: 1.5,
               ),
             ),

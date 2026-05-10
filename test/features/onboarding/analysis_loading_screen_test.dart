@@ -122,7 +122,7 @@ void main() {
       });
       // displayName = '지수님' → cap: "지수님만을 위한"
       expect(find.textContaining('만을 위한'), findsOneWidget);
-      expect(find.textContaining('만드는 중이에요'), findsWidgets);
+      expect(find.textContaining('만들어지고 있어요'), findsWidgets);
     });
 
     testWidgets('c: nickname 없을 때 Hero main만 표시 (cap 없음)', (tester) async {
@@ -130,15 +130,15 @@ void main() {
         await tester.pumpWidget(_buildApp(_profileNoName));
         await tester.pump(const Duration(milliseconds: 50));
       });
-      expect(find.textContaining('만드는 중이에요'), findsWidgets);
+      expect(find.textContaining('만들어지고 있어요'), findsWidgets);
     });
 
-    testWidgets('d: 초기 메시지 "프로필을 분석하고 있어요..." 표시', (tester) async {
+    testWidgets('d: 초기 메시지 "건강 정보를 읽고 있어요" 표시', (tester) async {
       await tester.runAsync(() async {
         await tester.pumpWidget(_buildApp(_profileWithName));
         await tester.pump(const Duration(milliseconds: 50));
       });
-      expect(find.text('프로필을 분석하고 있어요...'), findsOneWidget);
+      expect(find.text('건강 정보를 읽고 있어요'), findsOneWidget);
     });
   });
 }

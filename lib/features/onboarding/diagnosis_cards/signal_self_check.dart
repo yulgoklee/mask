@@ -80,8 +80,8 @@ class DiagSignalSelfCheck extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 32),
-          qBadge('Q$questionNumber · 자가 점검 (선택)'),
-          const SizedBox(height: 14),
+          const Icon(Icons.health_and_safety_outlined, size: 40, color: DT.caution),
+          const SizedBox(height: 12),
           qTitle(context, '혹시 이런 적\n있으신가요?'),
           const SizedBox(height: 8),
           qSubtitle(context, '복수 선택 가능 · 답하지 않아도 괜찮아요.'),
@@ -121,7 +121,7 @@ class DiagSignalSelfCheck extends StatelessWidget {
                               label,
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
-                                fontSize: 14,
+                                fontSize: 15,
                                 color: sel
                                     ? DT.caution
                                     : DT.text,
