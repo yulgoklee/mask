@@ -80,11 +80,12 @@ void main() {
         ..sort();
 
       // profile_tab.dart v2 재작성 후 /profile/edit 직접 참조 제거됨.
-      // app_router.dart (pageBuilder 정의)만 허용.
+      // app_router.dart (pageBuilder 정의) + settings_screen.dart (건강 정보 수정 진입) 허용.
       expect(
         files,
         equals([
           'lib/core/router/app_router.dart',
+          'lib/features/settings/settings_screen.dart',
         ]),
         reason:
             '허용된 파일 외에 /profile/edit 참조가 발견됨: $files',

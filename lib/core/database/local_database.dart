@@ -531,6 +531,24 @@ class LocalDatabase {
     ''', [stationName, since]);
   }
 
+  // ── 캐시·초기화 ─────────────────────────────────────────────
+
+  /// AQI 기록만 삭제 (캐시 삭제 기능 — 알림 로그는 보존)
+  Future<void> clearAqiRecords() async {
+    final db = await database;
+    await db.delete('aqi_records');
+  }
+
+  /// 전체 데이터 초기화 — 테이블 DROP 후 재생성 (데이터 초기화 기능)
+  ///
+  /// prefs.clear()와 함께 호출해 재설치와 동일한 상태를 만든다.
+  Future<void> resetAll() async {
+    final db = await database;
+    await db.execute('DROP TABLE IF EXISTS aqi_records');
+    await db.execute('DROP TABLE IF EXISTS notification_logs');
+    await _onCreate(db, _dbVersion);
+  }
+
   // ── 유틸 ─────────────────────────────────────────────────────
 
   Future<void> close() async => _db?.close();
